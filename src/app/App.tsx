@@ -83,6 +83,14 @@ type ObjectItem = {
   code: string;
   status: "Активен" | "Неактивен";
 };
+type AppPage =
+  | "home"
+  | "contractors"
+  | "contractor"
+  | "objects"
+  | "object"
+  | "settings"
+  | "tags";
 type TagItem = {
   id: string;
   uid: string;
@@ -277,6 +285,16 @@ const objectsInitial: ObjectItem[] = [
     status: "Активен",
   },
 ];
+const UNASSIGNED_BUSINESS = "Без бизнес-центра";
+const tagBusinessGroups: ObjectItem[] = [
+  ...objectsInitial,
+  {
+    name: UNASSIGNED_BUSINESS,
+    address: "Метки, которые ещё не назначены объекту",
+    code: "NO-LINK",
+    status: "Неактивен",
+  },
+];
 const initialTags: TagItem[] = [
   { id: "NFC-001", uid: "04:A7:2C:9F", color: "bg-blue-500" },
   { id: "NFC-002", uid: "04:6D:58:11", color: "bg-violet-500" },
@@ -316,6 +334,16 @@ type ContractorProfile = {
   onSite: number;
   weeklyReports: number;
   growth: string;
+  logs: LogRecord[];
+};
+
+type ObjectProfile = {
+  visits: number[];
+  visitsToday: number;
+  onSite: number;
+  activeTags: number;
+  growth: string;
+  contractors: string[];
   logs: LogRecord[];
 };
 
@@ -450,10 +478,152 @@ function getContractorProfile(contractor: string): ContractorProfile {
   return { ...metrics, logs };
 }
 
+const objectMetricSets = [
+  {
+    visits: [52, 61, 58, 69, 75, 84, 91],
+    visitsToday: 91,
+    onSite: 18,
+    activeTags: 48,
+    growth: "+8,3%",
+    contractorIndexes: [0, 1, 3],
+  },
+  {
+    visits: [31, 36, 42, 39, 47, 51, 56],
+    visitsToday: 56,
+    onSite: 9,
+    activeTags: 29,
+    growth: "+9,8%",
+    contractorIndexes: [1, 2],
+  },
+  {
+    visits: [12, 9, 8, 6, 5, 3, 0],
+    visitsToday: 0,
+    onSite: 0,
+    activeTags: 0,
+    growth: "0%",
+    contractorIndexes: [0],
+  },
+  {
+    visits: [44, 48, 53, 61, 64, 71, 79],
+    visitsToday: 79,
+    onSite: 14,
+    activeTags: 37,
+    growth: "+11,2%",
+    contractorIndexes: [0, 2, 3],
+  },
+];
+
+function getObjectProfile(object: ObjectItem): ObjectProfile {
+  const objectIndex = Math.max(
+    0,
+    objectsInitial.findIndex((item) => item.code === object.code),
+  );
+  const metrics = objectMetricSets[objectIndex];
+  const assignedContractors = metrics.contractorIndexes.map(
+    (index) => contractors[index],
+  );
+  const employees = staff.filter((employee) =>
+    assignedContractors.includes(employee.contractor),
+  );
+  const eventTemplates: Array<
+    Omit<LogRecord, "id" | "employee" | "initials" | "object">
+  > = [
+    {
+      date: "Сегодня",
+      time: ["07:48", "08:03", "08:26", "07:55"][objectIndex],
+      event: "Вход",
+      details: "Вход на объект зафиксирован NFC-меткой",
+      status: "Успешно",
+    },
+    {
+      date: "Сегодня",
+      time: ["08:12", "08:31", "09:04", "08:18"][objectIndex],
+      event: "Вход",
+      details: "Сотрудник допущен на территорию объекта",
+      status: "Успешно",
+    },
+    {
+      date: "Сегодня",
+      time: ["10:36", "11:08", "12:14", "10:51"][objectIndex],
+      event: "Отчёт",
+      details: "Ежедневный отчёт по объекту отправлен",
+      status: "Принято",
+    },
+    {
+      date: "Сегодня",
+      time: ["13:22", "14:17", "15:06", "13:48"][objectIndex],
+      event: "Вход",
+      details: "Повторный вход после перерыва",
+      status: "Успешно",
+    },
+    {
+      date: "Сегодня",
+      time: ["17:42", "18:02", "16:38", "17:51"][objectIndex],
+      event: "Выход",
+      details: "Выход с объекта зафиксирован NFC-меткой",
+      status: "Успешно",
+    },
+    {
+      date: "Вчера",
+      time: ["18:21", "17:49", "16:14", "18:08"][objectIndex],
+      event: "Выход",
+      details: "Рабочая смена на объекте завершена",
+      status: "Успешно",
+    },
+    {
+      date: "Вчера",
+      time: ["15:40", "16:18", "14:22", "16:35"][objectIndex],
+      event: "Отчёт",
+      details: "Отчёт по технике безопасности отправлен",
+      status: "На проверке",
+    },
+    {
+      date: "Вчера",
+      time: ["08:04", "08:19", "09:11", "07:58"][objectIndex],
+      event: "Вход",
+      details: "Вход на объект зафиксирован NFC-меткой",
+      status: "Успешно",
+    },
+  ];
+  const logs = eventTemplates.map((template, index) => {
+    const employee = employees[index % Math.max(employees.length, 1)] || staff[0];
+    return {
+      ...template,
+      id: `object-${objectIndex}-${index}`,
+      employee: employee.name,
+      initials: employee.initials,
+      object: object.name,
+    };
+  });
+  return {
+    visits: metrics.visits,
+    visitsToday: metrics.visitsToday,
+    onSite: metrics.onSite,
+    activeTags: metrics.activeTags,
+    growth: metrics.growth,
+    contractors: assignedContractors,
+    logs,
+  };
+}
+
 const statusStyle = {
   Активен: "bg-emerald-50 text-emerald-700 border-emerald-200",
   Неактивен: "bg-slate-100 text-slate-600 border-slate-200",
 };
+
+function pluralizeRu(
+  value: number,
+  one: string,
+  few: string,
+  many: string,
+) {
+  const mod100 = value % 100;
+  const mod10 = value % 10;
+  if (mod100 >= 11 && mod100 <= 14) return many;
+  if (mod10 === 1) return one;
+  if (mod10 >= 2 && mod10 <= 4) return few;
+  return many;
+}
 
 function downloadEmployees(rows: Employee[]) {
   const header = [
@@ -489,7 +659,7 @@ function downloadEmployees(rows: Employee[]) {
   URL.revokeObjectURL(link.href);
 }
 
-function downloadLogs(rows: LogRecord[]) {
+function downloadLogs(rows: LogRecord[], fileName = "contractor-log.csv") {
   const header = [
     "Дата",
     "Время",
@@ -518,7 +688,7 @@ function downloadLogs(rows: LogRecord[]) {
   link.href = URL.createObjectURL(
     new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }),
   );
-  link.download = "contractor-log.csv";
+  link.download = fileName;
   link.click();
   URL.revokeObjectURL(link.href);
 }
@@ -700,6 +870,7 @@ function Nav({
   return (
     <button
       title={compact ? label : undefined}
+      aria-current={active ? "page" : undefined}
       onClick={onClick}
       className={`flex h-[52px] w-full items-center gap-3 rounded-2xl px-3.5 text-left transition ${active ? "border border-[#cfe2ff] bg-[#f1f7ff] text-[#17223a] shadow-[0_0_0_1px_rgba(219,234,254,.45)]" : "text-[#50617c] hover:bg-[#f6f9fd]"} ${compact ? "justify-center px-0" : ""}`}
     >
@@ -708,26 +879,107 @@ function Nav({
       >
         {icon}
       </span>
-      {!compact && (
-        <>
-          <span className="flex-1 text-[16px] font-semibold">{label}</span>
-          {end}
-        </>
-      )}
+      <span
+        className={`nav-label flex-1 text-[16px] font-semibold ${compact ? "is-collapsed" : ""}`}
+      >
+        {label}
+      </span>
+      {!compact && end}
     </button>
   );
 }
 
+function useOverlayLock(close: () => void) {
+  const closeRef = useRef(close);
+  closeRef.current = close;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const scrollbarGap = Math.max(0, window.innerWidth - root.clientWidth);
+    const previous = {
+      bodyOverscroll: body.style.overscrollBehavior,
+      bodyPaddingRight: body.style.paddingRight,
+      rootScrollBehavior: root.style.scrollBehavior,
+    };
+    const rootAlreadyLocked = root.classList.contains("overlay-open");
+    const isInsideScrollableOverlay = (target: EventTarget | null) =>
+      target instanceof Element && Boolean(target.closest(".overlay-scroll-region"));
+    const stopBackgroundWheel = (event: WheelEvent) => {
+      if (!isInsideScrollableOverlay(event.target)) event.preventDefault();
+    };
+    const stopBackgroundTouch = (event: TouchEvent) => {
+      if (!isInsideScrollableOverlay(event.target)) event.preventDefault();
+    };
+    const keepPagePosition = () => {
+      if (window.scrollX !== scrollX || window.scrollY !== scrollY)
+        window.scrollTo(scrollX, scrollY);
+    };
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeRef.current();
+        return;
+      }
+      const target = event.target;
+      const editable =
+        target instanceof HTMLElement &&
+        (target.matches("input, textarea, select") || target.isContentEditable);
+      if (
+        !editable &&
+        !isInsideScrollableOverlay(target) &&
+        ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(
+          event.key,
+        )
+      )
+        event.preventDefault();
+    };
+
+    root.classList.add("overlay-open");
+    root.style.scrollBehavior = "auto";
+    body.style.overscrollBehavior = "none";
+    if (scrollbarGap) body.style.paddingRight = `${scrollbarGap}px`;
+    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("scroll", keepPagePosition, { passive: true });
+    document.addEventListener("wheel", stopBackgroundWheel, {
+      capture: true,
+      passive: false,
+    });
+    document.addEventListener("touchmove", stopBackgroundTouch, {
+      capture: true,
+      passive: false,
+    });
+
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("scroll", keepPagePosition);
+      document.removeEventListener("wheel", stopBackgroundWheel, true);
+      document.removeEventListener("touchmove", stopBackgroundTouch, true);
+      if (!rootAlreadyLocked) root.classList.remove("overlay-open");
+      root.style.scrollBehavior = previous.rootScrollBehavior;
+      body.style.overscrollBehavior = previous.bodyOverscroll;
+      body.style.paddingRight = previous.bodyPaddingRight;
+    };
+  }, []);
+}
+
 export default function App() {
-  const [page, setPage] = useState<
-    "home" | "contractors" | "contractor" | "settings" | "tags"
-  >("home");
+  const [page, setPage] = useState<AppPage>("home");
   const [sidebar, setSidebar] = useState(true);
   const [selectedContractor, setSelectedContractor] = useState(contractors[0]);
+  const [selectedObject, setSelectedObject] = useState(objectsInitial[0]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("Все статусы");
   const [detail, setDetail] = useState<Employee | null>(null);
   const [notice, setNotice] = useState("");
+  useEffect(() => {
+    const root = document.documentElement;
+    const previousBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = "auto";
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    root.style.scrollBehavior = previousBehavior;
+  }, [page]);
   const navigate = (p: typeof page) => {
     setPage(p);
     setDetail(null);
@@ -751,6 +1003,8 @@ export default function App() {
   const currentTitle =
     page === "home"
       ? "Главная"
+      : page === "objects" || page === "object"
+        ? "Объекты"
       : page === "tags"
         ? "Метки"
         : page === "settings"
@@ -758,9 +1012,8 @@ export default function App() {
           : "Подрядчики";
   return (
     <div className="app-shell min-h-screen bg-[#f5f7fb] font-[Inter,Arial,sans-serif] text-[#101b31]">
-      <div className="brand-line fixed inset-x-0 top-0 z-50 h-1.5" />
       <aside
-        className={`app-sidebar fixed bottom-0 left-0 top-1.5 z-30 border-r border-[#e1e8f1] bg-white px-4 py-4 transition-all duration-300 ${sidebar ? "is-open w-[268px]" : "w-[82px]"}`}
+        className={`app-sidebar fixed bottom-0 left-0 top-0 z-30 border-r border-[#e1e8f1] bg-white px-4 py-4 transition-all duration-300 ${sidebar ? "is-open w-[268px]" : "w-[82px]"}`}
       >
         <div className="flex h-full flex-col">
           <div className={`brand-lockup ${sidebar ? "" : "is-compact"}`}>
@@ -789,6 +1042,13 @@ export default function App() {
               onClick={() => navigate("contractors")}
             />
             <Nav
+              icon={<MapPin size={19} />}
+              label="Объекты"
+              active={page === "objects" || page === "object"}
+              compact={!sidebar}
+              onClick={() => navigate("objects")}
+            />
+            <Nav
               icon={<Tag size={19} />}
               label="Метки"
               active={page === "tags"}
@@ -810,9 +1070,11 @@ export default function App() {
           >
             {sidebar ? <ChevronLeft size={16} /> : <Menu size={16} />}
           </button>
-          <div className="profile-card mt-auto rounded-[22px] border border-[#e1e8f1] bg-[#fafcff] p-3">
+          <div
+            className={`profile-card mt-auto rounded-[22px] border border-[#e1e8f1] bg-[#fafcff] p-3 ${sidebar ? "" : "is-compact"}`}
+          >
             <div
-              className={`flex items-center gap-2.5 rounded-xl bg-white p-2.5 ${!sidebar ? "justify-center" : ""}`}
+              className={`profile-summary flex items-center gap-2.5 rounded-xl bg-white p-2.5 ${!sidebar ? "justify-center" : ""}`}
             >
               <div className="profile-avatar grid size-9 place-items-center rounded-xl text-xs font-semibold text-white">
                 АМ
@@ -825,6 +1087,8 @@ export default function App() {
               )}
             </div>
             <button
+              aria-label="Выйти из аккаунта"
+              title={!sidebar ? "Выйти" : undefined}
               onClick={() => toast("Сеанс будет завершён")}
               className={`mt-2 flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13.5px] font-medium text-[#61728e] hover:bg-white ${!sidebar ? "justify-center" : ""}`}
             >
@@ -837,7 +1101,7 @@ export default function App() {
       <main
         className={`app-main min-h-screen transition-all duration-300 ${sidebar ? "ml-[268px]" : "ml-[82px]"}`}
       >
-        <header className="app-header sticky top-1.5 z-20 flex h-[76px] items-center justify-between border-b border-[#e1e8f1] bg-white/90 px-10 backdrop-blur-xl">
+        <header className="app-header sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-[#e1e8f1] bg-white/90 px-10 backdrop-blur-xl">
           <div>
             <div className="text-[12.5px] font-medium uppercase tracking-[.08em] text-[#8a99ae]">
               Система управления
@@ -847,10 +1111,6 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="system-live">
-              <span />
-              Система работает
-            </div>
             <button
               aria-label="Уведомления"
               className="notification-button relative grid size-10 place-items-center rounded-xl border border-[#e1e8f1] text-[#5e718e]"
@@ -875,6 +1135,23 @@ export default function App() {
               <SettingsPage toast={toast} />
             ) : page === "tags" ? (
               <TagsPage toast={toast} />
+            ) : page === "objects" ? (
+              <ObjectsPage
+                open={(object) => {
+                  setSelectedObject(object);
+                  navigate("object");
+                }}
+              />
+            ) : page === "object" ? (
+              <ObjectDetailPage
+                object={selectedObject}
+                openEmployee={setDetail}
+                goObjects={() => navigate("objects")}
+                openContractor={(contractor) => {
+                  setSelectedContractor(contractor);
+                  navigate("contractor");
+                }}
+              />
             ) : page === "contractors" ? (
               <ContractorsPage
                 open={(name) => {
@@ -921,9 +1198,7 @@ export default function App() {
 function HomePage({
   navigate,
 }: {
-  navigate: (
-    page: "home" | "contractors" | "contractor" | "settings" | "tags",
-  ) => void;
+  navigate: (page: AppPage) => void;
 }) {
   const metrics = [
     {
@@ -1002,7 +1277,9 @@ function HomePage({
         {metrics.map((metric, index) => (
           <motion.button
             key={metric.label}
-            onClick={() => navigate(index === 3 ? "tags" : "contractors")}
+            onClick={() =>
+              navigate(index === 3 ? "tags" : index === 1 ? "objects" : "contractors")
+            }
             className={`metric-card tone-${metric.tone}`}
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1034,8 +1311,8 @@ function HomePage({
               </span>
               <h2>Присутствие персонала</h2>
             </div>
-            <button onClick={() => navigate("contractors")}>
-              Все подрядчики
+            <button onClick={() => navigate("objects")}>
+              Все объекты
               <ArrowUpRight size={15} />
             </button>
           </div>
@@ -1589,8 +1866,8 @@ function EmployeeLogTable({
       <FileText size={14} />
     );
   return (
-    <div className="overflow-x-auto">
-      <table className="employee-log-table w-full min-w-[1120px] text-left">
+    <div className="responsive-table-wrap overflow-x-auto">
+      <table className="employee-log-table responsive-table w-full min-w-[1120px] text-left">
         <thead>
           <tr>
             <th className="px-6 py-3.5">Дата и время</th>
@@ -1609,11 +1886,11 @@ function EmployeeLogTable({
               );
               return (
                 <tr key={record.id}>
-                  <td className="px-6 py-4">
+                  <td data-label="Дата и время" className="px-6 py-4">
                     <strong className="log-date">{record.date}</strong>
                     <time>{record.time}</time>
                   </td>
-                  <td className="px-3">
+                  <td data-label="Сотрудник" className="px-3">
                     <button
                       className="log-employee"
                       onClick={() => employee && openEmployee(employee)}
@@ -1622,7 +1899,7 @@ function EmployeeLogTable({
                       <strong>{record.employee}</strong>
                     </button>
                   </td>
-                  <td className="px-3">
+                  <td data-label="Событие" className="px-3">
                     <span
                       className={`log-event is-${record.event === "Вход" ? "entry" : record.event === "Выход" ? "exit" : "report"}`}
                     >
@@ -1630,16 +1907,16 @@ function EmployeeLogTable({
                       {record.event}
                     </span>
                   </td>
-                  <td className="px-3">
+                  <td data-label="Объект" className="px-3">
                     <div className="log-object">
                       <MapPin size={14} />
                       <span>{record.object}</span>
                     </div>
                   </td>
-                  <td className="px-3">
+                  <td data-label="Описание" className="px-3">
                     <span className="log-details">{record.details}</span>
                   </td>
-                  <td className="px-6">
+                  <td data-label="Статус" className="px-6">
                     <span
                       className={`log-status ${record.status === "Успешно" || record.status === "Принято" ? "is-success" : "is-review"}`}
                     >
@@ -1680,8 +1957,8 @@ function EmployeeTable({
   open: (e: Employee) => void;
 }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[990px] text-left">
+    <div className="responsive-table-wrap overflow-x-auto">
+      <table className="employee-table responsive-table w-full min-w-[990px] text-left">
         <thead className="bg-[#f8fafc] text-[12.5px] uppercase tracking-[.06em] text-[#7485a0]">
           <tr>
             <th className="px-6 py-3.5">Сотрудник</th>
@@ -1698,9 +1975,18 @@ function EmployeeTable({
               <tr
                 key={e.email}
                 onClick={() => open(e)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    open(e);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={`Открыть карточку сотрудника ${e.name}`}
                 className="cursor-pointer border-t border-[#e8edf4] hover:bg-[#f9fbfe]"
               >
-                <td className="px-6 py-4">
+                <td data-label="Сотрудник" className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="grid size-9 place-items-center rounded-xl bg-[#e9f2ff] text-[12.5px] font-bold text-[#2563eb]">
                       {e.initials}
@@ -1714,17 +2000,17 @@ function EmployeeTable({
                   </div>
                 </td>
                 {all && (
-                  <td className="px-3 text-[12.5px] text-[#5e718e]">
+                  <td data-label="Подрядчик" className="px-3 text-[12.5px] text-[#5e718e]">
                     {e.contractor.replace("ООО ", "")}
                   </td>
                 )}
-                <td className="px-3 text-[13.5px] text-[#30425e]">{e.role}</td>
-                <td className="px-3 text-[13.5px] text-[#627590]">{e.dept}</td>
-                <td className="px-3 text-[12.5px] text-[#526783]">
+                <td data-label="Должность" className="px-3 text-[13.5px] text-[#30425e]">{e.role}</td>
+                <td data-label="Подразделение" className="px-3 text-[13.5px] text-[#627590]">{e.dept}</td>
+                <td data-label="Контакты" className="px-3 text-[12.5px] text-[#526783]">
                   <p>{e.phone}</p>
                   <p className="mt-1 text-[#7e8da4]">{e.email}</p>
                 </td>
-                <td className="px-3">
+                <td data-label="Статус" className="px-3">
                   <span
                     className={`rounded-full border px-2.5 py-1 text-[12.5px] font-semibold ${statusStyle[e.status]}`}
                   >
@@ -1828,6 +2114,596 @@ function ContractorsPage({ open }: { open: (x: string) => void }) {
     </section>
   );
 }
+
+function ObjectsPage({ open }: { open: (object: ObjectItem) => void }) {
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return objectsInitial.filter((object) =>
+      `${object.name} ${object.address} ${object.code}`
+        .toLowerCase()
+        .includes(normalized),
+    );
+  }, [query]);
+  return (
+    <section className="objects-page px-10 py-8">
+      <p className="mb-1 text-[13.5px] text-[#7b8ba3]">
+        Управление персоналом / Объекты
+      </p>
+      <h1 className="text-[34px] font-bold tracking-[-.025em]">Объекты</h1>
+      <p className="mt-2 text-[16px] text-[#71819b]">
+        Объекты, привязанные подрядчики и история посещений
+      </p>
+      <div className="entity-list mt-7 overflow-hidden rounded-xl border border-[#dfe6ef] bg-white">
+        <div className="entity-list-header flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
+          <div>
+            <h2 className="text-[18px] font-semibold">Все объекты</h2>
+            <p className="mt-1 text-[13.5px] text-[#7788a1]">
+              Найдено: {filtered.length}
+            </p>
+          </div>
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8293ad]"
+              size={16}
+            />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Название, адрес или код"
+              className="h-9 w-[270px] rounded-lg border border-[#dce5ef] pl-9 pr-3 text-[13.5px] outline-none"
+            />
+          </div>
+        </div>
+        <div className="divide-y divide-[#e8edf4]">
+          {filtered.length ? (
+            filtered.map((object) => {
+              return (
+                <button
+                  key={object.code}
+                  aria-label={`Открыть объект ${object.name}`}
+                  onClick={() => open(object)}
+                  className="object-list-item flex w-full items-center gap-4 px-6 py-4 text-left hover:bg-[#f8fbff]"
+                >
+                  <span className="object-list-icon grid size-11 place-items-center rounded-xl bg-[#e9f2ff] text-[#2563eb]">
+                    <MapPin size={20} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-semibold text-[#1d2c44]">
+                      {object.name}
+                    </span>
+                    <span className="mt-1 block text-[12.5px] text-[#7b8ca5]">
+                      {object.address} · {object.code}
+                    </span>
+                  </span>
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-[12.5px] font-semibold ${statusStyle[object.status]}`}
+                  >
+                    {object.status}
+                  </span>
+                  <ChevronDown
+                    className="-rotate-90 text-[#6f819c]"
+                    size={18}
+                  />
+                </button>
+              );
+            })
+          ) : (
+            <div className="empty-filter-state">
+              <Search size={20} />
+              <strong>Объекты не найдены</strong>
+              <span>Измените поисковый запрос</span>
+              <button onClick={() => setQuery("")}>Сбросить поиск</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ObjectDetailPage({
+  object,
+  openEmployee,
+  goObjects,
+  openContractor,
+}: {
+  object: ObjectItem;
+  openEmployee: (employee: Employee) => void;
+  goObjects: () => void;
+  openContractor: (contractor: string) => void;
+}) {
+  const profile = useMemo(() => getObjectProfile(object), [object]);
+  const objectEmployees = useMemo(
+    () =>
+      staff.filter((employee) =>
+        profile.contractors.includes(employee.contractor),
+      ),
+    [profile],
+  );
+  const [mode, setMode] = useState<"employees" | "log">("employees");
+  const [draftQuery, setDraftQuery] = useState("");
+  const [query, setQuery] = useState("");
+  const [draftStatus, setDraftStatus] = useState("Все статусы");
+  const [status, setStatus] = useState("Все статусы");
+  const [draftContractor, setDraftContractor] = useState("Все подрядчики");
+  const [contractor, setContractor] = useState("Все подрядчики");
+  const [draftEvent, setDraftEvent] = useState("Все события");
+  const [event, setEvent] = useState("Все события");
+  const filteredEmployees = useMemo(() => {
+    const normalized = query.toLowerCase();
+    return objectEmployees.filter(
+      (employee) =>
+        (!normalized ||
+          `${employee.name} ${employee.role} ${employee.email}`
+            .toLowerCase()
+            .includes(normalized)) &&
+        (status === "Все статусы" || employee.status === status) &&
+        (contractor === "Все подрядчики" ||
+          employee.contractor === contractor),
+    );
+  }, [objectEmployees, query, status, contractor]);
+  const filteredLogs = useMemo(() => {
+    const normalized = query.toLowerCase();
+    return profile.logs.filter((record) => {
+      const employee = staff.find((item) => item.name === record.employee);
+      return (
+        (!normalized ||
+          `${record.employee} ${record.details}`
+            .toLowerCase()
+            .includes(normalized)) &&
+        (event === "Все события" || record.event === event) &&
+        (contractor === "Все подрядчики" ||
+          employee?.contractor === contractor)
+      );
+    });
+  }, [profile, query, event, contractor]);
+  const applyFilters = () => {
+    setQuery(draftQuery.trim());
+    setContractor(draftContractor);
+    if (mode === "employees") setStatus(draftStatus);
+    else setEvent(draftEvent);
+  };
+  const resetFilters = () => {
+    setDraftQuery("");
+    setQuery("");
+    setDraftContractor("Все подрядчики");
+    setContractor("Все подрядчики");
+    setDraftStatus("Все статусы");
+    setStatus("Все статусы");
+    setDraftEvent("Все события");
+    setEvent("Все события");
+  };
+  const switchMode = () => {
+    setMode((current) => (current === "employees" ? "log" : "employees"));
+    setDraftQuery(query);
+  };
+  return (
+    <section className="object-detail-page px-10 py-8">
+      <div className="object-detail-intro mb-7 flex items-start justify-between">
+        <div>
+          <p className="mb-1 text-[13.5px] text-[#7b8ba3]">
+            <button
+              onClick={goObjects}
+              className="hover:text-[#2563eb] hover:underline"
+            >
+              Объекты
+            </button>
+            <span className="px-1.5">/</span>
+            {object.name}
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-[34px] font-bold tracking-[-.025em]">
+              {object.name}
+            </h1>
+            <span
+              className={`rounded-full border px-2.5 py-1 text-[12.5px] font-semibold ${statusStyle[object.status]}`}
+            >
+              {object.status}
+            </span>
+          </div>
+          <p className="mt-2 flex items-center gap-1.5 text-[16px] text-[#71819b]">
+            <MapPin size={15} />
+            {object.address}
+            <span className="px-1 text-[#b2bdcb]">·</span>
+            {object.code}
+          </p>
+        </div>
+      </div>
+      <ObjectAnalytics object={object} profile={profile} />
+      <ObjectContractors
+        profile={profile}
+        openContractor={openContractor}
+      />
+      <div className="contractor-filters rounded-xl border border-[#dfe6ef] bg-white p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <SlidersHorizontal size={16} className="text-[#5d7394]" />
+          <h2 className="text-[16px] font-semibold">Фильтры</h2>
+          <span className="filter-context">
+            {mode === "employees" ? "Сотрудники объекта" : "Журнал объекта"}
+          </span>
+        </div>
+        <div className="grid grid-cols-[minmax(260px,2fr)_1fr_1fr_auto_auto] gap-3">
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8293ad]"
+              size={17}
+            />
+            <input
+              value={draftQuery}
+              onChange={(e) => setDraftQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && applyFilters()}
+              placeholder={
+                mode === "employees"
+                  ? "ФИО, должность или email"
+                  : "Сотрудник или описание события"
+              }
+              className="h-10 w-full rounded-lg border border-[#dce5f0] pl-10 pr-3 text-[13.5px] outline-none focus:border-[#3b82f6]"
+            />
+          </div>
+          {mode === "employees" ? (
+            <Select
+              value={draftStatus}
+              onChange={setDraftStatus}
+              options={["Все статусы", "Активен", "Неактивен"]}
+            />
+          ) : (
+            <Select
+              value={draftEvent}
+              onChange={setDraftEvent}
+              options={["Все события", "Вход", "Выход", "Отчёт"]}
+            />
+          )}
+          <Select
+            value={draftContractor}
+            onChange={setDraftContractor}
+            options={["Все подрядчики", ...profile.contractors]}
+          />
+          <button
+            onClick={applyFilters}
+            className="h-10 rounded-lg bg-[#2563eb] px-4 text-[13.5px] font-semibold text-white"
+          >
+            Применить
+          </button>
+          <button
+            onClick={resetFilters}
+            className="h-10 rounded-lg border border-[#dbe4ef] px-4 text-[13.5px] font-medium text-[#50637f]"
+          >
+            Сбросить
+          </button>
+        </div>
+      </div>
+      <div className="mt-5 overflow-hidden rounded-xl border border-[#dfe6ef] bg-white">
+        <div className="flex items-center justify-between px-6 py-5">
+          <div>
+            <h2 className="text-[18px] font-semibold">
+              {mode === "employees"
+                ? "Сотрудники объекта"
+                : "Журнал посещений"}
+            </h2>
+            <p className="mt-1 text-[13.5px] text-[#7788a1]">
+              {mode === "employees"
+                ? `Найдено: ${filteredEmployees.length}`
+                : `Событий: ${filteredLogs.length}`}
+            </p>
+          </div>
+          <div className="table-header-actions">
+            <button
+              onClick={switchMode}
+              className={`table-mode-button ${mode === "log" ? "is-active" : ""}`}
+            >
+              {mode === "employees" ? (
+                <ScrollText size={15} />
+              ) : (
+                <Users size={15} />
+              )}
+              {mode === "employees" ? "История" : "Сотрудники"}
+            </button>
+            <button
+              onClick={() =>
+                mode === "employees"
+                  ? downloadEmployees(filteredEmployees)
+                  : downloadLogs(filteredLogs, "object-log.csv")
+              }
+              disabled={
+                mode === "employees"
+                  ? !filteredEmployees.length
+                  : !filteredLogs.length
+              }
+              className="flex h-9 items-center gap-2 rounded-lg border border-[#dce5ef] px-3 text-[13.5px] font-medium text-[#47607f] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Download size={15} />
+              Экспорт
+            </button>
+          </div>
+        </div>
+        {mode === "employees" ? (
+          <EmployeeTable
+            rows={filteredEmployees}
+            all
+            open={openEmployee}
+          />
+        ) : (
+          <EmployeeLogTable rows={filteredLogs} openEmployee={openEmployee} />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ObjectAnalytics({
+  object,
+  profile,
+}: {
+  object: ObjectItem;
+  profile: ObjectProfile;
+}) {
+  const dayLabels = [
+    "22 июл",
+    "23 июл",
+    "24 июл",
+    "25 июл",
+    "26 июл",
+    "27 июл",
+    "28 июл",
+  ];
+  const chartData = profile.visits.map((visits, index) => ({
+    day: dayLabels[index],
+    visits,
+  }));
+  const contractorPercent = Math.round(
+    (profile.contractors.length / contractors.length) * 100,
+  );
+  return (
+    <div className="contractor-analytics object-analytics">
+      <motion.article
+        className="contractor-chart-card"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="analytics-heading">
+          <div>
+            <span>
+              <BarChart3 size={14} />
+              Посещаемость объекта
+            </span>
+            <h2>Посещения за 7 дней</h2>
+            <p>Все входы сотрудников на территорию объекта</p>
+          </div>
+          <div className="analytics-delta">
+            <span className="analytics-delta-value">
+              <TrendingUp size={14} />
+              <strong>{profile.growth}</strong>
+            </span>
+            <small>к прошлому дню</small>
+          </div>
+        </div>
+        <div className="contractor-chart">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={chartData}
+              margin={{ top: 10, right: 8, left: -22, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient
+                  id={`object-visits-${object.code}`}
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="0%" stopColor="#2b68ee" stopOpacity={0.28} />
+                  <stop offset="100%" stopColor="#2b68ee" stopOpacity={0.01} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                vertical={false}
+                stroke="#edf1f6"
+                strokeDasharray="3 3"
+              />
+              <XAxis
+                dataKey="day"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#8291a6", fontSize: 13.5 }}
+                dy={8}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#9aa7b8", fontSize: 12.5 }}
+              />
+              <ChartTooltip
+                cursor={{ stroke: "#8cb0f5", strokeDasharray: "3 3" }}
+                contentStyle={{
+                  borderRadius: 12,
+                  border: "1px solid #dce6f2",
+                  boxShadow: "0 12px 30px rgba(28,48,82,.12)",
+                  fontSize: 13.5,
+                }}
+                formatter={(value) => [`${value} посещений`, ""]}
+              />
+              <Area
+                type="monotone"
+                dataKey="visits"
+                stroke="#2b68ee"
+                strokeWidth={2.5}
+                fill={`url(#object-visits-${object.code})`}
+                activeDot={{
+                  r: 4,
+                  fill: "#2b68ee",
+                  stroke: "white",
+                  strokeWidth: 2,
+                }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.article>
+      <motion.article
+        className="contractor-report-card"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+      >
+        <div className="analytics-heading">
+          <div>
+            <span>
+              <Building2 size={14} />
+              Доступ к объекту
+            </span>
+            <h2>Привязанные подрядчики</h2>
+            <p>Организации с доступом на объект</p>
+          </div>
+        </div>
+        <div className="report-overview">
+          <div
+            className="report-ring"
+            style={{
+              background: `conic-gradient(#22a979 0 ${contractorPercent}%, #eaf0f5 ${contractorPercent}% 100%)`,
+            }}
+          >
+            <div>
+              <strong>
+                {profile.contractors.length} / {contractors.length}
+              </strong>
+              <span>подрядчика</span>
+            </div>
+          </div>
+          <div className="report-stats">
+            <span>
+              <i className="is-complete" />
+              <b>{profile.contractors.length}</b> имеют доступ
+            </span>
+            <span>
+              <i className="is-pending" />
+              <b>{contractors.length - profile.contractors.length}</b> не
+              привязаны
+            </span>
+            <span>
+              <i className="is-total" />
+              <b>{profile.onSite}</b> сейчас на объекте
+            </span>
+          </div>
+        </div>
+      </motion.article>
+      <div className="contractor-kpis">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <span className="kpi-icon is-blue">
+            <UserCheck size={17} />
+          </span>
+          <div>
+            <small>Сейчас на объекте</small>
+            <strong>{profile.onSite} сотрудников</strong>
+            <em>Данные обновлены сейчас</em>
+          </div>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.14 }}
+        >
+          <span className="kpi-icon is-violet">
+            <DoorOpen size={17} />
+          </span>
+          <div>
+            <small>Посещений сегодня</small>
+            <strong>{profile.visitsToday} посещений</strong>
+            <em>Входы на текущую дату</em>
+          </div>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+        >
+          <span className="kpi-icon is-orange">
+            <Radio size={17} />
+          </span>
+          <div>
+            <small>Активные метки</small>
+            <strong>{profile.activeTags} меток</strong>
+            <em>Закреплены за объектом</em>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+function ObjectContractors({
+  profile,
+  openContractor,
+}: {
+  profile: ObjectProfile;
+  openContractor: (contractor: string) => void;
+}) {
+  return (
+    <section className="object-contractors-card">
+      <div className="object-contractors-heading">
+        <div>
+          <span>
+            <Building2 size={14} />
+            Организации на объекте
+          </span>
+          <h2>Привязанные подрядчики</h2>
+          <p>Нажмите на организацию, чтобы открыть её карточку</p>
+        </div>
+        <strong>{profile.contractors.length}</strong>
+      </div>
+      <div className="object-contractor-grid">
+        {profile.contractors.map((contractor, index) => {
+          const employees = staff.filter(
+            (employee) => employee.contractor === contractor,
+          );
+          const visits = Math.max(
+            1,
+            Math.round(profile.visitsToday / profile.contractors.length) -
+              index * 3,
+          );
+          return (
+            <button
+              key={contractor}
+              aria-label={`Открыть подрядчика ${contractor}`}
+              onClick={() => openContractor(contractor)}
+              className="object-contractor-card"
+            >
+              <span className="object-contractor-icon">
+                <Building2 size={18} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <strong>{contractor}</strong>
+                <small>
+                  {employees.length}{" "}
+                  {pluralizeRu(
+                    employees.length,
+                    "сотрудник",
+                    "сотрудника",
+                    "сотрудников",
+                  )}{" "}
+                  · {visits}{" "}
+                  {pluralizeRu(
+                    visits,
+                    "посещение",
+                    "посещения",
+                    "посещений",
+                  )}{" "}
+                  сегодня
+                </small>
+              </span>
+              <ChevronDown size={17} className="-rotate-90" />
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function SettingsPage({ toast }: { toast: (m: string) => void }) {
   const [tab, setTab] = useState<"objects" | "contractors">("objects");
   const [objects, setObjects] = useState(objectsInitial);
@@ -1898,6 +2774,7 @@ function SettingsPage({ toast }: { toast: (m: string) => void }) {
                   {item.status}
                 </span>
                 <button
+                  aria-label={`Редактировать ${item.name}`}
                   onClick={() => {
                     setChosen(item);
                     setModal("edit");
@@ -1907,6 +2784,7 @@ function SettingsPage({ toast }: { toast: (m: string) => void }) {
                   <Pencil size={16} />
                 </button>
                 <button
+                  aria-label={`Удалить ${item.name}`}
                   onClick={() => {
                     setChosen(item);
                     setModal("delete");
@@ -1951,6 +2829,7 @@ function SettingsPage({ toast }: { toast: (m: string) => void }) {
                   </p>
                 </div>
                 <button
+                  aria-label={`Редактировать ${item}`}
                   onClick={() => setContractorModal(true)}
                   className="grid size-9 place-items-center rounded-lg text-[#617894] hover:bg-blue-50 hover:text-blue-600"
                 >
@@ -1961,38 +2840,44 @@ function SettingsPage({ toast }: { toast: (m: string) => void }) {
           </div>
         </div>
       )}
-      {modal && (
-        <ObjectModal
-          type={modal}
-          item={chosen}
-          close={() => setModal(null)}
-          done={(message, saved) => {
-            if (modal === "delete" && chosen)
-              setObjects((items) =>
-                items.filter((value) => value.code !== chosen.code),
-              );
-            if (modal === "add" && saved)
-              setObjects((items) => [...items, saved]);
-            if (modal === "edit" && saved && chosen)
-              setObjects((items) =>
-                items.map((value) =>
-                  value.code === chosen.code ? saved : value,
-                ),
-              );
-            setModal(null);
-            toast(message);
-          }}
-        />
-      )}{" "}
-      {contractorModal && (
-        <ContractorModal
-          close={() => setContractorModal(false)}
-          done={(m) => {
-            setContractorModal(false);
-            toast(m);
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {modal && (
+          <ObjectModal
+            key={`${modal}-${chosen?.code ?? "new"}`}
+            type={modal}
+            item={chosen}
+            close={() => setModal(null)}
+            done={(message, saved) => {
+              if (modal === "delete" && chosen)
+                setObjects((items) =>
+                  items.filter((value) => value.code !== chosen.code),
+                );
+              if (modal === "add" && saved)
+                setObjects((items) => [...items, saved]);
+              if (modal === "edit" && saved && chosen)
+                setObjects((items) =>
+                  items.map((value) =>
+                    value.code === chosen.code ? saved : value,
+                  ),
+                );
+              setModal(null);
+              toast(message);
+            }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {contractorModal && (
+          <ContractorModal
+            key="contractor-modal"
+            close={() => setContractorModal(false)}
+            done={(m) => {
+              setContractorModal(false);
+              toast(m);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 }
@@ -2016,6 +2901,7 @@ function ObjectModal({
   const [objectStatus, setObjectStatus] = useState<"Активен" | "Неактивен">(
     item?.status || "Активен",
   );
+  useOverlayLock(close);
   const shown = contractors.filter((contractor) =>
     contractor.toLowerCase().includes(find.toLowerCase()),
   );
@@ -2044,12 +2930,30 @@ function ObjectModal({
       />
     );
   return (
-    <>
-      <button
+    <motion.div
+      className="overlay-layer fixed inset-0 z-[60] isolate"
+      initial="closed"
+      animate="open"
+      exit="closed"
+    >
+      <motion.button
+        aria-label="Закрыть окно объекта"
         onClick={close}
-        className="fixed inset-0 z-[60] cursor-default bg-[#15233a]/30"
+        className="absolute inset-0 z-0 cursor-default bg-[#15233a]/30"
+        variants={{ closed: { opacity: 0 }, open: { opacity: 1 } }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
       />
-      <aside className="fixed bottom-0 right-0 top-0 z-[70] flex w-[480px] flex-col border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.18)]">
+      <motion.aside
+        aria-label={
+          type === "add" ? "Добавление объекта" : "Редактирование объекта"
+        }
+        aria-modal="true"
+        role="dialog"
+        className="overlay-drawer-panel fixed bottom-0 right-0 top-0 z-10 flex w-[480px] flex-col border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.18)]"
+        variants={{ closed: { x: "100%" }, open: { x: 0 } }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        style={{ willChange: "transform" }}
+      >
         <ModalHead
           title={
             type === "add" ? "Добавление объекта" : "Редактирование объекта"
@@ -2057,7 +2961,7 @@ function ObjectModal({
           sub="Основные данные объекта"
           close={close}
         />
-        <div className="flex-1 overflow-y-auto space-y-6 px-7 py-6">
+        <div className="overlay-scroll-region flex-1 overflow-y-auto space-y-6 px-7 py-6">
           <div className="space-y-4">
             <Field
               label="Название объекта *"
@@ -2214,8 +3118,8 @@ function ObjectModal({
           save={saveObject}
           label={type === "add" ? "Сохранить" : "Сохранить изменения"}
         />
-      </aside>
-    </>
+      </motion.aside>
+    </motion.div>
   );
 }
 function ContractorModal({
@@ -2239,6 +3143,7 @@ function ContractorModal({
     objectsInitial[1].code,
   ]);
   const [find, setFind] = useState("");
+  useOverlayLock(close);
   const shown = objectsInitial.filter(
     (object) =>
       object.name.toLowerCase().includes(find.toLowerCase()) ||
@@ -2249,18 +3154,34 @@ function ContractorModal({
       x.includes(code) ? x.filter((v) => v !== code) : [...x, code],
     );
   return (
-    <>
-      <button
+    <motion.div
+      className="overlay-layer fixed inset-0 z-[60] isolate"
+      initial="closed"
+      animate="open"
+      exit="closed"
+    >
+      <motion.button
+        aria-label="Закрыть редактирование подрядчика"
         onClick={close}
-        className="fixed inset-0 z-[60] cursor-default bg-[#15233a]/30"
+        className="absolute inset-0 z-0 cursor-default bg-[#15233a]/30"
+        variants={{ closed: { opacity: 0 }, open: { opacity: 1 } }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
       />
-      <aside className="fixed bottom-0 right-0 top-0 z-[70] flex w-[480px] flex-col border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.18)]">
+      <motion.aside
+        aria-label="Редактирование подрядчика"
+        aria-modal="true"
+        role="dialog"
+        className="overlay-drawer-panel fixed bottom-0 right-0 top-0 z-10 flex w-[480px] flex-col border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.18)]"
+        variants={{ closed: { x: "100%" }, open: { x: 0 } }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        style={{ willChange: "transform" }}
+      >
         <ModalHead
           title="Редактирование подрядчика"
           sub="Основные данные подрядной организации"
           close={close}
         />
-        <div className="flex-1 overflow-y-auto space-y-7 px-7 py-6">
+        <div className="overlay-scroll-region flex-1 overflow-y-auto space-y-7 px-7 py-6">
           <div className="space-y-4">
             <Field label="Название организации *" value="ООО «Альфа Строй»" />
             <div className="grid grid-cols-2 gap-4">
@@ -2481,11 +3402,11 @@ function ContractorModal({
           save={() => done("Данные подрядчика сохранены")}
           label="Сохранить"
         />
-      </aside>
-    </>
+      </motion.aside>
+    </motion.div>
   );
 }
-function ArchivedBusinessTagsPage({
+function TagsPage({
   toast,
 }: {
   toast: (m: string) => void;
@@ -2514,16 +3435,15 @@ function ArchivedBusinessTagsPage({
     })),
   );
   const [editingTag, setEditingTag] = useState<ManagedTag | null>(null);
-  const [expandedBusiness, setExpandedBusiness] = useState<string | null>(
-    "Логистический центр «Запад»",
-  );
+  const [view, setView] = useState<"tags" | "businesses">("tags");
+  const [expandedBusiness, setExpandedBusiness] = useState<string | null>(null);
   const [business, setBusiness] = useState("Все бизнес-центры");
   const [query, setQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
   const visibleGroups = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return objectsInitial
+    return tagBusinessGroups
       .filter(
         (object) =>
           business === "Все бизнес-центры" || object.name === business,
@@ -2553,6 +3473,17 @@ function ArchivedBusinessTagsPage({
     (total, group) => total + group.tags.length,
     0,
   );
+  const visibleTags = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return tags.filter(
+      (tag) =>
+        (business === "Все бизнес-центры" || tag.business === business) &&
+        (!normalized ||
+          `${tag.id} ${tag.uid} ${tag.title} ${tag.type} ${tag.business} ${tag.contractors.join(" ")}`
+            .toLowerCase()
+            .includes(normalized)),
+    );
+  }, [tags, business, query]);
   const toneFor = (type: TagType) =>
     type === "Посещение"
       ? "is-visit"
@@ -2618,7 +3549,7 @@ function ArchivedBusinessTagsPage({
           </p>
           <h1 className="text-[34px] font-bold tracking-[-.025em]">Метки</h1>
           <p className="mt-2 text-[16px] text-[#71819b]">
-            Управление NFC-метками по бизнес-центрам
+            Список NFC-меток и управление привязками к бизнес-центрам
           </p>
         </div>
         <button
@@ -2630,14 +3561,14 @@ function ArchivedBusinessTagsPage({
           Обновить
         </button>
       </div>
-      <div className="mt-6 flex items-center gap-3 rounded-xl border border-[#dfe6ef] bg-white p-4">
+      <div className="business-tags-toolbar mt-6 flex items-center gap-3 rounded-xl border border-[#dfe6ef] bg-white p-4">
         <div className="w-72">
           <Select
             value={business}
             onChange={setBusiness}
             options={[
               "Все бизнес-центры",
-              ...objectsInitial.map((x) => x.name),
+              ...tagBusinessGroups.map((x) => x.name),
             ]}
           />
         </div>
@@ -2668,28 +3599,67 @@ function ArchivedBusinessTagsPage({
           </span>
         </div>
       </div>
-      <div className="mt-5 overflow-visible rounded-xl border border-[#dfe6ef] bg-white">
-        <div className="flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
+      <div
+        className={`business-tags-workspace mt-5 overflow-visible rounded-xl border border-[#dfe6ef] bg-white ${view === "tags" ? "is-tags" : "is-businesses"}`}
+      >
+        <div className="business-tags-header flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
           <div>
             <h2 className="text-[18px] font-semibold">
-              Бизнес-центры и метки
+              {view === "tags" ? "Все метки" : "Связь с бизнес-центрами"}
             </h2>
             <p className="mt-1 text-[13.5px] text-[#7788a1]">
-              Наведите на количество для быстрого просмотра или раскройте
-              строку
+              {view === "tags"
+                ? "Цвет метки соответствует выбранному типу"
+                : "Выберите БЦ, чтобы посмотреть или изменить связанные метки"}
             </p>
           </div>
-          <span className="text-[13.5px] text-[#71839e]">
-            {visibleGroups.length} объектов · {tagCountLabel(totalVisibleTags)}
-          </span>
+          <div className="tag-view-controls">
+            <div
+              className="tag-view-switcher"
+              role="group"
+              aria-label="Режим отображения меток"
+            >
+              <button
+                type="button"
+                className={view === "tags" ? "is-active" : ""}
+                aria-pressed={view === "tags"}
+                onClick={() => setView("tags")}
+              >
+                <Tag size={14} />
+                Все метки
+              </button>
+              <button
+                type="button"
+                className={view === "businesses" ? "is-active" : ""}
+                aria-pressed={view === "businesses"}
+                onClick={() => setView("businesses")}
+              >
+                <Building2 size={14} />
+                Связь с БЦ
+              </button>
+            </div>
+            <span className="tag-view-count">
+              {view === "tags"
+                ? `Найдено: ${visibleTags.length}`
+                : `${visibleGroups.filter((group) => group.object.code !== "NO-LINK").length} БЦ · ${tagCountLabel(totalVisibleTags)}`}
+            </span>
+          </div>
         </div>
-        <table className="business-tags-table w-full text-left">
+        {view === "tags" ? (
+          <TagsListTable
+            tags={visibleTags}
+            edit={setEditingTag}
+            reset={() => {
+              setBusiness("Все бизнес-центры");
+              setQuery("");
+            }}
+          />
+        ) : (
+          <table className="business-tags-table w-full text-left">
           <thead className="bg-[#f8fafc] text-[12.5px] uppercase tracking-[.06em] text-[#7485a0]">
             <tr>
               <th className="px-6 py-3">Бизнес-центр</th>
               <th className="px-3 py-3">Связанные метки</th>
-              <th className="px-3 py-3">Типы меток</th>
-              <th className="px-6 py-3">Подрядчики</th>
               <th className="px-6 py-3 text-right">Действия</th>
             </tr>
           </thead>
@@ -2697,22 +3667,12 @@ function ArchivedBusinessTagsPage({
             {visibleGroups.length ? (
               visibleGroups.map(({ object, tags: objectTags }) => {
                 const expanded = expandedBusiness === object.name;
+                const isUnassigned = object.code === "NO-LINK";
                 const activeTags = objectTags.filter((tag) => tag.active);
-                const linkedContractors = Array.from(
-                  new Set(objectTags.flatMap((tag) => tag.contractors)),
-                );
-                const types = (
-                  ["Посещение", "Журнал", "Не выбран"] as TagType[]
-                )
-                  .map((type) => ({
-                    type,
-                    count: objectTags.filter((tag) => tag.type === type).length,
-                  }))
-                  .filter((item) => item.count > 0);
                 return (
                   <Fragment key={object.name}>
                     <tr
-                      className={`business-center-row border-t border-[#e8edf4] ${expanded ? "is-expanded" : ""}`}
+                      className={`business-center-row border-t border-[#e8edf4] ${expanded ? "is-expanded" : ""} ${isUnassigned ? "is-unassigned" : ""}`}
                       role="button"
                       tabIndex={0}
                       aria-expanded={expanded}
@@ -2732,12 +3692,18 @@ function ArchivedBusinessTagsPage({
                       <td className="px-6 py-4">
                         <div className="business-center-name">
                           <span className="business-center-icon">
-                            <Building2 size={17} />
+                            {isUnassigned ? (
+                              <AlertTriangle size={17} />
+                            ) : (
+                              <Building2 size={17} />
+                            )}
                           </span>
                           <span>
                             <strong>{object.name}</strong>
                             <small>
-                              {object.code} · {object.address}
+                              {isUnassigned
+                                ? object.address
+                                : `${object.code} · ${object.address}`}
                             </small>
                           </span>
                         </div>
@@ -2800,52 +3766,6 @@ function ArchivedBusinessTagsPage({
                           )}
                         </div>
                       </td>
-                      <td className="px-3">
-                        <div className="tag-type-summary">
-                          {types.length ? (
-                            types.map(({ type, count }) => (
-                              <span
-                                key={type}
-                                className={`tag-type-pill ${toneFor(type)}`}
-                              >
-                                {count} · {type}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="tag-type-empty">
-                              Метки не добавлены
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6">
-                        <div className="business-contractors">
-                          {linkedContractors.length ? (
-                            <>
-                              <span className="flex -space-x-1.5">
-                                {linkedContractors
-                                  .slice(0, 3)
-                                  .map((contractor) => (
-                                    <span key={contractor}>
-                                      {contractor
-                                        .replace("ООО ", "")
-                                        .slice(0, 1)}
-                                    </span>
-                                  ))}
-                              </span>
-                              <strong>
-                                {linkedContractors.length === 1
-                                  ? linkedContractors[0].replace("ООО ", "")
-                                  : `${linkedContractors.length} подрядчика`}
-                              </strong>
-                            </>
-                          ) : (
-                            <span className="tag-type-empty">
-                              Нет привязок
-                            </span>
-                          )}
-                        </div>
-                      </td>
                       <td className="px-6">
                         <div className="business-tag-actions">
                           <button
@@ -2856,7 +3776,7 @@ function ArchivedBusinessTagsPage({
                             }}
                           >
                             <Plus size={14} />
-                            Добавить
+                            {isUnassigned ? "Создать" : "Добавить"}
                           </button>
                           <button
                             type="button"
@@ -2879,7 +3799,7 @@ function ArchivedBusinessTagsPage({
                       </td>
                     </tr>
                     <tr className="business-tags-expanded-row">
-                      <td colSpan={5}>
+                      <td colSpan={3}>
                         <AnimatePresence initial={false}>
                           {expanded && (
                             <motion.div
@@ -2894,10 +3814,15 @@ function ArchivedBusinessTagsPage({
                             >
                               <div className="business-tags-expanded-head">
                                 <div>
-                                  <strong>Метки бизнес-центра</strong>
+                                  <strong>
+                                    {isUnassigned
+                                      ? "Метки без привязки"
+                                      : "Метки бизнес-центра"}
+                                  </strong>
                                   <span>
-                                    Редактируйте данные, статус и привязки без
-                                    перехода на другой экран
+                                    {isUnassigned
+                                      ? "Назначьте бизнес-центр прямо в редакторе метки"
+                                      : "Редактируйте данные, статус и привязки без перехода на другой экран"}
                                   </span>
                                 </div>
                                 <button
@@ -2905,7 +3830,9 @@ function ArchivedBusinessTagsPage({
                                   onClick={() => openNewTag(object.name)}
                                 >
                                   <Plus size={14} />
-                                  Добавить метку
+                                  {isUnassigned
+                                    ? "Создать без привязки"
+                                    : "Добавить метку"}
                                 </button>
                               </div>
                               {objectTags.length ? (
@@ -3010,7 +3937,7 @@ function ArchivedBusinessTagsPage({
               })
             ) : (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={3}>
                   <div className="empty-filter-state">
                     <Search size={20} />
                     <strong>Бизнес-центры не найдены</strong>
@@ -3029,31 +3956,158 @@ function ArchivedBusinessTagsPage({
             )}
           </tbody>
         </table>
+        )}
       </div>
-      {editingTag && (
-        <TagDrawer
-          tag={editingTag}
-          close={() => setEditingTag(null)}
-          save={(updated) => {
-            const { isNew, ...savedTag } = updated;
-            setTags((items) => {
-              const exists = items.some((item) => item.id === savedTag.id);
-              return exists
-                ? items.map((item) =>
-                    item.id === savedTag.id ? savedTag : item,
-                  )
-                : [...items, savedTag];
-            });
-            setExpandedBusiness(savedTag.business);
-            setEditingTag(null);
-            toast(isNew ? "Метка добавлена" : "Метка обновлена");
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {editingTag && (
+          <TagDrawer
+            key={editingTag.id}
+            tag={editingTag}
+            close={() => setEditingTag(null)}
+            save={(updated) => {
+              const { isNew, ...savedTag } = updated;
+              setTags((items) => {
+                const exists = items.some((item) => item.id === savedTag.id);
+                return exists
+                  ? items.map((item) =>
+                      item.id === savedTag.id ? savedTag : item,
+                    )
+                  : [...items, savedTag];
+              });
+              setExpandedBusiness(savedTag.business);
+              setEditingTag(null);
+              toast(isNew ? "Метка добавлена" : "Метка обновлена");
+            }}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 }
-function TagsPage({ toast }: { toast: (m: string) => void }) {
+
+function TagsListTable({
+  tags,
+  edit,
+  reset,
+}: {
+  tags: ManagedTag[];
+  edit: (tag: ManagedTag) => void;
+  reset: () => void;
+}) {
+  const colorFor = (type: TagType) =>
+    type === "Посещение"
+      ? "bg-[#2563eb]"
+      : type === "Журнал"
+        ? "bg-[#e87918]"
+        : "bg-[#a5b1c2]";
+  return (
+    <table className="tags-table responsive-table w-full text-left">
+      <thead className="bg-[#f8fafc] text-[12.5px] uppercase tracking-[.06em] text-[#7485a0]">
+        <tr>
+          <th className="px-6 py-3">Метка</th>
+          <th className="px-3 py-3">Бизнес-центр</th>
+          <th className="px-3 py-3">Название</th>
+          <th className="px-3 py-3">Тип</th>
+          <th className="px-6 py-3">Подрядчики</th>
+          <th className="px-6 py-3 text-right">Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {tags.length ? (
+          tags.map((tag) => (
+            <tr key={tag.id} className="border-t border-[#e8edf4]">
+              <td data-label="Метка" className="px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`size-3 rounded-full ring-4 ${tag.type === "Посещение" ? "ring-blue-50" : tag.type === "Журнал" ? "ring-orange-50" : "ring-slate-100"} ${colorFor(tag.type)}`}
+                  />
+                  <div>
+                    <p className="text-[13.5px] font-semibold">{tag.id}</p>
+                    <p className="font-mono text-[12.5px] text-[#7b8ca3]">
+                      {tag.uid}
+                    </p>
+                  </div>
+                </div>
+              </td>
+              <td
+                data-label="Бизнес-центр"
+                className="px-3 text-[13.5px] text-[#526783]"
+              >
+                <span
+                  className={`tag-business-cell ${tag.business === UNASSIGNED_BUSINESS ? "is-unassigned" : ""}`}
+                >
+                  {tag.business === UNASSIGNED_BUSINESS ? (
+                    <AlertTriangle size={13} />
+                  ) : (
+                    <Building2 size={13} />
+                  )}
+                  {tag.business}
+                </span>
+              </td>
+              <td data-label="Название" className="px-3">
+                <span className="text-[13.5px] font-medium text-[#263851]">
+                  {tag.title || "—"}
+                </span>
+              </td>
+              <td data-label="Тип" className="px-3">
+                <span className="text-[13.5px] text-[#40516d]">
+                  {tag.type}
+                </span>
+              </td>
+              <td data-label="Подрядчики" className="px-6">
+                <div className="flex min-h-9 items-center gap-2">
+                  {tag.contractors.length ? (
+                    <>
+                      <span className="flex -space-x-1.5">
+                        {tag.contractors.slice(0, 3).map((contractor) => (
+                          <span
+                            key={contractor}
+                            className="grid size-5 place-items-center rounded-full border-2 border-white bg-[#eaf3ff] text-[12.5px] font-bold text-[#2563eb]"
+                          >
+                            {contractor.replace("ООО ", "").slice(0, 1)}
+                          </span>
+                        ))}
+                      </span>
+                      <span className="max-w-[130px] truncate text-[12.5px] font-medium text-[#425a78]">
+                        {tag.contractors.length === 1
+                          ? tag.contractors[0].replace("ООО ", "")
+                          : `${tag.contractors.length} подрядчика`}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-[12.5px] text-[#8493a8]">—</span>
+                  )}
+                </div>
+              </td>
+              <td data-label="Действия" className="px-6 text-right">
+                <button
+                  aria-label={`Редактировать ${tag.id}`}
+                  onClick={() => edit(tag)}
+                  className="ml-auto grid size-8 place-items-center rounded-lg text-[#8293ad] transition hover:bg-[#edf5ff] hover:text-[#2563eb]"
+                >
+                  <Pencil size={15} />
+                </button>
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan={6}>
+              <div className="empty-filter-state">
+                <Search size={20} />
+                <strong>Метки не найдены</strong>
+                <span>Измените фильтр или поисковый запрос</span>
+                <button onClick={reset}>Сбросить фильтры</button>
+              </div>
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  );
+}
+
+function LegacyTagsPage({ toast }: { toast: (m: string) => void }) {
   const [tags, setTags] = useState(
     initialTags.map((tag, i) => ({
       ...tag,
@@ -3167,7 +4221,7 @@ function TagsPage({ toast }: { toast: (m: string) => void }) {
             Найдено: {visibleTags.length}
           </span>
         </div>
-        <table className="w-full text-left">
+        <table className="tags-table responsive-table w-full text-left">
           <thead className="bg-[#f8fafc] text-[12.5px] uppercase tracking-[.06em] text-[#7485a0]">
             <tr>
               <th className="px-6 py-3">Метка</th>
@@ -3182,7 +4236,7 @@ function TagsPage({ toast }: { toast: (m: string) => void }) {
             {visibleTags.length ? (
               visibleTags.map((tag) => (
                 <tr key={tag.id} className="border-t border-[#e8edf4]">
-                  <td className="px-6 py-4">
+                  <td data-label="Метка" className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <span
                         className={`size-3 rounded-full ring-4 ${tag.type === "Посещение" ? "ring-blue-50" : tag.type === "Журнал" ? "ring-orange-50" : "ring-slate-100"} ${colorFor(tag.type)}`}
@@ -3195,20 +4249,20 @@ function TagsPage({ toast }: { toast: (m: string) => void }) {
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 text-[13.5px] text-[#526783]">
+                  <td data-label="Бизнес-центр" className="px-3 text-[13.5px] text-[#526783]">
                     {tag.business}
                   </td>
-                  <td className="px-3">
+                  <td data-label="Название" className="px-3">
                     <span className="text-[13.5px] font-medium text-[#263851]">
                       {tag.title || "—"}
                     </span>
                   </td>
-                  <td className="px-3">
+                  <td data-label="Тип" className="px-3">
                     <span className="text-[13.5px] text-[#40516d]">
                       {tag.type}
                     </span>
                   </td>
-                  <td className="px-6">
+                  <td data-label="Подрядчики" className="px-6">
                     <div className="flex min-h-9 items-center gap-2">
                       {tag.contractors.length ? (
                         <>
@@ -3235,7 +4289,7 @@ function TagsPage({ toast }: { toast: (m: string) => void }) {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 text-right">
+                  <td data-label="Действия" className="px-6 text-right">
                     <button
                       aria-label={`Редактировать ${tag.id}`}
                       onClick={() => setEditingTag(tag)}
@@ -3268,19 +4322,22 @@ function TagsPage({ toast }: { toast: (m: string) => void }) {
           </tbody>
         </table>
       </div>
-      {editingTag && (
-        <TagDrawer
-          tag={editingTag}
-          close={() => setEditingTag(null)}
-          save={(updated) => {
-            setTags((items) =>
-              items.map((item) => (item.id === updated.id ? updated : item)),
-            );
-            setEditingTag(null);
-            toast("Метка обновлена");
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {editingTag && (
+          <TagDrawer
+            key={editingTag.id}
+            tag={editingTag}
+            close={() => setEditingTag(null)}
+            save={(updated) => {
+              setTags((items) =>
+                items.map((item) => (item.id === updated.id ? updated : item)),
+              );
+              setEditingTag(null);
+              toast("Метка обновлена");
+            }}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 }
@@ -3289,36 +4346,63 @@ function TagDrawer({
   close,
   save,
 }: {
-  tag: any;
+  tag: ManagedTag;
   close: () => void;
-  save: (tag: any) => void;
+  save: (tag: ManagedTag) => void;
 }) {
   const [title, setTitle] = useState(tag.title || "");
-  const [type, setType] = useState(tag.type || "Не выбран");
+  const [type, setType] = useState<TagType>(tag.type || "Не выбран");
   const [business, setBusiness] = useState(
-    tag.business || "Логистический центр «Запад»",
+    tag.business || UNASSIGNED_BUSINESS,
   );
+  const [active, setActive] = useState(tag.active ?? true);
   const [linked, setLinked] = useState<string[]>(tag.contractors || []);
   const [drawer, setDrawer] = useState(false);
   const [find, setFind] = useState("");
+  useOverlayLock(close);
   const shown = contractors.filter((c) =>
     c.toLowerCase().includes(find.toLowerCase()),
   );
   const toggle = (c: string) =>
     setLinked((x) => (x.includes(c) ? x.filter((v) => v !== c) : [...x, c]));
+  const selectedBusiness = objectsInitial.find(
+    (object) => object.name === business,
+  );
   return (
-    <>
-      <button
+    <motion.div
+      className="overlay-layer tag-drawer-layer fixed inset-0 z-[60] isolate"
+      initial="closed"
+      animate="open"
+      exit="closed"
+    >
+      <motion.button
+        aria-label="Закрыть редактирование метки"
         onClick={close}
-        className="fixed inset-0 z-[60] cursor-default bg-[#15233a]/30"
+        className="absolute inset-0 z-0 cursor-default bg-[#15233a]/30"
+        variants={{
+          closed: { opacity: 0 },
+          open: { opacity: 1 },
+        }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
       />
-      <aside className="fixed bottom-0 right-0 top-0 z-[70] flex w-[480px] flex-col border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.18)]">
+      <motion.aside
+        aria-label="Редактирование метки"
+        aria-modal="true"
+        role="dialog"
+        className="overlay-drawer-panel tag-drawer-panel fixed bottom-0 right-0 top-0 z-10 flex w-[480px] flex-col border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.18)]"
+        variants={{
+          closed: { x: "100%" },
+          open: { x: 0 },
+        }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        style={{ willChange: "transform" }}
+      >
         <ModalHead
-          title="Редактирование метки"
+          title={tag.isNew ? "Добавление метки" : "Редактирование метки"}
           sub={`UID: ${tag.uid}`}
           close={close}
         />
-        <div className="flex-1 overflow-y-auto space-y-7 px-7 py-6">
+        <div className="overlay-scroll-region tag-drawer-scroll-region flex-1 overflow-y-auto space-y-7 px-7 py-6">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <label className="block">
@@ -3335,9 +4419,9 @@ function TagDrawer({
                 <span className="mb-1.5 block text-[13.5px] font-medium text-[#40516d]">
                   Тип метки
                 </span>
-                <Select
-                  value={type}
-                  onChange={setType}
+              <Select
+                value={type}
+                  onChange={(value) => setType(value as TagType)}
                   options={["Не выбран", "Посещение", "Журнал"]}
                 />
               </label>
@@ -3355,14 +4439,70 @@ function TagDrawer({
             </label>
             <label className="block">
               <span className="mb-1.5 block text-[13.5px] font-medium text-[#40516d]">
-                Бизнес-центр
+                Привязка к бизнес-центру
               </span>
               <Select
                 value={business}
                 onChange={setBusiness}
-                options={objectsInitial.map((x) => x.name)}
+                options={[
+                  UNASSIGNED_BUSINESS,
+                  ...objectsInitial.map((x) => x.name),
+                ]}
               />
+              <small className="mt-1.5 block text-[12px] leading-5 text-[#8191a7]">
+                Выберите другой БЦ для переноса метки или снимите привязку.
+              </small>
             </label>
+            <div
+              className={`tag-business-link-card ${selectedBusiness ? "is-linked" : "is-unassigned"}`}
+            >
+              <span>
+                {selectedBusiness ? (
+                  <Building2 size={17} />
+                ) : (
+                  <AlertTriangle size={17} />
+                )}
+              </span>
+              <div>
+                <strong>
+                  {selectedBusiness?.name || "Метка без бизнес-центра"}
+                </strong>
+                <small>
+                  {selectedBusiness
+                    ? `${selectedBusiness.code} · ${selectedBusiness.address}`
+                    : "Она останется доступна в отдельной группе без привязки"}
+                </small>
+              </div>
+            </div>
+            <div className="tag-drawer-status">
+              <span
+                className={`tag-drawer-status-icon ${active ? "is-active" : ""}`}
+              >
+                {active ? (
+                  <CheckCircle2 size={17} />
+                ) : (
+                  <AlertTriangle size={17} />
+                )}
+              </span>
+              <span>
+                <strong>{active ? "Метка активна" : "Метка отключена"}</strong>
+                <small>
+                  {active
+                    ? "События с метки принимаются системой"
+                    : "События временно не учитываются"}
+                </small>
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={active}
+                aria-label={active ? "Отключить метку" : "Включить метку"}
+                className={`tag-toggle ${active ? "is-active" : ""}`}
+                onClick={() => setActive((value) => !value)}
+              >
+                <i />
+              </button>
+            </div>
           </div>
           <section className="rounded-xl border border-[#e3eaf3] bg-[#f8fbff] p-5">
             <div className="mb-4 flex items-center justify-between">
@@ -3483,12 +4623,19 @@ function TagDrawer({
         <ModalFoot
           close={close}
           save={() =>
-            save({ ...tag, title, type, business, contractors: linked })
+            save({
+              ...tag,
+              title,
+              type,
+              business,
+              contractors: linked,
+              active,
+            })
           }
-          label="Сохранить изменения"
+          label={tag.isNew ? "Добавить метку" : "Сохранить изменения"}
         />
-      </aside>
-    </>
+      </motion.aside>
+    </motion.div>
   );
 }
 function DropColumn({
@@ -3555,6 +4702,7 @@ function EmployeePanel({
   const [tab, setTab] = useState<"profile" | "history">("profile");
   const [object, setObject] = useState("Все объекты");
   const [period, setPeriod] = useState("За всё время");
+  useOverlayLock(close);
   const history = [
     {
       object: "Логистический центр «Запад»",
@@ -3591,9 +4739,28 @@ function EmployeePanel({
     }))
     .filter((group) => group.events.length);
   return (
-    <>
-      <button onClick={close} className="fixed inset-0 z-40 bg-[#18253b]/15" />
-      <aside className="fixed bottom-0 right-0 top-0 z-50 w-[540px] border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.14)]">
+    <motion.div
+      className="overlay-layer fixed inset-0 z-40 isolate"
+      initial="closed"
+      animate="open"
+      exit="closed"
+    >
+      <motion.button
+        aria-label="Закрыть карточку сотрудника"
+        onClick={close}
+        className="absolute inset-0 z-0 bg-[#18253b]/15"
+        variants={{ closed: { opacity: 0 }, open: { opacity: 1 } }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
+      />
+      <motion.aside
+        aria-label="Карточка сотрудника"
+        aria-modal="true"
+        role="dialog"
+        className="overlay-drawer-panel fixed bottom-0 right-0 top-0 z-10 w-[540px] border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.14)]"
+        variants={{ closed: { x: "100%" }, open: { x: 0 } }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        style={{ willChange: "transform" }}
+      >
         <div className="flex h-[76px] items-center justify-between border-b border-[#e4eaf2] px-6">
           <div>
             <p className="text-[17px] font-semibold">Карточка сотрудника</p>
@@ -3602,6 +4769,7 @@ function EmployeePanel({
             </p>
           </div>
           <button
+            aria-label="Закрыть карточку сотрудника"
             onClick={close}
             className="grid size-9 place-items-center rounded-xl border border-[#e0e7f0] text-[#61748f]"
           >
@@ -3623,7 +4791,7 @@ function EmployeePanel({
           </button>
         </div>
         {tab === "profile" ? (
-          <div className="h-[calc(100%-132px)] overflow-y-auto px-6 py-6">
+          <div className="overlay-scroll-region h-[calc(100%-132px)] overflow-y-auto px-6 py-6">
             <div className="flex items-center gap-4">
               <div className="grid size-16 place-items-center rounded-2xl bg-[#e9f2ff] text-base font-bold text-[#2563eb]">
                 {employee.initials}
@@ -3664,7 +4832,7 @@ function EmployeePanel({
             />
           </div>
         ) : (
-          <div className="h-[calc(100%-132px)] overflow-y-auto px-6 py-5">
+          <div className="overlay-scroll-region h-[calc(100%-132px)] overflow-y-auto px-6 py-5">
             <div className="grid grid-cols-2 gap-3">
               <Select
                 value={object}
@@ -3712,8 +4880,8 @@ function EmployeePanel({
             </div>
           </div>
         )}
-      </aside>
-    </>
+      </motion.aside>
+    </motion.div>
   );
 }
 function HistoryGroup({
@@ -3794,6 +4962,7 @@ function ModalHead({
         <p className="mt-1 text-[15px] text-[#74849d]">{sub}</p>
       </div>
       <button
+        aria-label="Закрыть окно"
         onClick={close}
         className="grid size-9 place-items-center rounded-xl border border-[#e0e7f0] text-[#60738f]"
       >
@@ -3840,8 +5009,29 @@ function Confirm({
   action: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[60] grid place-items-center bg-[#15233a]/30 p-5">
-      <div className="w-[450px] rounded-2xl bg-white p-7 shadow-2xl">
+    <motion.div
+      className="overlay-modal-layer fixed inset-0 z-[60] grid place-items-center p-5"
+      initial="closed"
+      animate="open"
+      exit="closed"
+    >
+      <motion.div
+        className="absolute inset-0 bg-[#15233a]/30"
+        variants={{ closed: { opacity: 0 }, open: { opacity: 1 } }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+      />
+      <motion.div
+        aria-label={title}
+        aria-modal="true"
+        role="alertdialog"
+        className="relative w-[450px] rounded-2xl bg-white p-7 shadow-2xl"
+        variants={{
+          closed: { opacity: 0, y: 16, scale: 0.97 },
+          open: { opacity: 1, y: 0, scale: 1 },
+        }}
+        transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+        style={{ willChange: "transform, opacity" }}
+      >
         <div className="grid size-11 place-items-center rounded-xl bg-rose-50 text-rose-600">
           <Trash2 size={21} />
         </div>
@@ -3861,7 +5051,7 @@ function Confirm({
             Удалить
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
