@@ -889,6 +889,13 @@ function Nav({
   );
 }
 
+let activeOverlayLocks = 0;
+let overlayInitialStyles: {
+  bodyOverscroll: string;
+  bodyPaddingRight: string;
+  rootScrollBehavior: string;
+} | null = null;
+
 function useOverlayLock(close: () => void) {
   const closeRef = useRef(close);
   closeRef.current = close;
@@ -899,12 +906,15 @@ function useOverlayLock(close: () => void) {
     const scrollX = window.scrollX;
     const scrollY = window.scrollY;
     const scrollbarGap = Math.max(0, window.innerWidth - root.clientWidth);
-    const previous = {
-      bodyOverscroll: body.style.overscrollBehavior,
-      bodyPaddingRight: body.style.paddingRight,
-      rootScrollBehavior: root.style.scrollBehavior,
-    };
-    const rootAlreadyLocked = root.classList.contains("overlay-open");
+    const isFirstOverlay = activeOverlayLocks === 0;
+    if (isFirstOverlay) {
+      overlayInitialStyles = {
+        bodyOverscroll: body.style.overscrollBehavior,
+        bodyPaddingRight: body.style.paddingRight,
+        rootScrollBehavior: root.style.scrollBehavior,
+      };
+    }
+    activeOverlayLocks += 1;
     const isInsideScrollableOverlay = (target: EventTarget | null) =>
       target instanceof Element && Boolean(target.closest(".overlay-scroll-region"));
     const stopBackgroundWheel = (event: WheelEvent) => {
@@ -936,10 +946,12 @@ function useOverlayLock(close: () => void) {
         event.preventDefault();
     };
 
-    root.classList.add("overlay-open");
-    root.style.scrollBehavior = "auto";
-    body.style.overscrollBehavior = "none";
-    if (scrollbarGap) body.style.paddingRight = `${scrollbarGap}px`;
+    if (isFirstOverlay) {
+      root.classList.add("overlay-open");
+      root.style.scrollBehavior = "auto";
+      body.style.overscrollBehavior = "none";
+      if (scrollbarGap) body.style.paddingRight = `${scrollbarGap}px`;
+    }
     window.addEventListener("keydown", closeOnEscape);
     window.addEventListener("scroll", keepPagePosition, { passive: true });
     document.addEventListener("wheel", stopBackgroundWheel, {
@@ -956,10 +968,16 @@ function useOverlayLock(close: () => void) {
       window.removeEventListener("scroll", keepPagePosition);
       document.removeEventListener("wheel", stopBackgroundWheel, true);
       document.removeEventListener("touchmove", stopBackgroundTouch, true);
-      if (!rootAlreadyLocked) root.classList.remove("overlay-open");
-      root.style.scrollBehavior = previous.rootScrollBehavior;
-      body.style.overscrollBehavior = previous.bodyOverscroll;
-      body.style.paddingRight = previous.bodyPaddingRight;
+      activeOverlayLocks = Math.max(0, activeOverlayLocks - 1);
+      if (activeOverlayLocks === 0) {
+        root.classList.remove("overlay-open");
+        root.style.scrollBehavior =
+          overlayInitialStyles?.rootScrollBehavior || "";
+        body.style.overscrollBehavior =
+          overlayInitialStyles?.bodyOverscroll || "";
+        body.style.paddingRight = overlayInitialStyles?.bodyPaddingRight || "";
+        overlayInitialStyles = null;
+      }
     };
   }, []);
 }
@@ -2176,11 +2194,6 @@ function ObjectsPage({ open }: { open: (object: ObjectItem) => void }) {
                       {object.address} · {object.code}
                     </span>
                   </span>
-                  <span
-                    className={`rounded-full border px-2.5 py-1 text-[12.5px] font-semibold ${statusStyle[object.status]}`}
-                  >
-                    {object.status}
-                  </span>
                   <ChevronDown
                     className="-rotate-90 text-[#6f819c]"
                     size={18}
@@ -2292,16 +2305,9 @@ function ObjectDetailPage({
             <span className="px-1.5">/</span>
             {object.name}
           </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-[34px] font-bold tracking-[-.025em]">
-              {object.name}
-            </h1>
-            <span
-              className={`rounded-full border px-2.5 py-1 text-[12.5px] font-semibold ${statusStyle[object.status]}`}
-            >
-              {object.status}
-            </span>
-          </div>
+          <h1 className="text-[34px] font-bold tracking-[-.025em]">
+            {object.name}
+          </h1>
           <p className="mt-2 flex items-center gap-1.5 text-[16px] text-[#71819b]">
             <MapPin size={15} />
             {object.address}
@@ -3060,7 +3066,7 @@ function ObjectModal({
                           </button>
                         ))}
                       </div>
-                      <div className="flex items-center justify-between border-t border-[#e8edf4] bg-[#fafcff] px-3 py-2">
+                      <div className="association-picker-footer flex items-center justify-between border-t border-[#e8edf4] bg-[#fafcff] px-3 py-2">
                         <button
                           onClick={() =>
                             setLinked(
@@ -3342,7 +3348,7 @@ function ContractorModal({
                           </button>
                         ))}
                       </div>
-                      <div className="flex items-center justify-between border-t border-[#e8edf4] bg-[#fafcff] px-3 py-2">
+                      <div className="association-picker-footer flex items-center justify-between border-t border-[#e8edf4] bg-[#fafcff] px-3 py-2">
                         <button
                           onClick={() =>
                             setLinked(
@@ -3436,7 +3442,10 @@ function TagsPage({
   );
   const [editingTag, setEditingTag] = useState<ManagedTag | null>(null);
   const [view, setView] = useState<"tags" | "businesses">("tags");
-  const [expandedBusiness, setExpandedBusiness] = useState<string | null>(null);
+  const [managingBusiness, setManagingBusiness] = useState<ObjectItem | null>(
+    null,
+  );
+  const [returnToBusiness, setReturnToBusiness] = useState<string | null>(null);
   const [business, setBusiness] = useState("Все бизнес-центры");
   const [query, setQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -3498,7 +3507,7 @@ function TagsPage({
     if (last >= 2 && last <= 4) return `${count} метки`;
     return `${count} меток`;
   };
-  const openNewTag = (businessName: string) => {
+  const openNewTag = (businessName: string, returnToManager = false) => {
     const nextNumber =
       Math.max(
         0,
@@ -3509,6 +3518,8 @@ function TagsPage({
       (44 + nextNumber * 29) % 256,
       (93 + nextNumber * 37) % 256,
     ].map((value) => value.toString(16).padStart(2, "0").toUpperCase());
+    setReturnToBusiness(returnToManager ? businessName : null);
+    setManagingBusiness(null);
     setEditingTag({
       id: `NFC-${String(nextNumber).padStart(3, "0")}`,
       uid: `04:${uidParts.join(":")}`,
@@ -3531,7 +3542,17 @@ function TagsPage({
   };
   const removeTag = (tagId: string) => {
     setTags((items) => items.filter((tag) => tag.id !== tagId));
-    toast("Метка удалена из бизнес-центра");
+    toast("Метка удалена");
+  };
+  const unassignTag = (tagId: string) => {
+    setTags((items) =>
+      items.map((tag) =>
+        tag.id === tagId
+          ? { ...tag, business: UNASSIGNED_BUSINESS }
+          : tag,
+      ),
+    );
+    toast("Метка отвязана от бизнес-центра");
   };
   const refresh = () => {
     setRefreshing(true);
@@ -3648,7 +3669,10 @@ function TagsPage({
         {view === "tags" ? (
           <TagsListTable
             tags={visibleTags}
-            edit={setEditingTag}
+            edit={(tag) => {
+              setReturnToBusiness(null);
+              setEditingTag(tag);
+            }}
             reset={() => {
               setBusiness("Все бизнес-центры");
               setQuery("");
@@ -3656,36 +3680,33 @@ function TagsPage({
           />
         ) : (
           <table className="business-tags-table w-full text-left">
-          <thead className="bg-[#f8fafc] text-[12.5px] uppercase tracking-[.06em] text-[#7485a0]">
-            <tr>
-              <th className="px-6 py-3">Бизнес-центр</th>
-              <th className="px-3 py-3">Связанные метки</th>
-              <th className="px-6 py-3 text-right">Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleGroups.length ? (
-              visibleGroups.map(({ object, tags: objectTags }) => {
-                const expanded = expandedBusiness === object.name;
-                const isUnassigned = object.code === "NO-LINK";
-                const activeTags = objectTags.filter((tag) => tag.active);
-                return (
-                  <Fragment key={object.name}>
+            <thead className="bg-[#f8fafc] text-[12.5px] uppercase tracking-[.06em] text-[#7485a0]">
+              <tr>
+                <th className="px-6 py-3">Бизнес-центр</th>
+                <th className="px-3 py-3">Связанные метки</th>
+                <th className="px-6 py-3 text-right">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleGroups.length ? (
+                visibleGroups.map(({ object, tags: objectTags }) => {
+                  const isUnassigned = object.code === "NO-LINK";
+                  const activeTags = objectTags.filter((tag) => tag.active);
+                  return (
                     <tr
-                      className={`business-center-row border-t border-[#e8edf4] ${expanded ? "is-expanded" : ""} ${isUnassigned ? "is-unassigned" : ""}`}
+                      key={object.name}
+                      className={`business-center-row border-t border-[#e8edf4] ${isUnassigned ? "is-unassigned" : ""}`}
                       role="button"
                       tabIndex={0}
-                      aria-expanded={expanded}
-                      onClick={() =>
-                        setExpandedBusiness(expanded ? null : object.name)
-                      }
+                      aria-label={`Управлять метками ${object.name}`}
+                      onClick={() => setManagingBusiness(object)}
                       onKeyDown={(event) => {
                         if (
                           event.target === event.currentTarget &&
                           (event.key === "Enter" || event.key === " ")
                         ) {
                           event.preventDefault();
-                          setExpandedBusiness(expanded ? null : object.name);
+                          setManagingBusiness(object);
                         }
                       }}
                     >
@@ -3709,62 +3730,30 @@ function TagsPage({
                         </div>
                       </td>
                       <td className="px-3">
-                        <div className="tag-summary-wrap">
-                          <button
-                            type="button"
-                            className="tag-summary"
-                            aria-expanded={expanded}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setExpandedBusiness(
-                                expanded ? null : object.name,
-                              );
-                            }}
-                          >
-                            <span className="tag-dot-stack">
-                              {objectTags.slice(0, 4).map((tag) => (
-                                <i
-                                  key={tag.id}
-                                  className={`tag-color-dot ${toneFor(tag.type)}`}
-                                />
-                              ))}
-                              {!objectTags.length && (
-                                <i className="tag-color-dot is-empty" />
-                              )}
-                            </span>
-                            <span>
-                              <strong>{tagCountLabel(objectTags.length)}</strong>
-                              <small>
-                                {activeTags.length} активных
-                              </small>
-                            </span>
-                          </button>
-                          {objectTags.length > 0 && (
-                            <div className="tag-hover-preview">
-                              <div className="tag-hover-preview-head">
-                                <strong>Метки объекта</strong>
-                                <span>{tagCountLabel(objectTags.length)}</span>
-                              </div>
-                              <div className="tag-hover-preview-list">
-                                {objectTags.map((tag) => (
-                                  <div key={tag.id}>
-                                    <i
-                                      className={`tag-color-dot ${toneFor(tag.type)}`}
-                                    />
-                                    <span>
-                                      <strong>{tag.id}</strong>
-                                      <small>{tag.title || "Без названия"}</small>
-                                    </span>
-                                    <em>{tag.type}</em>
-                                  </div>
-                                ))}
-                              </div>
-                              <small className="tag-hover-preview-hint">
-                                Нажмите, чтобы управлять метками
-                              </small>
-                            </div>
-                          )}
-                        </div>
+                        <button
+                          type="button"
+                          className="tag-summary"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setManagingBusiness(object);
+                          }}
+                        >
+                          <span className="tag-dot-stack">
+                            {objectTags.slice(0, 4).map((tag) => (
+                              <i
+                                key={tag.id}
+                                className={`tag-color-dot ${toneFor(tag.type)}`}
+                              />
+                            ))}
+                            {!objectTags.length && (
+                              <i className="tag-color-dot is-empty" />
+                            )}
+                          </span>
+                          <span>
+                            <strong>{tagCountLabel(objectTags.length)}</strong>
+                            <small>{activeTags.length} активных</small>
+                          </span>
+                        </button>
                       </td>
                       <td className="px-6">
                         <div className="business-tag-actions">
@@ -3772,198 +3761,89 @@ function TagsPage({
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
-                              openNewTag(object.name);
+                              setManagingBusiness(object);
                             }}
                           >
-                            <Plus size={14} />
-                            {isUnassigned ? "Создать" : "Добавить"}
+                            <SlidersHorizontal size={14} />
+                            Управлять
                           </button>
                           <button
                             type="button"
-                            aria-label={
-                              expanded
-                                ? `Свернуть метки ${object.name}`
-                                : `Показать метки ${object.name}`
-                            }
-                            className="business-expand-button"
+                            className="business-quick-add-button"
+                            aria-label={`Добавить метку в ${object.name}`}
                             onClick={(event) => {
                               event.stopPropagation();
-                              setExpandedBusiness(
-                                expanded ? null : object.name,
-                              );
+                              openNewTag(object.name);
                             }}
                           >
-                            <ChevronDown size={16} />
+                            <Plus size={15} />
                           </button>
                         </div>
                       </td>
                     </tr>
-                    <tr className="business-tags-expanded-row">
-                      <td colSpan={3}>
-                        <AnimatePresence initial={false}>
-                          {expanded && (
-                            <motion.div
-                              className="business-tags-expanded"
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{
-                                duration: 0.22,
-                                ease: [0.22, 1, 0.36, 1],
-                              }}
-                            >
-                              <div className="business-tags-expanded-head">
-                                <div>
-                                  <strong>
-                                    {isUnassigned
-                                      ? "Метки без привязки"
-                                      : "Метки бизнес-центра"}
-                                  </strong>
-                                  <span>
-                                    {isUnassigned
-                                      ? "Назначьте бизнес-центр прямо в редакторе метки"
-                                      : "Редактируйте данные, статус и привязки без перехода на другой экран"}
-                                  </span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => openNewTag(object.name)}
-                                >
-                                  <Plus size={14} />
-                                  {isUnassigned
-                                    ? "Создать без привязки"
-                                    : "Добавить метку"}
-                                </button>
-                              </div>
-                              {objectTags.length ? (
-                                <div className="business-tag-grid">
-                                  {objectTags.map((tag) => (
-                                    <article
-                                      key={tag.id}
-                                      className={`business-tag-card ${tag.active ? "" : "is-disabled"}`}
-                                    >
-                                      <span
-                                        className={`business-tag-tone ${toneFor(tag.type)}`}
-                                      />
-                                      <div className="business-tag-card-main">
-                                        <div>
-                                          <span>
-                                            <strong>{tag.id}</strong>
-                                            <em
-                                              className={`tag-state-badge ${tag.active ? "is-active" : ""}`}
-                                            >
-                                              {tag.active
-                                                ? "Активна"
-                                                : "Отключена"}
-                                            </em>
-                                          </span>
-                                          <small>{tag.uid}</small>
-                                        </div>
-                                        <h3>{tag.title || "Без названия"}</h3>
-                                        <div className="business-tag-meta">
-                                          <span
-                                            className={`tag-type-pill ${toneFor(tag.type)}`}
-                                          >
-                                            {tag.type}
-                                          </span>
-                                          <span>
-                                            {tag.contractors.length
-                                              ? `${tag.contractors.length} подрядчика`
-                                              : "Без подрядчиков"}
-                                          </span>
-                                        </div>
-                                      </div>
-                                      <div className="business-tag-card-actions">
-                                        <button
-                                          type="button"
-                                          role="switch"
-                                          aria-checked={tag.active}
-                                          aria-label={
-                                            tag.active
-                                              ? `Отключить ${tag.id}`
-                                              : `Включить ${tag.id}`
-                                          }
-                                          className={`tag-toggle ${tag.active ? "is-active" : ""}`}
-                                          onClick={() => toggleTag(tag.id)}
-                                        >
-                                          <i />
-                                        </button>
-                                        <button
-                                          type="button"
-                                          aria-label={`Редактировать ${tag.id}`}
-                                          onClick={() => setEditingTag(tag)}
-                                        >
-                                          <Pencil size={14} />
-                                        </button>
-                                        <button
-                                          type="button"
-                                          aria-label={`Удалить ${tag.id}`}
-                                          className="is-danger"
-                                          onClick={() => removeTag(tag.id)}
-                                        >
-                                          <Trash2 size={14} />
-                                        </button>
-                                      </div>
-                                    </article>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="business-tags-empty">
-                                  <span>
-                                    <Tag size={19} />
-                                  </span>
-                                  <div>
-                                    <strong>У объекта пока нет меток</strong>
-                                    <small>
-                                      Добавьте первую NFC-метку и настройте её
-                                      назначение
-                                    </small>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => openNewTag(object.name)}
-                                  >
-                                    Добавить метку
-                                  </button>
-                                </div>
-                              )}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </td>
-                    </tr>
-                  </Fragment>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={3}>
-                  <div className="empty-filter-state">
-                    <Search size={20} />
-                    <strong>Бизнес-центры не найдены</strong>
-                    <span>Измените фильтр или поисковый запрос</span>
-                    <button
-                      onClick={() => {
-                        setBusiness("Все бизнес-центры");
-                        setQuery("");
-                      }}
-                    >
-                      Сбросить фильтры
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={3}>
+                    <div className="empty-filter-state">
+                      <Search size={20} />
+                      <strong>Бизнес-центры не найдены</strong>
+                      <span>Измените фильтр или поисковый запрос</span>
+                      <button
+                        onClick={() => {
+                          setBusiness("Все бизнес-центры");
+                          setQuery("");
+                        }}
+                      >
+                        Сбросить фильтры
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         )}
       </div>
+      <AnimatePresence>
+        {managingBusiness && (
+          <BusinessTagsManager
+            key={managingBusiness.name}
+            object={managingBusiness}
+            tags={tags.filter(
+              (tag) => tag.business === managingBusiness.name,
+            )}
+            close={() => setManagingBusiness(null)}
+            add={() => openNewTag(managingBusiness.name, true)}
+            edit={(tag) => {
+              setReturnToBusiness(managingBusiness.name);
+              setManagingBusiness(null);
+              setEditingTag(tag);
+            }}
+            toggle={toggleTag}
+            detach={
+              managingBusiness.code === "NO-LINK" ? removeTag : unassignTag
+            }
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {editingTag && (
           <TagDrawer
             key={editingTag.id}
             tag={editingTag}
-            close={() => setEditingTag(null)}
+            close={() => {
+              setEditingTag(null);
+              if (returnToBusiness) {
+                setManagingBusiness(
+                  tagBusinessGroups.find(
+                    (object) => object.name === returnToBusiness,
+                  ) || null,
+                );
+              }
+              setReturnToBusiness(null);
+            }}
             save={(updated) => {
               const { isNew, ...savedTag } = updated;
               setTags((items) => {
@@ -3974,14 +3854,255 @@ function TagsPage({
                     )
                   : [...items, savedTag];
               });
-              setExpandedBusiness(savedTag.business);
               setEditingTag(null);
+              if (returnToBusiness) {
+                setManagingBusiness(
+                  tagBusinessGroups.find(
+                    (object) => object.name === savedTag.business,
+                  ) || null,
+                );
+              }
+              setReturnToBusiness(null);
               toast(isNew ? "Метка добавлена" : "Метка обновлена");
             }}
           />
         )}
       </AnimatePresence>
     </section>
+  );
+}
+
+function BusinessTagsManager({
+  object,
+  tags,
+  close,
+  add,
+  edit,
+  toggle,
+  detach,
+}: {
+  object: ObjectItem;
+  tags: ManagedTag[];
+  close: () => void;
+  add: () => void;
+  edit: (tag: ManagedTag) => void;
+  toggle: (tagId: string) => void;
+  detach: (tagId: string) => void;
+}) {
+  const [tagQuery, setTagQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("Все типы");
+  const [statusFilter, setStatusFilter] = useState("Все статусы");
+  const isUnassigned = object.code === "NO-LINK";
+  useOverlayLock(close);
+  const filteredTags = useMemo(() => {
+    const normalized = tagQuery.trim().toLowerCase();
+    return tags.filter((tag) => {
+      const matchesQuery =
+        !normalized ||
+        `${tag.id} ${tag.uid} ${tag.title} ${tag.type}`
+          .toLowerCase()
+          .includes(normalized);
+      const matchesType =
+        typeFilter === "Все типы" || tag.type === typeFilter;
+      const matchesStatus =
+        statusFilter === "Все статусы" ||
+        (statusFilter === "Активные" ? tag.active : !tag.active);
+      return matchesQuery && matchesType && matchesStatus;
+    });
+  }, [tags, tagQuery, typeFilter, statusFilter]);
+  const activeCount = tags.filter((tag) => tag.active).length;
+  const visitCount = tags.filter((tag) => tag.type === "Посещение").length;
+  const journalCount = tags.filter((tag) => tag.type === "Журнал").length;
+  const toneFor = (type: TagType) =>
+    type === "Посещение"
+      ? "is-visit"
+      : type === "Журнал"
+        ? "is-journal"
+        : "is-neutral";
+  return (
+    <motion.div
+      className="overlay-layer business-tag-manager-layer fixed inset-0 z-[60] isolate"
+      initial="closed"
+      animate="open"
+      exit="closed"
+    >
+      <motion.button
+        aria-label="Закрыть управление метками"
+        onClick={close}
+        className="absolute inset-0 z-0 cursor-default bg-[#15233a]/30"
+        variants={{ closed: { opacity: 0 }, open: { opacity: 1 } }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
+      />
+      <motion.aside
+        aria-label={`Метки ${object.name}`}
+        aria-modal="true"
+        role="dialog"
+        className="overlay-drawer-panel business-tag-manager-panel fixed bottom-0 right-0 top-0 z-10 flex w-[640px] flex-col border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.18)]"
+        variants={{ closed: { x: "100%" }, open: { x: 0 } }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        style={{ willChange: "transform" }}
+      >
+        <ModalHead
+          title={isUnassigned ? "Метки без привязки" : object.name}
+          sub={
+            isUnassigned
+              ? "Назначьте меткам нужный бизнес-центр"
+              : `${object.code} · Управление связанными метками`
+          }
+          close={close}
+        />
+        <div className="business-tag-manager-body">
+          <div className="business-tag-manager-overview">
+            <div className="business-tag-manager-counts">
+              <span>
+                <strong>{tags.length}</strong>
+                всего
+              </span>
+              <span>
+                <strong>{activeCount}</strong>
+                активных
+              </span>
+              <span>
+                <i className="tag-color-dot is-visit" />
+                <strong>{visitCount}</strong>
+                посещение
+              </span>
+              <span>
+                <i className="tag-color-dot is-journal" />
+                <strong>{journalCount}</strong>
+                журнал
+              </span>
+            </div>
+            <button type="button" onClick={add}>
+              <Plus size={15} />
+              Добавить метку
+            </button>
+          </div>
+          <div className="business-tag-manager-filters">
+            <label className="business-tag-manager-search">
+              <Search size={15} />
+              <input
+                value={tagQuery}
+                onChange={(event) => setTagQuery(event.target.value)}
+                placeholder="Название, ID или UID"
+              />
+            </label>
+            <Select
+              value={typeFilter}
+              onChange={setTypeFilter}
+              options={["Все типы", "Посещение", "Журнал", "Не выбран"]}
+            />
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={["Все статусы", "Активные", "Отключённые"]}
+            />
+          </div>
+          <div className="business-tag-manager-result">
+            <span>Показано: {filteredTags.length}</span>
+            {(tagQuery ||
+              typeFilter !== "Все типы" ||
+              statusFilter !== "Все статусы") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setTagQuery("");
+                  setTypeFilter("Все типы");
+                  setStatusFilter("Все статусы");
+                }}
+              >
+                Сбросить фильтры
+              </button>
+            )}
+          </div>
+          <div className="business-tag-manager-list" role="list">
+            {filteredTags.length ? (
+              filteredTags.map((tag) => (
+                <article
+                  key={tag.id}
+                  className={`business-tag-manager-row ${tag.active ? "" : "is-disabled"}`}
+                  role="listitem"
+                >
+                  <i className={`tag-color-dot ${toneFor(tag.type)}`} />
+                  <div className="business-tag-manager-identity">
+                    <strong>{tag.title || "Без названия"}</strong>
+                    <span>
+                      {tag.id} · <code>{tag.uid}</code>
+                    </span>
+                  </div>
+                  <span className={`tag-type-pill ${toneFor(tag.type)}`}>
+                    {tag.type}
+                  </span>
+                  <span
+                    className={`tag-state-badge ${tag.active ? "is-active" : ""}`}
+                  >
+                    {tag.active ? "Активна" : "Отключена"}
+                  </span>
+                  <div className="business-tag-manager-actions">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={tag.active}
+                      aria-label={
+                        tag.active ? `Отключить ${tag.id}` : `Включить ${tag.id}`
+                      }
+                      className={`tag-toggle ${tag.active ? "is-active" : ""}`}
+                      onClick={() => toggle(tag.id)}
+                    >
+                      <i />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Редактировать ${tag.id}`}
+                      onClick={() => edit(tag)}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="is-danger"
+                      aria-label={
+                        isUnassigned
+                          ? `Удалить ${tag.id}`
+                          : `Отвязать ${tag.id} от ${object.name}`
+                      }
+                      title={isUnassigned ? "Удалить" : "Отвязать от БЦ"}
+                      onClick={() => detach(tag.id)}
+                    >
+                      {isUnassigned ? <Trash2 size={14} /> : <X size={14} />}
+                    </button>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div className="business-tag-manager-empty">
+                <Tag size={20} />
+                <strong>
+                  {tags.length ? "Метки не найдены" : "Здесь пока нет меток"}
+                </strong>
+                <span>
+                  {tags.length
+                    ? "Измените поисковый запрос или фильтры"
+                    : "Добавьте первую метку"}
+                </span>
+                {!tags.length && (
+                  <button type="button" onClick={add}>
+                    <Plus size={14} />
+                    Добавить метку
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="business-tag-manager-footer">
+          <span>{filteredTags.length} из {tags.length}</span>
+          <button type="button" onClick={close}>
+            Закрыть
+          </button>
+        </div>
+      </motion.aside>
+    </motion.div>
   );
 }
 
@@ -4004,8 +4125,7 @@ function TagsListTable({
     <table className="tags-table responsive-table w-full text-left">
       <thead className="bg-[#f8fafc] text-[12.5px] uppercase tracking-[.06em] text-[#7485a0]">
         <tr>
-          <th className="px-6 py-3">Метка</th>
-          <th className="px-3 py-3">Бизнес-центр</th>
+          <th className="px-6 py-3">Бизнес-центр</th>
           <th className="px-3 py-3">Название</th>
           <th className="px-3 py-3">Тип</th>
           <th className="px-6 py-3">Подрядчики</th>
@@ -4016,22 +4136,9 @@ function TagsListTable({
         {tags.length ? (
           tags.map((tag) => (
             <tr key={tag.id} className="border-t border-[#e8edf4]">
-              <td data-label="Метка" className="px-6 py-4">
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`size-3 rounded-full ring-4 ${tag.type === "Посещение" ? "ring-blue-50" : tag.type === "Журнал" ? "ring-orange-50" : "ring-slate-100"} ${colorFor(tag.type)}`}
-                  />
-                  <div>
-                    <p className="text-[13.5px] font-semibold">{tag.id}</p>
-                    <p className="font-mono text-[12.5px] text-[#7b8ca3]">
-                      {tag.uid}
-                    </p>
-                  </div>
-                </div>
-              </td>
               <td
                 data-label="Бизнес-центр"
-                className="px-3 text-[13.5px] text-[#526783]"
+                className="px-6 py-4 text-[13.5px] text-[#526783]"
               >
                 <span
                   className={`tag-business-cell ${tag.business === UNASSIGNED_BUSINESS ? "is-unassigned" : ""}`}
@@ -4045,9 +4152,17 @@ function TagsListTable({
                 </span>
               </td>
               <td data-label="Название" className="px-3">
-                <span className="text-[13.5px] font-medium text-[#263851]">
-                  {tag.title || "—"}
-                </span>
+                <div className="tag-name-cell">
+                  <span
+                    className={`tag-name-color ${colorFor(tag.type)}`}
+                  />
+                  <span>
+                    <strong>{tag.title || "Без названия"}</strong>
+                    <small>
+                      {tag.id} · <code>{tag.uid}</code>
+                    </small>
+                  </span>
+                </div>
               </td>
               <td data-label="Тип" className="px-3">
                 <span className="text-[13.5px] text-[#40516d]">
@@ -4092,7 +4207,7 @@ function TagsListTable({
           ))
         ) : (
           <tr>
-            <td colSpan={6}>
+            <td colSpan={5}>
               <div className="empty-filter-state">
                 <Search size={20} />
                 <strong>Метки не найдены</strong>
@@ -4568,7 +4683,7 @@ function TagDrawer({
                           </button>
                         ))}
                       </div>
-                      <div className="flex items-center justify-between border-t border-[#e8edf4] bg-[#fafcff] px-3 py-2">
+                      <div className="association-picker-footer flex items-center justify-between border-t border-[#e8edf4] bg-[#fafcff] px-3 py-2">
                         <button
                           onClick={() =>
                             setLinked(
