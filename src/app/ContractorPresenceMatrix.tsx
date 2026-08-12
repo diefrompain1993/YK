@@ -390,6 +390,12 @@ export function ContractorPresenceMatrix({
                     <span className="cpm__object-active">Сейчас: {object.active}</span>
                   )}
                 </header>
+                <div className="cpm__object-columns" aria-hidden="true">
+                  <span>Сотрудник</span>
+                  <span>Помещение</span>
+                  <span>Дата и время</span>
+                  <span>Длительность</span>
+                </div>
                 <div className="cpm__object-visits">
                   {object.records.map((record) => (
                     <button
@@ -398,12 +404,14 @@ export function ContractorPresenceMatrix({
                       key={record.id}
                       onClick={() => onOpenEmployee(record.employee)}
                     >
-                      <span className="cpm__avatar" aria-hidden="true">
-                        {initials(record.employee)}
-                      </span>
-                      <span className="cpm__object-person">
-                        <strong>{record.employee}</strong>
-                        <small>{record.role}</small>
+                      <span className="cpm__object-employee">
+                        <span className="cpm__avatar" aria-hidden="true">
+                          {initials(record.employee)}
+                        </span>
+                        <span className="cpm__object-person">
+                          <strong>{record.employee}</strong>
+                          <small>{record.role}</small>
+                        </span>
                       </span>
                       <span className="cpm__object-room">
                         <MapPin size={14} aria-hidden="true" />
@@ -411,9 +419,10 @@ export function ContractorPresenceMatrix({
                       </span>
                       <span className="cpm__object-time">
                         <CalendarDays size={14} aria-hidden="true" />
-                        {dateFormatter.format(new Date(record.enteredAt))}
-                        <span aria-hidden="true">·</span>
-                        {visitTime(record)}
+                        <span className="cpm__object-time-copy">
+                          <strong>{dateFormatter.format(new Date(record.enteredAt))}</strong>
+                          <small>{visitTime(record)}</small>
+                        </span>
                       </span>
                       <span
                         className={

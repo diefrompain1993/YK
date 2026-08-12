@@ -557,7 +557,7 @@ export function PresencePage({
               <tr>
                 <th>Сотрудник</th>
                 <th>Объект</th>
-                <th>Комната</th>
+                <th>Помещение</th>
                 <th>Подрядчик</th>
                 <th>Вход</th>
                 <th>Выход</th>
@@ -588,7 +588,7 @@ export function PresencePage({
                   <td data-label="Объект">
                     <span className="op-cell-main">{record.object}</span>
                   </td>
-                  <td data-label="Комната">
+                  <td data-label="Помещение">
                     <span className="op-cell-main">{roomForRecord(record)}</span>
                   </td>
                   <td data-label="Подрядчик">
@@ -787,7 +787,7 @@ export function ExportPage({
       "Подрядчик",
       "Объект",
       "Тип",
-      "Комната / отчёт",
+      "Помещение / отчёт",
     ];
     const rows = visibleEvents.map((event) => {
       const occurredAt = new Date(event.occurredAt);
@@ -931,7 +931,7 @@ export function ExportPage({
                 <th>Подрядчик</th>
                 <th>Объект</th>
                 <th>Тип</th>
-                <th>Комната / отчёт</th>
+                <th>Помещение / отчёт</th>
               </tr>
             </thead>
             <tbody>
@@ -989,7 +989,7 @@ export function ExportPage({
                       {event.type}
                     </span>
                   </td>
-                  <td data-label="Комната / отчёт">
+                  <td data-label="Помещение / отчёт">
                     <span className="op-cell-main op-export-details" title={event.details}>
                       {event.details}
                     </span>

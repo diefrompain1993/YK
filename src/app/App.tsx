@@ -849,7 +849,7 @@ function downloadLogs(rows: LogRecord[], fileName = "contractor-log.csv") {
     "Сотрудник",
     "Событие",
     "Объект",
-    "Комната",
+    "Помещение",
     "Описание",
     "Статус",
   ];
@@ -2906,7 +2906,7 @@ function ObjectPresence({
             <tr>
               <th>Сотрудник</th>
               <th>Подрядчик</th>
-              <th>Комната</th>
+              <th>Помещение</th>
               <th>Вход</th>
               <th>Выход</th>
             </tr>
@@ -2929,7 +2929,7 @@ function ObjectPresence({
                 >
                   <td data-label="Сотрудник"><strong>{record.employee}</strong><small>{record.role}</small></td>
                   <td data-label="Подрядчик">{record.contractor}</td>
-                  <td data-label="Комната">{roomForRecord(record)}</td>
+                  <td data-label="Помещение">{roomForRecord(record)}</td>
                   <td data-label="Вход">{new Date(record.enteredAt).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td>
                   <td data-label="Выход">{record.leftAt ? new Date(record.leftAt).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : <span className="on-site-badge">На месте</span>}</td>
                 </tr>
@@ -4069,7 +4069,7 @@ function TagsPage({
       ...tag,
       business:
         index % 2 ? "БЦ «Орион»" : "Логистический центр «Запад»",
-      title: ["Архив", "Комната 1", "Комната 2", "Переговорная", "Склад"][
+      title: ["Архив", "Помещение 1", "Помещение 2", "Переговорная", "Склад"][
         index
       ],
       type:
@@ -4894,7 +4894,7 @@ function LegacyTagsPage({ toast }: { toast: (m: string) => void }) {
     initialTags.map((tag, i) => ({
       ...tag,
       business: i % 2 ? "БЦ «Орион»" : "Логистический центр «Запад»",
-      title: ["Архив", "Комната 1", "Комната 2", "Переговорная", "Склад"][i],
+      title: ["Архив", "Помещение 1", "Помещение 2", "Переговорная", "Склад"][i],
       type: i === 1 ? "Журнал" : i === 2 ? "Не выбран" : "Посещение",
       contractors:
         i === 0
@@ -5223,7 +5223,7 @@ function TagDrawer({
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Например, Комната 1"
+                placeholder="Например, помещение 1"
                 className="h-10 w-full rounded-lg border border-[#dce5f0] bg-white px-3 text-[15px] text-[#16223a] outline-none transition focus:border-[#3b82f6] focus:ring-2 focus:ring-blue-100"
               />
             </label>
