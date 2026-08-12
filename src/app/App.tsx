@@ -138,6 +138,8 @@ const contractors = [
   "ООО «ТехСервис»",
   "ООО «МонтажПро»",
   "ООО «СтройГрупп»",
+  "ООО «ЭнергоКонтроль»",
+  "ООО «СитиКлининг»",
 ];
 const staff: Employee[] = [
   {
@@ -282,6 +284,28 @@ const staff: Employee[] = [
     added: "11.03.2026",
     status: "Активен",
     contractor: contractors[3],
+  },
+  {
+    name: "Павел Егоров",
+    initials: "ПЕ",
+    role: "Инженер-энергетик",
+    dept: "Технический отдел",
+    phone: "+7 916 842-17-39",
+    email: "p.egorov@energocontrol.ru",
+    added: "06.03.2026",
+    status: "Активен",
+    contractor: contractors[4],
+  },
+  {
+    name: "Анна Миронова",
+    initials: "АМ",
+    role: "Менеджер объекта",
+    dept: "Администрация",
+    phone: "+7 903 775-28-14",
+    email: "a.mironova@citycleaning.ru",
+    added: "02.03.2026",
+    status: "Активен",
+    contractor: contractors[5],
   },
 ];
 const objectsInitial: ObjectItem[] = [
@@ -461,6 +485,32 @@ const contractorDetails: Record<string, ContractorDetails> = {
       },
     },
   },
+  [contractors[4]]: {
+    description: "Обслуживание электросетей, щитового оборудования и резервного питания.",
+    phone: "+7 495 669-42-18",
+    email: "service@energocontrol.ru",
+    contactsByObject: {
+      "LC-ZAP-01": {
+        name: "Павел Егоров",
+        role: "Инженер-энергетик",
+        phone: "+7 916 842-17-39",
+        email: "p.egorov@energocontrol.ru",
+      },
+    },
+  },
+  [contractors[5]]: {
+    description: "Комплексная уборка помещений, территории и зон погрузки.",
+    phone: "+7 495 118-76-32",
+    email: "office@citycleaning.ru",
+    contactsByObject: {
+      "LC-ZAP-01": {
+        name: "Анна Миронова",
+        role: "Менеджер объекта",
+        phone: "+7 903 775-28-14",
+        email: "a.mironova@citycleaning.ru",
+      },
+    },
+  },
 };
 const UNASSIGNED_BUSINESS = "Без объекта";
 const tagBusinessGroups: ObjectItem[] = [
@@ -562,7 +612,8 @@ const contractorMetricSets = [
 
 function getContractorProfile(contractor: string): ContractorProfile {
   const contractorIndex = Math.max(0, contractors.indexOf(contractor));
-  const metrics = contractorMetricSets[contractorIndex];
+  const metricIndex = contractorIndex % contractorMetricSets.length;
+  const metrics = contractorMetricSets[metricIndex];
   const employees = staff.filter(
     (employee) => employee.contractor === contractor,
   );
@@ -573,7 +624,7 @@ function getContractorProfile(contractor: string): ContractorProfile {
   > = [
     {
       date: "Сегодня",
-      time: ["08:12", "08:27", "07:54", "08:41"][contractorIndex],
+      time: ["08:12", "08:27", "07:54", "08:41"][metricIndex],
       event: "Вход",
       objectOffset: 0,
       details: "Вход на объект зафиксирован NFC-меткой",
@@ -581,7 +632,7 @@ function getContractorProfile(contractor: string): ContractorProfile {
     },
     {
       date: "Сегодня",
-      time: ["09:05", "09:18", "08:46", "09:22"][contractorIndex],
+      time: ["09:05", "09:18", "08:46", "09:22"][metricIndex],
       event: "Вход",
       objectOffset: 1,
       details: "Вход на объект зафиксирован NFC-меткой",
@@ -589,7 +640,7 @@ function getContractorProfile(contractor: string): ContractorProfile {
     },
     {
       date: "Сегодня",
-      time: ["12:36", "12:18", "13:04", "12:51"][contractorIndex],
+      time: ["12:36", "12:18", "13:04", "12:51"][metricIndex],
       event: "Отчёт",
       objectOffset: 0,
       details: "Ежедневный отчёт по выполненным работам отправлен",
@@ -597,7 +648,7 @@ function getContractorProfile(contractor: string): ContractorProfile {
     },
     {
       date: "Сегодня",
-      time: ["17:48", "18:02", "17:36", "17:55"][contractorIndex],
+      time: ["17:48", "18:02", "17:36", "17:55"][metricIndex],
       event: "Выход",
       objectOffset: 1,
       details: "Выход с объекта зафиксирован NFC-меткой",
@@ -605,7 +656,7 @@ function getContractorProfile(contractor: string): ContractorProfile {
     },
     {
       date: "Вчера",
-      time: ["18:21", "17:49", "18:14", "17:38"][contractorIndex],
+      time: ["18:21", "17:49", "18:14", "17:38"][metricIndex],
       event: "Выход",
       objectOffset: 0,
       details: "Выход с объекта зафиксирован NFC-меткой",
@@ -613,7 +664,7 @@ function getContractorProfile(contractor: string): ContractorProfile {
     },
     {
       date: "Вчера",
-      time: ["16:40", "15:58", "16:22", "16:08"][contractorIndex],
+      time: ["16:40", "15:58", "16:22", "16:08"][metricIndex],
       event: "Отчёт",
       objectOffset: 2,
       details: "Отчёт по технике безопасности заполнен и отправлен",
@@ -621,7 +672,7 @@ function getContractorProfile(contractor: string): ContractorProfile {
     },
     {
       date: "Вчера",
-      time: ["08:34", "08:11", "08:29", "07:58"][contractorIndex],
+      time: ["08:34", "08:11", "08:29", "07:58"][metricIndex],
       event: "Вход",
       objectOffset: 2,
       details: "Вход на объект зафиксирован NFC-меткой",
@@ -629,7 +680,7 @@ function getContractorProfile(contractor: string): ContractorProfile {
     },
     {
       date: "26 июля",
-      time: ["17:16", "17:42", "18:06", "17:27"][contractorIndex],
+      time: ["17:16", "17:42", "18:06", "17:27"][metricIndex],
       event: "Отчёт",
       objectOffset: 1,
       details: "Сменный отчёт о ходе работ заполнен и отправлен",
@@ -2721,37 +2772,38 @@ function ObjectDetailPage({
     };
   }, [object.name, onStickyTitleChange]);
   return (
-    <section className="object-detail-page px-10 py-8">
-      <div className="object-detail-intro mb-7 flex items-start justify-between">
-        <div>
-          <p className="mb-1 text-[13.5px] text-[#7b8ba3]">
-            <button
-              onClick={goObjects}
-              className="hover:text-[#2563eb] hover:underline"
-            >
-              Объекты
-            </button>
-            <span className="px-1.5">/</span>
-            {object.name}
-          </p>
-          <h1 ref={titleRef} className="text-[34px] font-bold tracking-[-.025em]">
-            {object.name}
-          </h1>
-          <p className="mt-2 flex items-center gap-1.5 text-[16px] text-[#71819b]">
-            <MapPin size={15} />
-            {object.address}
-            <span className="px-1 text-[#b2bdcb]">·</span>
-            {object.code}
-          </p>
-        </div>
+    <section className="object-detail-page">
+      <nav className="object-breadcrumb" aria-label="Хлебные крошки">
+        <button type="button" onClick={goObjects}>
+          Объекты
+        </button>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{object.name}</span>
+      </nav>
+
+      <div className="object-overview-panel">
+        <header className="object-detail-intro">
+          <h1 ref={titleRef}>{object.name}</h1>
+          <div className="object-detail-meta">
+            <span className="object-address">
+              <MapPin size={16} aria-hidden="true" />
+              {object.address}
+            </span>
+            <span className="object-code">{object.code}</span>
+          </div>
+        </header>
+        <ObjectContacts object={object} />
       </div>
-      <ObjectContacts object={object} />
-      <ObjectContractors
-        object={object}
-        profile={profile}
-        openContractor={openContractor}
-      />
-      <ObjectAnalytics object={object} profile={profile} />
+
+      <div className="object-detail-primary">
+        <ObjectContractors
+          object={object}
+          profile={profile}
+          openContractor={openContractor}
+        />
+        <ObjectAnalytics object={object} profile={profile} />
+      </div>
+
       <ObjectPresence
         object={object}
         contractors={profile.contractors}
@@ -2768,28 +2820,34 @@ function ObjectContacts({ object }: { object: ObjectItem }) {
     <section className="object-contacts-card">
       <div className="object-contacts-heading">
         <span className="object-contact-icon">
-          <Contact size={18} />
+          <Contact size={18} aria-hidden="true" />
         </span>
         <div>
           <h2>Контакты объекта</h2>
+          <span className="object-access-label">
+            <ShieldCheck size={12} aria-hidden="true" />
+            Порядок доступа
+          </span>
           <p>{object.access || details?.access || "Уточните порядок доступа у управляющего"}</p>
         </div>
       </div>
       <div className="object-contact-list">
         {contacts.map((contact) => (
           <article key={`${object.code}-${contact.phone}`}>
-            <div>
+            <span className="object-contact-avatar" aria-hidden="true">
+              {contact.name
+                .split(/\s+/)
+                .map((part) => part[0])
+                .join("")
+                .slice(0, 2)}
+            </span>
+            <div className="object-contact-person">
               <strong>{contact.name}</strong>
               <span>{contact.role}</span>
             </div>
             <div className="contact-actions">
-              {contact.email && (
-                <a href={`mailto:${contact.email}`} aria-label={`Написать ${contact.name}`}>
-                  <Mail size={15} />
-                </a>
-              )}
               <a className="call-link" href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`}>
-                <Phone size={15} />
+                <Phone size={15} aria-hidden="true" />
                 {contact.phone}
               </a>
             </div>
@@ -3002,8 +3060,10 @@ function ObjectAnalytics({
         <div className="chart-series-picker" role="group" aria-label="Подрядчик на графике">
           {["Все подрядчики", ...profile.contractors].map((contractor, index) => (
             <button
+              type="button"
               key={contractor}
               className={selectedContractor === contractor ? "is-active" : ""}
+              aria-pressed={selectedContractor === contractor}
               onClick={() => setSelectedContractor(contractor)}
             >
               {index > 0 && (
@@ -3086,9 +3146,23 @@ function ObjectContractors({
     <section className="object-contractors-card">
       <div className="object-contractors-heading">
         <div>
-          <h2>Подрядчики и ответственные</h2>
+          <span className="object-section-eyebrow">
+            <Building2 size={13} aria-hidden="true" />
+            Реестр объекта
+          </span>
+          <h2>Подрядчики</h2>
         </div>
-        <strong>{profile.contractors.length}</strong>
+        <strong aria-label={`Подрядчиков: ${profile.contractors.length}`}>
+          {profile.contractors.length}
+        </strong>
+      </div>
+      <div className="object-contractor-columns" aria-hidden="true">
+        <span />
+        <span>Подрядчик</span>
+        <span>На объекте</span>
+        <span>Ответственный</span>
+        <span>Контакт</span>
+        <span />
       </div>
       <div className="object-contractor-grid">
         {profile.contractors.map((contractor) => {
@@ -3100,54 +3174,72 @@ function ObjectContractors({
               record.object === object.name &&
               record.contractor === contractor,
           ).length;
+          const presenceLabel = onSiteCount
+            ? `${onSiteCount} ${pluralizeRu(onSiteCount, "работник", "работника", "работников")} на месте`
+            : "Сейчас работников нет";
           return (
             <article
               key={contractor}
-              role="button"
-              tabIndex={0}
-              aria-label={`Открыть подрядчика ${contractor}`}
-              onClick={() => openContractor(contractor)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  openContractor(contractor);
-                }
-              }}
               className="object-contractor-card"
             >
+              <button
+                type="button"
+                className="object-contractor-target"
+                aria-label={`Открыть подрядчика ${contractor}`}
+                onClick={() => openContractor(contractor)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openContractor(contractor);
+                  }
+                }}
+              />
               <span className="object-contractor-icon">
-                <Building2 size={18} />
+                <Building2 size={18} aria-hidden="true" />
               </span>
               <span className="object-contractor-copy min-w-0 flex-1">
                 <strong>{contractor}</strong>
                 <small className="object-contractor-service">{details.description}</small>
-                <small className="object-contractor-presence">
-                  {onSiteCount
-                    ? `${onSiteCount} ${pluralizeRu(onSiteCount, "работник", "работника", "работников")} на месте`
-                    : "Сейчас работников нет"}
-                </small>
-                {responsible ? (
-                  <span className="object-responsible">
-                    <span>
-                      <b>{responsible.name}</b>
-                      <small>{responsible.role}</small>
-                    </span>
-                    <a
-                      href={`tel:${responsible.phone.replace(/[^+\d]/g, "")}`}
-                      onClick={(event) => event.stopPropagation()}
-                      aria-label={`Позвонить ${responsible.name}`}
-                    >
-                      <Phone size={14} />
-                      {responsible.phone}
-                    </a>
+              </span>
+              <span
+                className={`object-contractor-presence${onSiteCount ? " is-present" : ""}`}
+                aria-label={`На объекте: ${presenceLabel}`}
+              >
+                <Users size={13} aria-hidden="true" />
+                <strong>{onSiteCount}</strong>
+              </span>
+              {responsible ? (
+                <>
+                  <span
+                    className="object-contractor-owner"
+                    aria-label={`Ответственный: ${responsible.name}, ${responsible.role}`}
+                  >
+                    <b>{responsible.name}</b>
+                    <small>{responsible.role}</small>
                   </span>
-                ) : (
-                  <span className="object-responsible is-empty">
+                  <a
+                    className="object-contractor-phone"
+                    href={`tel:${responsible.phone.replace(/[^+\d]/g, "")}`}
+                    aria-label={`Позвонить ${responsible.name}`}
+                  >
+                    <Phone size={14} aria-hidden="true" />
+                    {responsible.phone}
+                  </a>
+                </>
+              ) : (
+                <>
+                  <span
+                    className="object-contractor-owner is-empty"
+                    aria-label="Ответственный не назначен"
+                  >
                     Ответственный не назначен
                   </span>
-                )}
+                  <span className="object-contractor-phone is-empty" aria-hidden="true">—</span>
+                </>
+              )}
+              <span className="object-contractor-open" aria-hidden="true">
+                <ChevronDown size={17} />
               </span>
-              <ChevronDown size={17} className="-rotate-90" />
             </article>
           );
         })}

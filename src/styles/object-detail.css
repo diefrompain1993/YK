@@ -1,0 +1,2737 @@
+/*
+ * Object detail is intentionally isolated from the legacy dashboard overrides.
+ * The screen keeps the existing product tokens, data and interactions, while
+ * using a denser comparison-first layout.
+ */
+
+.object-detail-page {
+  container-type: inline-size;
+  display: flex;
+  width: 100%;
+  max-width: 1600px;
+  flex-direction: column;
+  gap: 12px;
+  margin-inline: auto;
+  padding: 20px clamp(20px, 2.3vw, 38px) 32px !important;
+}
+
+.object-detail-page .object-breadcrumb {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  color: #7b8ca4;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.object-detail-page .object-breadcrumb button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #567094;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.object-detail-page .object-breadcrumb button:hover {
+  color: #245ecc;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.object-detail-page .object-breadcrumb button:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid rgba(37, 99, 235, 0.4);
+  outline-offset: 3px;
+}
+
+.object-detail-page .object-breadcrumb > span:last-child {
+  overflow: hidden;
+  color: #8796aa;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.object-detail-page .object-overview-panel {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.86fr) minmax(560px, 1.14fr);
+  overflow: hidden;
+  border: 1px solid rgba(214, 225, 238, 0.96);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 1px 2px rgba(23, 39, 70, 0.025), 0 10px 28px rgba(23, 39, 70, 0.045);
+}
+
+.object-detail-page .object-detail-intro {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 22px;
+  background:
+    radial-gradient(circle at 0 0, rgba(50, 111, 235, 0.08), transparent 15rem),
+    linear-gradient(135deg, #f8fbff 0%, #ffffff 78%);
+}
+
+.object-detail-page .object-detail-intro h1 {
+  max-width: 760px;
+  margin: 0;
+  color: #15233b;
+  font-size: clamp(26px, 2vw, 31px) !important;
+  font-weight: 690 !important;
+  line-height: 1.14 !important;
+  letter-spacing: -0.035em !important;
+  text-wrap: balance;
+}
+
+.object-detail-page .object-detail-meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+.object-detail-page .object-address {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 7px;
+  color: #647993;
+  font-size: 13.5px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.object-detail-page .object-address svg {
+  flex: 0 0 auto;
+  color: #7290b5;
+}
+
+.object-detail-page .object-code {
+  display: inline-flex;
+  min-height: 25px;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid #d8e5f4;
+  border-radius: 7px;
+  background: #f4f8fd;
+  color: #4c6688;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.object-detail-page .object-contacts-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  margin: 0;
+  overflow: visible;
+  border: 0;
+  border-left: 1px solid #e4ebf3;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+}
+
+.object-detail-page .object-contacts-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid #e8edf4;
+  background: #fbfdff;
+}
+
+.object-detail-page .object-contact-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: #eaf3ff;
+  color: #2864eb;
+}
+
+.object-detail-page .object-contacts-heading > div {
+  min-width: 0;
+}
+
+.object-detail-page .object-contacts-heading h2 {
+  margin: 0;
+  color: #1f324d;
+  font-size: 15px !important;
+  font-weight: 680 !important;
+  line-height: 1.3 !important;
+}
+
+.object-detail-page .object-contacts-heading p {
+  margin: 2px 0 0;
+  color: #70829a;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  overflow-wrap: anywhere;
+}
+
+.object-detail-page .object-contact-list {
+  display: grid;
+  min-height: 64px;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.object-detail-page .object-contact-list article {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.object-detail-page .object-contact-list article + article {
+  border-left: 1px solid #e8edf4;
+}
+
+.object-detail-page .object-contact-list article:only-child {
+  grid-column: 1 / -1;
+}
+
+.object-detail-page .object-contact-person {
+  min-width: 0;
+}
+
+.object-detail-page .object-contact-list strong,
+.object-detail-page .object-contact-list span {
+  display: block;
+}
+
+.object-detail-page .object-contact-list strong {
+  color: #253955;
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.object-detail-page .object-contact-list .object-contact-person > span {
+  margin-top: 2px;
+  color: #74869e;
+  font-size: 11.5px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.object-detail-page .contact-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.object-detail-page .contact-actions > a,
+.object-detail-page .contact-actions .call-link {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid #d0e0f3;
+  border-radius: 9px;
+  background: #f8fbff;
+  color: #245ecc;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.object-detail-page .contact-actions > a:first-child:not(.call-link) {
+  width: 36px;
+  padding: 0;
+}
+
+.object-detail-page .contact-actions > a:hover,
+.object-detail-page .contact-actions .call-link:hover {
+  border-color: #a9c6ef;
+  background: #edf5ff;
+}
+
+.object-detail-page .contact-actions > a:focus-visible,
+.object-detail-page .contact-actions .call-link:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.38);
+  outline-offset: 2px;
+}
+
+.object-detail-page .object-detail-primary {
+  display: grid;
+  grid-template-columns: minmax(690px, 1.22fr) minmax(390px, 0.78fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.object-detail-page .object-contractors-card,
+.object-detail-page .contractor-chart-card,
+.object-detail-page .object-presence-card {
+  overflow: hidden;
+  border: 1px solid rgba(214, 225, 238, 0.96);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 1px 2px rgba(23, 39, 70, 0.025), 0 8px 24px rgba(23, 39, 70, 0.04);
+}
+
+.object-detail-page .object-contractors-card {
+  min-width: 0;
+  margin: 0;
+}
+
+.object-detail-page .object-contractors-heading {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e7edf4;
+}
+
+.object-detail-page .object-contractors-heading h2 {
+  margin: 0;
+  color: #1c2d47;
+  font-size: 16px !important;
+  font-weight: 680 !important;
+  line-height: 1.35 !important;
+}
+
+.object-detail-page .object-contractors-heading > strong {
+  display: grid;
+  width: auto;
+  min-width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding-inline: 7px;
+  border-radius: 8px;
+  background: #edf4ff;
+  color: #2864eb;
+  font-size: 12.5px;
+  font-weight: 750;
+}
+
+.object-detail-page .object-contractor-columns,
+.object-detail-page .object-contractor-card {
+  display: grid;
+  grid-template-columns:
+    38px minmax(180px, 1.45fr) minmax(96px, 0.6fr)
+    minmax(132px, 0.82fr) minmax(128px, auto) 18px;
+  gap: 10px;
+}
+
+.object-detail-page .object-contractor-columns {
+  align-items: center;
+  min-height: 28px;
+  padding: 0 14px;
+  border-bottom: 1px solid #edf1f6;
+  background: #fbfcfe;
+  color: #8998ac;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.object-detail-page .object-contractor-grid {
+  display: block;
+  padding: 0;
+}
+
+.object-detail-page .object-contractor-card {
+  position: relative;
+  min-width: 0;
+  min-height: 82px;
+  align-items: center;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  color: #667b98;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.object-detail-page .object-contractor-card + .object-contractor-card {
+  border-top: 1px solid #e9eef4;
+}
+
+.object-detail-page .object-contractor-card:hover {
+  border-color: transparent;
+  background: #f7faff;
+  box-shadow: inset 3px 0 0 #5d8ded;
+  transform: none;
+}
+
+.object-detail-page .object-contractor-target {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.object-detail-page .object-contractor-target:active {
+  transform: none;
+}
+
+.object-detail-page .object-contractor-target:focus-visible {
+  border-color: transparent;
+  outline: 2px solid #7da8f0;
+  outline-offset: -2px;
+}
+
+.object-detail-page .object-contractor-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  border-radius: 10px;
+  background: #eaf3ff;
+  color: #2864eb;
+}
+
+.object-detail-page .object-contractor-copy {
+  min-width: 0;
+}
+
+.object-detail-page .object-contractor-copy > strong {
+  display: block;
+  color: #223752;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.object-detail-page .object-contractor-service {
+  display: block !important;
+  min-height: 0;
+  margin-top: 3px !important;
+  overflow: visible;
+  color: #657992 !important;
+  font-size: 11.5px !important;
+  line-height: 1.35 !important;
+  -webkit-line-clamp: unset;
+}
+
+.object-detail-page .object-contractor-presence {
+  display: inline-flex;
+  width: fit-content;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  margin: 0 !important;
+  padding: 5px 7px;
+  border-radius: 7px;
+  background: #f1f4f8;
+  color: #687b92 !important;
+  font-size: 11px !important;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.object-detail-page .object-contractor-presence.is-present {
+  background: #eaf8f3;
+  color: #157b5e !important;
+}
+
+.object-detail-page .object-contractor-presence svg {
+  flex: 0 0 auto;
+}
+
+.object-detail-page .object-contractor-owner {
+  display: block;
+  min-width: 0;
+}
+
+.object-detail-page .object-contractor-owner b,
+.object-detail-page .object-contractor-owner small {
+  display: block;
+}
+
+.object-detail-page .object-contractor-owner b {
+  color: #2b405d;
+  font-size: 12px;
+  font-weight: 680;
+  line-height: 1.35;
+}
+
+.object-detail-page .object-contractor-owner small {
+  margin-top: 2px !important;
+  color: #7c8da2;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.object-detail-page .object-contractor-owner.is-empty {
+  color: #8493a7;
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.object-detail-page .object-contractor-phone {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: #edf5ff;
+  color: #245ecc;
+  font-size: 11.5px;
+  font-weight: 720;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.object-detail-page .object-contractor-phone:hover {
+  background: #dfeeff;
+  color: #174db8;
+}
+
+.object-detail-page .object-contractor-phone:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.42);
+  outline-offset: 2px;
+}
+
+.object-detail-page .object-contractor-phone.is-empty {
+  background: transparent;
+  color: #9aa7b8;
+}
+
+.object-detail-page .object-contractor-open {
+  display: grid;
+  width: 18px;
+  height: 32px;
+  place-items: center;
+  color: #7990ad;
+}
+
+.object-detail-page .object-contractor-open svg {
+  transform: rotate(-90deg);
+  transition: transform 150ms ease;
+}
+
+.object-detail-page .object-contractor-card:hover .object-contractor-open svg {
+  transform: translateX(2px) rotate(-90deg);
+}
+
+.object-detail-page .object-traffic-section {
+  min-width: 0;
+  margin: 0;
+}
+
+.object-detail-page .object-multiline-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.object-detail-page .analytics-heading {
+  min-height: 52px;
+  padding: 9px 14px 7px;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.object-detail-page .analytics-heading > div:first-child > span {
+  margin-bottom: 2px;
+  color: #6f829b;
+  font-size: 10.5px !important;
+  letter-spacing: 0.065em !important;
+}
+
+.object-detail-page .analytics-heading h2 {
+  font-size: 16px !important;
+  line-height: 1.3 !important;
+}
+
+.object-detail-page .chart-series-picker {
+  gap: 5px;
+  padding: 8px 12px 6px;
+  scrollbar-width: none;
+}
+
+.object-detail-page .chart-series-picker::-webkit-scrollbar {
+  display: none;
+}
+
+.object-detail-page .chart-series-picker button {
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+.object-detail-page .object-multiline-card .contractor-chart {
+  height: 218px;
+  flex: none;
+  padding: 4px 8px 10px 2px;
+}
+
+.object-detail-page .object-presence-card {
+  margin: 0;
+}
+
+.object-detail-page .object-presence-heading {
+  min-height: 58px;
+  padding: 10px 14px;
+}
+
+.object-detail-page .object-presence-heading > div:first-child > span {
+  font-size: 10.5px;
+}
+
+.object-detail-page .object-presence-heading h2 {
+  margin-top: 2px;
+  font-size: 16px !important;
+  line-height: 1.3 !important;
+}
+
+.object-detail-page .object-presence-tabs > button {
+  min-height: 32px;
+  padding-inline: 12px;
+  font-size: 12px;
+}
+
+.object-detail-page .object-presence-card .responsive-table th,
+.object-detail-page .object-presence-card .responsive-table td {
+  padding: 9px 14px;
+}
+
+.object-detail-page .object-presence-card .data-pagination {
+  min-height: 44px;
+  padding-block: 5px;
+}
+
+@container (max-width: 1120px) {
+  .object-detail-page .object-detail-primary {
+    grid-template-columns: 1fr;
+  }
+
+  .object-detail-page .object-overview-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .object-detail-page .object-contacts-card {
+    border-top: 1px solid #e4ebf3;
+    border-left: 0;
+  }
+
+  .object-detail-page .object-multiline-card .contractor-chart {
+    height: 210px;
+    flex: none;
+  }
+}
+
+@container (max-width: 760px) {
+  .object-detail-page .object-contractor-columns {
+    display: none;
+  }
+
+  .object-detail-page .object-contractor-card {
+    grid-template-columns: 36px minmax(0, 1fr) 18px;
+    grid-template-areas:
+      "icon company open"
+      ". presence presence"
+      ". owner owner"
+      ". phone phone";
+    align-items: start;
+    gap: 7px 10px;
+    padding-block: 13px;
+  }
+
+  .object-detail-page .object-contractor-icon {
+    grid-area: icon;
+  }
+
+  .object-detail-page .object-contractor-copy {
+    grid-area: company;
+  }
+
+  .object-detail-page .object-contractor-presence {
+    grid-area: presence;
+  }
+
+  .object-detail-page .object-contractor-owner {
+    grid-area: owner;
+  }
+
+  .object-detail-page .object-contractor-phone {
+    width: fit-content;
+    grid-area: phone;
+  }
+
+  .object-detail-page .object-contractor-open {
+    grid-area: open;
+  }
+}
+
+@container (max-width: 620px) {
+  .object-detail-page .object-contact-list {
+    grid-template-columns: 1fr;
+  }
+
+  .object-detail-page .object-contact-list article + article {
+    border-top: 1px solid #e8edf4;
+    border-left: 0;
+  }
+
+  .object-detail-page .object-presence-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 700px) {
+  .object-detail-page {
+    gap: 10px;
+    padding: 14px 11px 26px !important;
+  }
+
+  .object-detail-page .object-overview-panel,
+  .object-detail-page .object-contractors-card,
+  .object-detail-page .contractor-chart-card,
+  .object-detail-page .object-presence-card {
+    border-radius: 13px;
+  }
+
+  .object-detail-page .object-detail-intro {
+    padding: 17px 15px;
+  }
+
+  .object-detail-page .object-detail-intro h1 {
+    font-size: clamp(24px, 7.2vw, 29px) !important;
+  }
+
+  .object-detail-page .object-detail-meta {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .object-detail-page .object-address {
+    align-items: flex-start;
+  }
+
+  .object-detail-page .object-contact-list article {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .object-detail-page .contact-actions {
+    width: 100%;
+  }
+
+  .object-detail-page .contact-actions .call-link {
+    flex: 1;
+  }
+
+  .object-detail-page .object-presence-tabs {
+    width: 100%;
+  }
+
+  .object-detail-page .object-presence-tabs > button {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .object-detail-page .object-contractor-open svg,
+  .object-detail-page .object-contractor-card,
+  .object-detail-page .contact-actions > a {
+    transition: none;
+  }
+}
+
+/* Additive desktop-only content stays out of the existing mobile composition. */
+.object-detail-page .object-hero-kicker,
+.object-detail-page .object-hero-metrics,
+.object-detail-page .object-access-label,
+.object-detail-page .object-contact-avatar,
+.object-detail-page .object-section-eyebrow {
+  display: none;
+}
+
+/*
+ * Desktop concept: an operational object dossier.
+ * Everything below is intentionally gated so the existing <= 1100px layout
+ * remains untouched while the large-screen experience gets a full redesign.
+ */
+@media (min-width: 1101px) {
+  .object-detail-page {
+    --object-ink: #0c1b34;
+    --object-ink-soft: #142a4d;
+    --object-blue: #3f73f1;
+    --object-blue-bright: #71a4ff;
+    --object-mint: #3dd6bd;
+    --object-canvas: #f1f5f9;
+    --object-line: #dce5ef;
+    --object-text: #17243a;
+    --object-muted: #6c7e95;
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    max-width: none;
+    gap: 18px;
+    margin: 0;
+    padding: 24px clamp(26px, 2.35vw, 46px) 46px !important;
+    background-color: var(--object-canvas);
+    background-image:
+      linear-gradient(rgba(41, 68, 105, 0.026) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(41, 68, 105, 0.026) 1px, transparent 1px),
+      radial-gradient(circle at 83% 5%, rgba(64, 115, 241, 0.08), transparent 28rem);
+    background-size: 28px 28px, 28px 28px, auto;
+    color: var(--object-text);
+    font-family: "Manrope Variable", Manrope, Inter, sans-serif;
+    font-feature-settings: "ss01" 1, "ss02" 1, "tnum" 1;
+  }
+
+  .object-detail-page .object-breadcrumb {
+    width: fit-content;
+    min-height: 30px;
+    gap: 8px;
+    padding: 0 11px;
+    border: 1px solid rgba(207, 218, 230, 0.88);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 4px 14px rgba(24, 42, 70, 0.035);
+    color: #8998aa;
+    font-size: 11.5px;
+    backdrop-filter: blur(10px);
+  }
+
+  .object-detail-page .object-breadcrumb button {
+    color: #45617f;
+    font-weight: 720;
+  }
+
+  .object-detail-page .object-breadcrumb button:hover {
+    color: #245fe3;
+  }
+
+  .object-detail-page .object-overview-panel {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: minmax(500px, 0.9fr) minmax(620px, 1.1fr);
+    min-height: 292px;
+    overflow: hidden;
+    border: 1px solid rgba(41, 72, 120, 0.82);
+    border-radius: 26px;
+    background:
+      radial-gradient(circle at 18% 22%, rgba(77, 129, 255, 0.34), transparent 25rem),
+      linear-gradient(132deg, #0a1730 0%, #10284c 56%, #0d203e 100%);
+    box-shadow:
+      0 24px 50px rgba(16, 33, 62, 0.16),
+      0 3px 8px rgba(16, 33, 62, 0.08);
+  }
+
+  .object-detail-page .object-overview-panel::before {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background-image:
+      radial-gradient(circle, rgba(255, 255, 255, 0.12) 1px, transparent 1.2px),
+      linear-gradient(118deg, transparent 0 59%, rgba(113, 164, 255, 0.08) 59.2% 59.4%, transparent 59.6%);
+    background-size: 22px 22px, auto;
+    content: "";
+    mask-image: linear-gradient(90deg, #000, transparent 70%);
+    pointer-events: none;
+  }
+
+  .object-detail-page .object-overview-panel::after {
+    position: absolute;
+    z-index: -1;
+    top: -132px;
+    left: 39%;
+    width: 340px;
+    height: 340px;
+    border: 1px solid rgba(113, 164, 255, 0.16);
+    border-radius: 50%;
+    box-shadow: 0 0 0 54px rgba(113, 164, 255, 0.035);
+    content: "";
+    pointer-events: none;
+  }
+
+  .object-detail-page .object-detail-intro {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-height: 290px;
+    justify-content: flex-start;
+    padding: 30px 38px 27px;
+    background: transparent;
+  }
+
+  .object-detail-page .object-hero-kicker {
+    display: flex;
+    min-height: 30px;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 20px;
+    color: #b7cae8;
+    font-size: 10.5px;
+    font-weight: 730;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .object-detail-page .object-hero-mark {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border: 1px solid rgba(129, 174, 255, 0.34);
+    border-radius: 9px;
+    background: rgba(77, 128, 243, 0.18);
+    color: #8eb8ff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .object-detail-page .object-status-chip {
+    display: inline-flex;
+    min-height: 27px;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+    padding: 0 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.075);
+    color: #dce9fb;
+    font-size: 10px;
+    font-weight: 730;
+    letter-spacing: 0.055em;
+  }
+
+  .object-detail-page .object-status-chip i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #92a1b5;
+    box-shadow: 0 0 0 4px rgba(146, 161, 181, 0.12);
+  }
+
+  .object-detail-page .object-status-chip--active i {
+    background: #43ddbc;
+    box-shadow: 0 0 0 4px rgba(67, 221, 188, 0.14), 0 0 16px rgba(67, 221, 188, 0.5);
+  }
+
+  .object-detail-page .object-detail-intro h1 {
+    max-width: 720px;
+    color: #ffffff;
+    font-size: clamp(33px, 2.35vw, 42px) !important;
+    font-weight: 665 !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.046em !important;
+    text-shadow: 0 2px 20px rgba(3, 11, 27, 0.2);
+  }
+
+  .object-detail-page .object-detail-meta {
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .object-detail-page .object-address {
+    color: #afc2de;
+    font-size: 13px;
+    font-weight: 510;
+  }
+
+  .object-detail-page .object-address svg {
+    color: #75a5ff;
+  }
+
+  .object-detail-page .object-code {
+    min-height: 27px;
+    padding: 0 9px;
+    border-color: rgba(129, 174, 255, 0.26);
+    border-radius: 7px;
+    background: rgba(99, 149, 245, 0.1);
+    color: #bcd3fb;
+    font-size: 10.5px;
+    font-weight: 680;
+    letter-spacing: 0.055em;
+  }
+
+  .object-detail-page .object-hero-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin-top: auto;
+    padding-top: 24px;
+  }
+
+  .object-detail-page .object-hero-metrics > div {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
+    padding-right: 15px;
+  }
+
+  .object-detail-page .object-hero-metrics > div + div {
+    padding-left: 15px;
+    border-left: 1px solid rgba(186, 208, 239, 0.17);
+  }
+
+  .object-detail-page .object-metric-icon {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    place-items: center;
+    border: 1px solid rgba(142, 184, 255, 0.17);
+    border-radius: 10px;
+    background: rgba(86, 138, 244, 0.12);
+    color: #83afff;
+  }
+
+  .object-detail-page .object-hero-metrics > div > span:last-child {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .object-detail-page .object-hero-metrics small {
+    overflow: hidden;
+    color: #8fa7c9;
+    font-size: 9.5px;
+    font-weight: 660;
+    letter-spacing: 0.035em;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .object-detail-page .object-hero-metrics strong {
+    margin-top: 3px;
+    color: #f4f8ff;
+    font-size: 18px;
+    font-weight: 690;
+    line-height: 1;
+  }
+
+  .object-detail-page .object-contacts-card {
+    align-self: stretch;
+    margin: 13px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.68);
+    border-radius: 19px;
+    background:
+      radial-gradient(circle at 100% 0, rgba(76, 125, 235, 0.08), transparent 16rem),
+      rgba(250, 252, 255, 0.97);
+    box-shadow:
+      0 20px 40px rgba(4, 17, 39, 0.2),
+      inset 0 1px 0 #fff;
+    backdrop-filter: blur(18px);
+  }
+
+  .object-detail-page .object-contacts-heading {
+    align-items: flex-start;
+    gap: 12px;
+    padding: 19px 20px 15px;
+    border: 0;
+    border-bottom: 1px solid #e4ebf3;
+    background: transparent;
+  }
+
+  .object-detail-page .object-contact-icon {
+    width: 39px;
+    height: 39px;
+    flex-basis: 39px;
+    border: 1px solid #ccddfb;
+    border-radius: 12px;
+    background: linear-gradient(145deg, #edf4ff, #dfeaff);
+    color: #3269e9;
+    box-shadow: 0 6px 14px rgba(48, 104, 229, 0.12);
+  }
+
+  .object-detail-page .object-contacts-heading h2 {
+    color: #14243d;
+    font-size: 15.5px !important;
+    font-weight: 720 !important;
+    letter-spacing: -0.018em;
+  }
+
+  .object-detail-page .object-access-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 7px;
+    color: #3e6bbd;
+    font-size: 9px;
+    font-weight: 740;
+    letter-spacing: 0.09em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .object-detail-page .object-contacts-heading p {
+    margin-top: 5px;
+    color: #697c94;
+    font-size: 11.5px !important;
+    font-weight: 520;
+    line-height: 1.45 !important;
+  }
+
+  .object-detail-page .object-contact-list {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  .object-detail-page .object-contact-list article {
+    display: grid;
+    min-height: 82px;
+    flex: 1 1 0;
+    grid-template-columns: 39px minmax(118px, 1fr) auto;
+    gap: 11px;
+    padding: 13px 18px;
+    transition: background-color 150ms ease;
+  }
+
+  .object-detail-page .object-contact-list article:hover {
+    background: rgba(238, 244, 253, 0.72);
+  }
+
+  .object-detail-page .object-contact-list article + article {
+    border-top: 1px solid #e5ebf2;
+    border-left: 0;
+  }
+
+  .object-detail-page .object-contact-avatar {
+    display: grid;
+    width: 39px;
+    height: 39px;
+    place-items: center;
+    border: 1px solid #d8e4f3;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #f6f9fd, #e8eef7);
+    color: #48627f;
+    font-size: 10.5px;
+    font-weight: 780;
+    letter-spacing: 0.025em;
+    box-shadow: inset 0 1px 0 #fff;
+  }
+
+  .object-detail-page .object-contact-person {
+    align-self: center;
+  }
+
+  .object-detail-page .object-contact-list strong {
+    color: #182a44;
+    font-size: 12.5px;
+    font-weight: 720;
+  }
+
+  .object-detail-page .object-contact-list .object-contact-person > span {
+    color: #75869c;
+    font-size: 10.5px;
+    font-weight: 520;
+  }
+
+  .object-detail-page .contact-actions {
+    align-self: center;
+    gap: 7px;
+  }
+
+  .object-detail-page .contact-actions > a,
+  .object-detail-page .contact-actions .call-link {
+    min-height: 34px;
+    padding: 0 10px;
+    border-color: #d6e2f2;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #285fda;
+    font-size: 10.5px;
+    font-weight: 740;
+    box-shadow: 0 3px 8px rgba(23, 48, 82, 0.045);
+  }
+
+  .object-detail-page .contact-actions > a:first-child:not(.call-link) {
+    width: 34px;
+  }
+
+  .object-detail-page .contact-actions > a:hover,
+  .object-detail-page .contact-actions .call-link:hover {
+    border-color: #92b3f3;
+    background: #edf4ff;
+    box-shadow: 0 5px 12px rgba(42, 93, 204, 0.1);
+  }
+
+  .object-detail-page .object-detail-primary {
+    grid-template-columns: minmax(720px, 1.35fr) minmax(420px, 0.65fr);
+    align-items: start;
+    gap: 18px;
+  }
+
+  .object-detail-page .object-contractors-card,
+  .object-detail-page .contractor-chart-card,
+  .object-detail-page .object-presence-card {
+    border: 1px solid rgba(208, 220, 233, 0.95);
+    border-radius: 22px;
+    box-shadow:
+      0 14px 34px rgba(25, 43, 70, 0.065),
+      0 2px 5px rgba(25, 43, 70, 0.035);
+  }
+
+  .object-detail-page .object-contractors-card {
+    background: rgba(255, 255, 255, 0.97);
+  }
+
+  .object-detail-page .object-contractors-heading {
+    min-height: 72px;
+    padding: 13px 20px 12px;
+    border-bottom-color: #dfe7f0;
+    background:
+      radial-gradient(circle at 8% 0, rgba(69, 119, 242, 0.08), transparent 13rem),
+      #ffffff;
+  }
+
+  .object-detail-page .object-section-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    color: #4773c5;
+    font-size: 9px;
+    font-weight: 760;
+    letter-spacing: 0.105em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .object-detail-page .object-contractors-heading h2 {
+    color: #15253d;
+    font-size: 17px !important;
+    font-weight: 720 !important;
+    letter-spacing: -0.023em;
+  }
+
+  .object-detail-page .object-contractors-heading > strong {
+    min-width: 34px;
+    height: 34px;
+    padding-inline: 9px;
+    border: 1px solid #d5e2f8;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #edf4ff, #e3edff);
+    color: #2e66e7;
+    font-size: 13px;
+    font-weight: 780;
+    box-shadow: inset 0 1px 0 #fff;
+  }
+
+  .object-detail-page .object-contractor-columns,
+  .object-detail-page .object-contractor-card {
+    grid-template-columns:
+      42px minmax(205px, 1.45fr) minmax(112px, 0.62fr)
+      minmax(150px, 0.82fr) minmax(130px, auto) 20px;
+    gap: 12px;
+  }
+
+  .object-detail-page .object-contractor-columns {
+    min-height: 34px;
+    padding: 0 20px;
+    border-bottom-color: #e4eaf1;
+    background: #f2f5f9;
+    color: #7b8aa0;
+    font-size: 9px;
+    font-weight: 770;
+    letter-spacing: 0.085em;
+  }
+
+  .object-detail-page .object-contractor-card {
+    min-height: 92px;
+    padding: 13px 20px;
+    background: rgba(255, 255, 255, 0.97);
+  }
+
+  .object-detail-page .object-contractor-card + .object-contractor-card {
+    border-top-color: #e6ecf2;
+  }
+
+  .object-detail-page .object-contractor-card:hover {
+    background:
+      linear-gradient(90deg, rgba(63, 115, 241, 0.08), transparent 28%),
+      #f9fbfe;
+    box-shadow: inset 4px 0 0 #4e7ef1;
+  }
+
+  .object-detail-page .object-contractor-target:focus-visible {
+    outline: 2px solid #3f73f1;
+    outline-offset: -3px;
+  }
+
+  .object-detail-page .object-contractor-icon {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(126, 166, 247, 0.34);
+    border-radius: 12px;
+    background: linear-gradient(145deg, #e9f1ff, #dce8ff);
+    color: #356be8;
+    box-shadow: 0 7px 14px rgba(48, 101, 218, 0.1), inset 0 1px 0 #fff;
+  }
+
+  .object-detail-page .object-contractor-card:nth-child(3n + 2) .object-contractor-icon {
+    border-color: rgba(145, 119, 226, 0.3);
+    background: linear-gradient(145deg, #f0edff, #e6e0ff);
+    color: #7157ce;
+    box-shadow: 0 7px 14px rgba(102, 74, 190, 0.09), inset 0 1px 0 #fff;
+  }
+
+  .object-detail-page .object-contractor-card:nth-child(3n) .object-contractor-icon {
+    border-color: rgba(53, 177, 151, 0.28);
+    background: linear-gradient(145deg, #e9faf5, #d9f3eb);
+    color: #168e73;
+    box-shadow: 0 7px 14px rgba(29, 137, 113, 0.09), inset 0 1px 0 #fff;
+  }
+
+  .object-detail-page .object-contractor-copy > strong {
+    color: #172b46;
+    font-size: 12.5px;
+    font-weight: 740;
+    letter-spacing: -0.012em;
+  }
+
+  .object-detail-page .object-contractor-service {
+    margin-top: 4px !important;
+    color: #708198 !important;
+    font-size: 10.5px !important;
+    font-weight: 500;
+    line-height: 1.4 !important;
+  }
+
+  .object-detail-page .object-contractor-presence {
+    min-height: 28px;
+    gap: 6px;
+    padding: 5px 8px;
+    border: 1px solid #e0e6ed;
+    border-radius: 999px;
+    background: #f2f4f7;
+    color: #69788d !important;
+    font-size: 9.5px !important;
+    font-weight: 690;
+  }
+
+  .object-detail-page .object-contractor-presence.is-present {
+    border-color: #c7eadf;
+    background: #e9f8f3;
+    color: #14785f !important;
+  }
+
+  .object-detail-page .object-contractor-owner b {
+    color: #263b55;
+    font-size: 11.5px;
+    font-weight: 710;
+  }
+
+  .object-detail-page .object-contractor-owner small {
+    color: #8190a3;
+    font-size: 10px;
+  }
+
+  .object-detail-page .object-contractor-phone {
+    min-height: 33px;
+    padding: 0 9px;
+    border: 1px solid #d8e5fa;
+    border-radius: 9px;
+    background: #eef4ff;
+    color: #2860d8;
+    font-size: 10.5px;
+    font-weight: 750;
+  }
+
+  .object-detail-page .object-contractor-open {
+    color: #69809e;
+  }
+
+  .object-detail-page .contractor-chart-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-color: #1f3d68;
+    background:
+      radial-gradient(circle at 94% 2%, rgba(83, 139, 255, 0.27), transparent 17rem),
+      linear-gradient(145deg, #0c1b34, #112848);
+    box-shadow: 0 18px 38px rgba(12, 27, 52, 0.18);
+  }
+
+  .object-detail-page .contractor-chart-card::before {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(180, 205, 244, 0.09) 1px, transparent 1.2px);
+    background-size: 18px 18px;
+    content: "";
+    mask-image: linear-gradient(180deg, #000, transparent 72%);
+    pointer-events: none;
+  }
+
+  .object-detail-page .analytics-heading {
+    min-height: 72px;
+    padding: 14px 18px 10px;
+    border-bottom-color: rgba(178, 201, 234, 0.13);
+  }
+
+  .object-detail-page .analytics-heading > div:first-child > span {
+    color: #78a7ff;
+    font-size: 9px !important;
+    font-weight: 760;
+    letter-spacing: 0.105em !important;
+  }
+
+  .object-detail-page .analytics-heading h2 {
+    color: #f4f8ff;
+    font-size: 17px !important;
+    font-weight: 690 !important;
+    letter-spacing: -0.025em;
+  }
+
+  .object-detail-page .chart-series-picker {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 11px 16px 5px;
+    overflow-x: visible;
+  }
+
+  .object-detail-page .chart-series-picker button {
+    min-height: 30px;
+    padding: 0 9px;
+    border: 1px solid rgba(171, 197, 236, 0.16);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.055);
+    color: #9eb4d3;
+    font-size: 9.5px;
+    font-weight: 670;
+  }
+
+  .object-detail-page .chart-series-picker button:hover {
+    border-color: rgba(139, 178, 247, 0.42);
+    background: rgba(106, 155, 246, 0.13);
+    color: #dce9fb;
+  }
+
+  .object-detail-page .chart-series-picker button.is-active {
+    border-color: rgba(255, 255, 255, 0.9);
+    background: #f4f8ff;
+    color: #17345f;
+    box-shadow: 0 7px 16px rgba(2, 11, 27, 0.22);
+  }
+
+  .object-detail-page .chart-series-picker button:focus-visible {
+    outline: 2px solid #7eabff;
+    outline-offset: 2px;
+  }
+
+  .object-detail-page .object-multiline-card .contractor-chart {
+    height: 236px;
+    padding: 9px 12px 14px 3px;
+  }
+
+  .object-detail-page .contractor-chart-card .recharts-cartesian-grid line {
+    stroke: rgba(159, 184, 220, 0.16) !important;
+  }
+
+  .object-detail-page .contractor-chart-card .recharts-cartesian-axis-tick text {
+    fill: #879dbd !important;
+    font-family: "Manrope Variable", Manrope, sans-serif;
+    font-size: 10px;
+  }
+
+  .object-detail-page .object-presence-card {
+    position: relative;
+    margin: 0;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.98);
+  }
+
+  .object-detail-page .object-presence-card::before {
+    position: absolute;
+    z-index: 2;
+    inset: 0 auto 0 0;
+    width: 5px;
+    background: linear-gradient(180deg, #477af0, #51cfbb);
+    content: "";
+    pointer-events: none;
+  }
+
+  .object-detail-page .object-presence-heading {
+    min-height: 78px;
+    padding: 14px 20px 13px 24px;
+    border-bottom: 1px solid #dfe7ef;
+    background:
+      radial-gradient(circle at 7% 0, rgba(64, 115, 241, 0.07), transparent 15rem),
+      #fff;
+  }
+
+  .object-detail-page .object-presence-heading > div:first-child > span {
+    color: #4773c5;
+    font-size: 9px;
+    font-weight: 760;
+    letter-spacing: 0.105em;
+  }
+
+  .object-detail-page .object-presence-heading h2 {
+    margin-top: 5px;
+    color: #15253d;
+    font-size: 18px !important;
+    font-weight: 720 !important;
+    letter-spacing: -0.026em;
+  }
+
+  .object-detail-page .object-presence-tabs {
+    min-height: 38px;
+    padding: 4px;
+    border: 1px solid #dce5ef;
+    border-radius: 11px;
+    background: #edf2f7;
+    box-shadow: inset 0 1px 2px rgba(25, 43, 70, 0.035);
+  }
+
+  .object-detail-page .object-presence-tabs > button {
+    min-width: 86px;
+    min-height: 30px;
+    padding-inline: 13px;
+    border-radius: 8px;
+    color: #65778e;
+    font-size: 10.5px;
+    font-weight: 710;
+  }
+
+  .object-detail-page .object-presence-tabs > button.is-active {
+    background: var(--object-ink);
+    color: #ffffff;
+    box-shadow: 0 5px 12px rgba(12, 27, 52, 0.18);
+  }
+
+  .object-detail-page .object-presence-tabs > button:focus-visible {
+    outline: 2px solid #3f73f1;
+    outline-offset: 2px;
+  }
+
+  .object-detail-page .object-presence-filters {
+    padding: 13px 20px 14px 24px;
+    border-bottom: 1px solid #e0e7ef;
+    background: #f7f9fc;
+  }
+
+  .object-detail-page .object-presence-filter-field > span {
+    color: #697a90;
+    font-size: 9px;
+    font-weight: 760;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table-wrap {
+    border: 0;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 11px;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table thead {
+    background: #eef2f6;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table th {
+    height: 38px;
+    padding: 0 18px;
+    border-bottom: 1px solid #dce4ec;
+    color: #718197;
+    font-size: 9px;
+    font-weight: 770;
+    letter-spacing: 0.085em;
+    text-transform: uppercase;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table td {
+    height: 54px;
+    padding: 9px 18px;
+    border-bottom-color: #e6ebf1;
+    color: #566a82;
+    font-size: 11px;
+    font-weight: 530;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table tbody tr {
+    transition: background-color 140ms ease, box-shadow 140ms ease;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table tbody tr:hover {
+    background: #f2f7ff;
+    box-shadow: inset 4px 0 0 #4d7df0;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table tbody tr:focus-visible {
+    outline: 2px solid #3f73f1;
+    outline-offset: -3px;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table td strong {
+    color: #1c304b;
+    font-size: 11.5px;
+    font-weight: 730;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table td small {
+    margin-top: 2px;
+    color: #8392a5;
+    font-size: 9.5px;
+    font-weight: 520;
+  }
+
+  .object-detail-page .on-site-badge {
+    border: 1px solid #bfe5d9;
+    border-radius: 999px;
+    background: #e7f7f1;
+    color: #14755e;
+    font-size: 9.5px;
+    font-weight: 730;
+  }
+
+  .object-detail-page .object-presence-card .data-pagination {
+    min-height: 50px;
+    padding: 6px 18px 6px 22px;
+    border-top: 0;
+    background: #fafbfd;
+  }
+
+  .object-detail-page :is(
+      .object-breadcrumb button,
+      .contact-actions a,
+      .object-contractor-target,
+      .object-contractor-phone,
+      .chart-series-picker button,
+      .object-presence-tabs button,
+      .responsive-table tbody tr
+    ):focus-visible {
+    outline-width: 2px;
+    outline-style: solid;
+  }
+}
+
+/* Desktop fluidity: preserve the visual language while preventing cramped columns. */
+@media (min-width: 1101px) and (max-width: 1540px) {
+  .object-detail-page .object-detail-primary {
+    grid-template-columns: 1fr;
+  }
+
+  .object-detail-page .object-multiline-card .contractor-chart {
+    height: 244px;
+  }
+}
+
+@media (min-width: 1101px) and (max-width: 1280px) {
+  .object-detail-page .object-overview-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .object-detail-page .object-detail-intro {
+    min-height: 274px;
+  }
+
+  .object-detail-page .object-contacts-card {
+    min-height: 250px;
+  }
+}
+
+@media (min-width: 1101px) {
+  /* Data-aware desktop flow: short contractor registries do not leave a dead column. */
+  .object-detail-page .object-detail-primary:not(:has(.object-contractor-card:nth-child(3))) {
+    grid-template-columns: 1fr;
+  }
+
+  .object-detail-page .object-breadcrumb {
+    font-size: 12px;
+  }
+
+  .object-detail-page .object-address {
+    font-size: 13.5px;
+  }
+
+  .object-detail-page .object-contacts-heading p {
+    font-size: 12px !important;
+  }
+
+  .object-detail-page .object-contact-list strong {
+    font-size: 13px;
+  }
+
+  .object-detail-page .object-contact-list .object-contact-person > span,
+  .object-detail-page .object-contractor-service,
+  .object-detail-page .object-contractor-owner b,
+  .object-detail-page .object-contractor-phone,
+  .object-detail-page .contact-actions > a,
+  .object-detail-page .contact-actions .call-link {
+    font-size: 11.5px !important;
+  }
+
+  .object-detail-page .object-contractor-presence,
+  .object-detail-page .object-contractor-owner small,
+  .object-detail-page .chart-series-picker button,
+  .object-detail-page .object-presence-tabs > button,
+  .object-detail-page .object-presence-card .responsive-table th,
+  .object-detail-page .on-site-badge {
+    font-size: 10.5px !important;
+  }
+
+  .object-detail-page .object-contractor-copy > strong,
+  .object-detail-page .object-presence-card .responsive-table td {
+    font-size: 12.5px;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table td strong {
+    font-size: 13px;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table td small {
+    font-size: 10.5px;
+  }
+
+  .object-detail-page :is(button, a):active {
+    transform: none;
+  }
+}
+
+@media (min-width: 1101px) and (prefers-reduced-motion: reduce) {
+  .object-detail-page *,
+  .object-detail-page *::before,
+  .object-detail-page *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/*
+ * Compact desktop CRM revision.
+ * This final layer replaces the presentation-like desktop treatment with a
+ * fast-scanning workspace. The existing <= 1100px composition is untouched.
+ */
+@media (min-width: 1101px) {
+  .object-detail-page {
+    --object-ink: #17243a;
+    --object-blue: #356fe2;
+    --object-blue-soft: #edf3ff;
+    --object-canvas: #f4f6fa;
+    --object-line: #dce3ec;
+    --object-muted: #6d7d92;
+    width: 100%;
+    max-width: 1480px;
+    min-height: calc(100dvh - 70px);
+    gap: 10px;
+    margin-inline: auto;
+    padding: 16px clamp(18px, 1.8vw, 30px) 26px !important;
+    background: var(--object-canvas);
+    background-image: none;
+    color: var(--object-ink);
+    font-family: "Manrope Variable", Manrope, Inter, sans-serif;
+  }
+
+  .object-detail-page .object-breadcrumb {
+    width: auto;
+    min-height: 18px;
+    gap: 7px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #8a97a8;
+    font-size: 11.5px;
+    backdrop-filter: none;
+  }
+
+  .object-detail-page .object-breadcrumb button {
+    color: #526980;
+    font-weight: 700;
+  }
+
+  .object-detail-page .object-breadcrumb button:hover {
+    color: #285fcf;
+  }
+
+  .object-detail-page .object-overview-panel {
+    position: relative;
+    display: grid;
+    min-height: 112px;
+    grid-template-columns: minmax(340px, 0.72fr) minmax(620px, 1.28fr);
+    overflow: hidden;
+    border: 1px solid var(--object-line);
+    border-radius: 15px;
+    background: #fff;
+    box-shadow: 0 3px 12px rgba(24, 43, 70, 0.055);
+  }
+
+  .object-detail-page .object-overview-panel::before,
+  .object-detail-page .object-overview-panel::after {
+    display: none;
+  }
+
+  .object-detail-page .object-detail-intro {
+    min-height: 112px;
+    justify-content: center;
+    padding: 16px 19px 15px 21px;
+    border-right: 1px solid #dde5ef;
+    background:
+      linear-gradient(90deg, rgba(53, 111, 226, 0.055), transparent 42%),
+      linear-gradient(135deg, #f9fbfe, #f0f5fc);
+    box-shadow: inset 3px 0 0 var(--object-blue);
+  }
+
+  .object-detail-page .object-hero-kicker,
+  .object-detail-page .object-hero-metrics {
+    display: none;
+  }
+
+  .object-detail-page .object-detail-intro h1 {
+    max-width: 640px;
+    color: #16253b;
+    font-size: clamp(23px, 1.75vw, 27px) !important;
+    font-weight: 690 !important;
+    line-height: 1.14 !important;
+    letter-spacing: -0.035em !important;
+    text-shadow: none;
+  }
+
+  .object-detail-page .object-detail-meta {
+    gap: 8px;
+    margin-top: 9px;
+  }
+
+  .object-detail-page .object-address {
+    color: #667990;
+    font-size: 12.5px;
+    font-weight: 520;
+  }
+
+  .object-detail-page .object-address svg {
+    color: #6286c8;
+  }
+
+  .object-detail-page .object-code {
+    min-height: 24px;
+    padding-inline: 8px;
+    border-color: #ccd9eb;
+    border-radius: 6px;
+    background: #fff;
+    color: #49627f;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.045em;
+    box-shadow: 0 1px 2px rgba(28, 47, 73, 0.04);
+  }
+
+  .object-detail-page .object-contacts-card {
+    display: grid;
+    min-height: 0;
+    grid-template-columns: minmax(190px, 0.52fr) minmax(0, 1.48fr);
+    align-self: stretch;
+    margin: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .object-detail-page .object-contacts-heading {
+    align-items: center;
+    gap: 9px;
+    padding: 11px 13px;
+    border: 0;
+    border-right: 1px solid #e2e8f0;
+    background: #fafbfd;
+  }
+
+  .object-detail-page .object-contact-icon {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+    border: 1px solid #d5e1f4;
+    border-radius: 9px;
+    background: #edf3ff;
+    color: #356fe2;
+    box-shadow: none;
+  }
+
+  .object-detail-page .object-contacts-heading h2 {
+    color: #1d304a;
+    font-size: 13px !important;
+    font-weight: 720 !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.012em;
+  }
+
+  .object-detail-page .object-access-label {
+    display: inline-flex;
+    gap: 4px;
+    margin-top: 5px;
+    color: #5675a6;
+    font-size: 10px;
+    font-weight: 760;
+    letter-spacing: 0.075em;
+  }
+
+  .object-detail-page .object-contacts-heading p {
+    margin-top: 4px;
+    color: #6f7f93;
+    font-size: 11.5px !important;
+    font-weight: 520;
+    line-height: 1.35 !important;
+  }
+
+  .object-detail-page .object-contact-list {
+    display: grid;
+    min-height: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .object-detail-page .object-contact-list article {
+    display: grid;
+    min-height: 56px;
+    grid-template-columns: 30px minmax(0, 1fr);
+    grid-template-areas:
+      "avatar person"
+      ". actions";
+    align-content: center;
+    gap: 5px 8px;
+    padding: 8px 11px;
+    background: #fff;
+  }
+
+  .object-detail-page .object-contact-list article:hover {
+    background: #f7f9fc;
+  }
+
+  .object-detail-page .object-contact-list article:only-child {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    grid-template-areas: "avatar person actions";
+  }
+
+  .object-detail-page .object-contact-list article + article {
+    border-top: 1px solid #e3e9f0;
+    border-left: 0;
+  }
+
+  .object-detail-page .object-contact-list article:nth-child(2n) {
+    border-left: 1px solid #e3e9f0;
+  }
+
+  .object-detail-page .object-contact-list article:nth-child(-n + 2) {
+    border-top: 0;
+  }
+
+  .object-detail-page .object-contact-avatar {
+    display: grid;
+    grid-area: avatar;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border: 1px solid #d9e2ee;
+    border-radius: 9px;
+    background: #f0f3f8;
+    color: #546a83;
+    font-size: 8.5px;
+    font-weight: 780;
+    box-shadow: none;
+  }
+
+  .object-detail-page .object-contact-person {
+    grid-area: person;
+    align-self: center;
+  }
+
+  .object-detail-page .object-contact-list strong {
+    color: #23364f;
+    font-size: 13px;
+    font-weight: 720;
+    line-height: 1.25;
+  }
+
+  .object-detail-page .object-contact-list .object-contact-person > span {
+    margin-top: 2px;
+    color: #7a899b;
+    font-size: 11px !important;
+    line-height: 1.25;
+  }
+
+  .object-detail-page .contact-actions {
+    grid-area: actions;
+    justify-self: start;
+    gap: 5px;
+  }
+
+  .object-detail-page .contact-actions > a,
+  .object-detail-page .contact-actions .call-link {
+    min-height: 30px;
+    gap: 5px;
+    padding-inline: 8px;
+    border-color: #d7e1ee;
+    border-radius: 8px;
+    background: #fff;
+    color: #2e64cf;
+    font-size: 11px !important;
+    font-weight: 720;
+    box-shadow: none;
+  }
+
+  .object-detail-page .contact-actions > a:first-child:not(.call-link) {
+    width: 30px;
+    padding: 0;
+  }
+
+  .object-detail-page .contact-actions > a:hover,
+  .object-detail-page .contact-actions .call-link:hover {
+    border-color: #adc4ed;
+    background: #eef4ff;
+    box-shadow: none;
+  }
+
+  .object-detail-page .object-detail-primary,
+  .object-detail-page .object-detail-primary:not(:has(.object-contractor-card:nth-child(3))) {
+    grid-template-columns: minmax(640px, 1.4fr) minmax(355px, 0.6fr);
+    align-items: start;
+    gap: 10px;
+  }
+
+  .object-detail-page .object-detail-primary:has(.object-contractor-card:only-child) {
+    grid-template-columns: minmax(640px, 1.4fr) minmax(355px, 0.6fr);
+  }
+
+  .object-detail-page .object-contractors-card,
+  .object-detail-page .contractor-chart-card,
+  .object-detail-page .object-presence-card {
+    overflow: hidden;
+    border: 1px solid var(--object-line);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 2px 9px rgba(24, 43, 70, 0.045);
+  }
+
+  .object-detail-page .object-contractors-heading {
+    min-height: 48px;
+    padding: 9px 13px;
+    border-bottom-color: #e1e7ef;
+    background: #fff;
+  }
+
+  .object-detail-page .object-section-eyebrow {
+    display: none;
+  }
+
+  .object-detail-page .object-contractors-heading h2 {
+    color: #1b2d46;
+    font-size: 14.5px !important;
+    font-weight: 710 !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.018em;
+  }
+
+  .object-detail-page .object-contractors-heading > strong {
+    min-width: 27px;
+    height: 27px;
+    padding-inline: 7px;
+    border: 1px solid #d7e2f4;
+    border-radius: 8px;
+    background: #edf3ff;
+    color: #356bd5;
+    font-size: 11px;
+    font-weight: 780;
+    box-shadow: none;
+  }
+
+  .object-detail-page .object-contractor-columns,
+  .object-detail-page .object-contractor-card {
+    grid-template-columns:
+      34px minmax(180px, 1.4fr) minmax(100px, 0.62fr)
+      minmax(130px, 0.76fr) minmax(124px, auto) 16px;
+    gap: 8px;
+  }
+
+  .object-detail-page .object-contractor-columns {
+    min-height: 27px;
+    padding-inline: 13px;
+    border-bottom-color: #e3e8ef;
+    background: #f5f7fa;
+    color: #7d8999;
+    font-size: 10px;
+    font-weight: 770;
+    letter-spacing: 0.075em;
+  }
+
+  .object-detail-page .object-contractor-card {
+    min-height: 76px;
+    padding: 9px 13px;
+    background: #fff;
+  }
+
+  .object-detail-page .object-contractor-card + .object-contractor-card {
+    border-top-color: #e5eaf0;
+  }
+
+  .object-detail-page .object-contractor-card:hover {
+    background: #f5f8fd;
+    box-shadow: inset 3px 0 0 #4778dc;
+  }
+
+  .object-detail-page .object-contractor-target:focus-visible {
+    outline: 2px solid #356fe2;
+    outline-offset: -3px;
+  }
+
+  .object-detail-page .object-contractor-icon,
+  .object-detail-page .object-contractor-card:nth-child(3n + 2) .object-contractor-icon,
+  .object-detail-page .object-contractor-card:nth-child(3n) .object-contractor-icon {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #d3e0f5;
+    border-radius: 9px;
+    background: #edf3ff;
+    color: #356fe2;
+    box-shadow: none;
+  }
+
+  .object-detail-page .object-contractor-copy > strong {
+    color: #21354f;
+    font-size: 13px;
+    font-weight: 730;
+    line-height: 1.25;
+  }
+
+  .object-detail-page .object-contractor-service {
+    margin-top: 3px !important;
+    color: #718096 !important;
+    font-size: 11px !important;
+    font-weight: 500;
+    line-height: 1.32 !important;
+  }
+
+  .object-detail-page .object-contractor-presence {
+    min-height: 26px;
+    gap: 5px;
+    padding: 4px 7px;
+    border: 1px solid #dfe5ec;
+    border-radius: 8px;
+    background: #f3f5f8;
+    color: #69798d !important;
+    font-size: 10.5px !important;
+    font-weight: 680;
+  }
+
+  .object-detail-page .object-contractor-presence.is-present {
+    border-color: #c8e8dd;
+    background: #eaf7f2;
+    color: #16765e !important;
+  }
+
+  .object-detail-page .object-contractor-owner b {
+    color: #2a3d55;
+    font-size: 12px !important;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .object-detail-page .object-contractor-owner small {
+    color: #8390a0;
+    font-size: 10.5px !important;
+    line-height: 1.2;
+  }
+
+  .object-detail-page .object-contractor-phone {
+    min-height: 30px;
+    padding-inline: 8px;
+    border: 1px solid #d6e2f5;
+    border-radius: 8px;
+    background: #eef4ff;
+    color: #2f64cc;
+    font-size: 10.5px !important;
+    font-weight: 740;
+  }
+
+  .object-detail-page .object-contractor-phone:hover {
+    border-color: #b6caec;
+    background: #e3edff;
+  }
+
+  .object-detail-page .object-contractor-open {
+    width: 16px;
+    color: #73869c;
+  }
+
+  .object-detail-page .contractor-chart-card {
+    position: relative;
+    height: 305px;
+    border-color: var(--object-line);
+    background: #fff;
+    box-shadow: 0 2px 9px rgba(24, 43, 70, 0.045);
+  }
+
+  .object-detail-page .contractor-chart-card::before {
+    display: none;
+  }
+
+  .object-detail-page .analytics-heading {
+    min-height: 48px;
+    padding: 8px 13px 7px;
+    border-bottom-color: #e3e8ef;
+    background: #fff;
+  }
+
+  .object-detail-page .analytics-heading > div:first-child > span {
+    margin-bottom: 2px;
+    color: #607cac;
+    font-size: 10px !important;
+    font-weight: 760;
+    letter-spacing: 0.08em !important;
+  }
+
+  .object-detail-page .analytics-heading h2 {
+    color: #1b2d46;
+    font-size: 14.5px !important;
+    font-weight: 710 !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.018em;
+  }
+
+  .object-detail-page .chart-series-picker {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 7px 10px 4px;
+    overflow-x: visible;
+  }
+
+  .object-detail-page .chart-series-picker button {
+    min-height: 25px;
+    padding-inline: 7px;
+    border: 1px solid #dfe5ed;
+    border-radius: 7px;
+    background: #f7f9fc;
+    color: #65758a;
+    font-size: 10.5px !important;
+    font-weight: 670;
+    box-shadow: none;
+  }
+
+  .object-detail-page .chart-series-picker button:hover {
+    border-color: #bacceb;
+    background: #eef4ff;
+    color: #315fba;
+  }
+
+  .object-detail-page .chart-series-picker button.is-active {
+    border-color: #bdd0f4;
+    background: #eaf1ff;
+    color: #244f9f;
+    box-shadow: none;
+  }
+
+  .object-detail-page .object-multiline-card .contractor-chart {
+    height: auto;
+    min-height: 0;
+    flex: 1;
+    padding: 3px 8px 8px 0;
+  }
+
+  .object-detail-page .object-detail-primary:has(.object-contractor-card:only-child)
+    .contractor-chart-card {
+    height: 184px;
+  }
+
+  .object-detail-page .object-detail-primary:not(:has(.object-contractor-card))
+    .contractor-chart-card {
+    height: 150px;
+  }
+
+  .object-detail-page .object-detail-primary:has(.object-contractor-card:nth-child(2):last-child)
+    .contractor-chart-card {
+    height: 229px;
+  }
+
+  .object-detail-page .contractor-chart-card .recharts-cartesian-grid line {
+    stroke: #e7ebf1 !important;
+  }
+
+  .object-detail-page .contractor-chart-card .recharts-cartesian-axis-tick text {
+    fill: #77869a !important;
+    font-size: 9.5px;
+  }
+
+  .object-detail-page .object-presence-card {
+    margin: 0;
+    background: #fff;
+  }
+
+  .object-detail-page .object-presence-card::before {
+    width: 3px;
+    background: #4778dc;
+  }
+
+  .object-detail-page .object-presence-heading {
+    min-height: 52px;
+    padding: 8px 13px 8px 17px;
+    border-bottom: 1px solid #e1e7ee;
+    background: #fff;
+  }
+
+  .object-detail-page .object-presence-heading > div:first-child > span {
+    color: #607cac;
+    font-size: 10px;
+    font-weight: 760;
+    letter-spacing: 0.08em;
+  }
+
+  .object-detail-page .object-presence-heading h2 {
+    margin-top: 3px;
+    color: #1b2d46;
+    font-size: 15px !important;
+    font-weight: 710 !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.018em;
+  }
+
+  .object-detail-page .object-presence-tabs {
+    min-height: 32px;
+    padding: 3px;
+    border: 1px solid #dce3eb;
+    border-radius: 9px;
+    background: #f0f3f7;
+    box-shadow: none;
+  }
+
+  .object-detail-page .object-presence-tabs > button {
+    min-width: 72px;
+    min-height: 26px;
+    padding-inline: 10px;
+    border-radius: 7px;
+    color: #68788c;
+    font-size: 10.5px !important;
+    font-weight: 700;
+  }
+
+  .object-detail-page .object-presence-tabs > button.is-active {
+    background: #285fc7;
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .object-detail-page .object-presence-filters {
+    padding: 9px 13px 10px 17px;
+    border-bottom: 1px solid #e2e8ef;
+    background: #f7f9fc;
+  }
+
+  .object-detail-page .object-presence-filter-field > span {
+    color: #6e7d90;
+    font-size: 10px;
+    font-weight: 760;
+    letter-spacing: 0.065em;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table thead {
+    background: #f4f6f9;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table th {
+    height: 32px;
+    padding: 0 13px;
+    border-bottom-color: #dfe5ec;
+    color: #788697;
+    font-size: 10px !important;
+    font-weight: 770;
+    letter-spacing: 0.075em;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table td {
+    height: 46px;
+    padding: 7px 13px;
+    border-bottom-color: #e7ebf0;
+    color: #586b82;
+    font-size: 12px;
+    font-weight: 530;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table tbody tr:hover {
+    background: #f5f8fd;
+    box-shadow: inset 3px 0 0 #4778dc;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table td strong {
+    color: #253950;
+    font-size: 13px;
+    font-weight: 720;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table td small {
+    margin-top: 1px;
+    color: #8290a1;
+    font-size: 10.5px;
+  }
+
+  .object-detail-page .on-site-badge {
+    padding: 4px 7px;
+    border-color: #c6e4da;
+    border-radius: 7px;
+    background: #eaf7f2;
+    color: #16745d;
+    font-size: 10px !important;
+    font-weight: 720;
+  }
+
+  .object-detail-page .object-presence-card .data-pagination {
+    min-height: 40px;
+    padding: 4px 12px 4px 16px;
+    border-top: 0;
+    background: #fafbfd;
+  }
+}
+
+@media (min-width: 1101px) and (max-width: 1340px) {
+  .object-detail-page {
+    padding-inline: 18px !important;
+  }
+
+  .object-detail-page .object-overview-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .object-detail-page .object-detail-intro {
+    min-height: 100px;
+    border-right: 0;
+    border-bottom: 1px solid #dde5ef;
+  }
+
+  .object-detail-page .object-contacts-card {
+    min-height: 0;
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+
+  .object-detail-page .object-detail-primary,
+  .object-detail-page .object-detail-primary:not(:has(.object-contractor-card:nth-child(3))) {
+    grid-template-columns: 1fr;
+  }
+
+  .object-detail-page .object-multiline-card .contractor-chart {
+    height: 180px;
+    flex: none;
+  }
+}
+
+/* Final desktop density and readability tuning from CRM usage feedback. */
+@media (min-width: 1101px) {
+  .object-detail-page {
+    font-size: 13px;
+  }
+
+  .object-detail-page .object-breadcrumb {
+    font-size: 12.5px;
+  }
+
+  .object-detail-page .object-detail-intro h1 {
+    font-size: clamp(27px, 1.9vw, 30px) !important;
+  }
+
+  .object-detail-page .object-address {
+    font-size: 13.5px;
+  }
+
+  .object-detail-page .object-code {
+    min-height: 26px;
+    font-size: 11px;
+  }
+
+  .object-detail-page .object-contact-icon,
+  .object-detail-page .object-contact-list .object-contact-avatar {
+    display: none !important;
+  }
+
+  .object-detail-page .object-contacts-heading {
+    gap: 0;
+    padding-inline: 16px;
+  }
+
+  .object-detail-page .object-contacts-heading > div {
+    width: 100%;
+  }
+
+  .object-detail-page .object-contacts-heading h2 {
+    font-size: 15px !important;
+  }
+
+  .object-detail-page .object-access-label {
+    font-size: 10.5px;
+  }
+
+  .object-detail-page .object-contacts-heading p {
+    font-size: 12.5px !important;
+  }
+
+  .object-detail-page .object-contact-list article {
+    min-height: 58px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "person"
+      "actions";
+    gap: 6px;
+    padding: 10px 13px;
+  }
+
+  .object-detail-page .object-contact-list article:only-child {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "person actions";
+  }
+
+  .object-detail-page .object-contact-list strong {
+    font-size: 14px;
+  }
+
+  .object-detail-page .object-contact-list .object-contact-person > span {
+    font-size: 12px !important;
+  }
+
+  .object-detail-page .contact-actions > a,
+  .object-detail-page .contact-actions .call-link {
+    min-height: 32px;
+    font-size: 12px !important;
+  }
+
+  .object-detail-page .contact-actions > a:first-child:not(.call-link) {
+    width: 32px;
+  }
+
+  .object-detail-page .object-contractors-heading {
+    min-height: 52px;
+    padding-inline: 15px;
+  }
+
+  .object-detail-page .object-contractors-heading h2,
+  .object-detail-page .analytics-heading h2 {
+    font-size: 16px !important;
+  }
+
+  .object-detail-page .object-contractors-heading > strong {
+    min-width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .object-detail-page .object-contractor-columns,
+  .object-detail-page .object-contractor-card {
+    grid-template-columns:
+      36px minmax(190px, 1.42fr) minmax(78px, 0.46fr)
+      minmax(136px, 0.78fr) minmax(128px, auto) 16px;
+    gap: 9px;
+  }
+
+  .object-detail-page .object-contractor-columns {
+    min-height: 30px;
+    padding-inline: 15px 11px;
+    font-size: 10.5px;
+  }
+
+  .object-detail-page .object-contractor-grid {
+    height: 240px;
+    max-height: 240px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-color: #9eb3cf #eef2f6;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+  }
+
+  .object-detail-page .object-contractor-grid::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .object-detail-page .object-contractor-grid::-webkit-scrollbar-track {
+    margin-block: 5px;
+    border-radius: 999px;
+    background: #eef2f6;
+  }
+
+  .object-detail-page .object-contractor-grid::-webkit-scrollbar-thumb {
+    border: 2px solid #eef2f6;
+    border-radius: 999px;
+    background: #9eb3cf;
+  }
+
+  .object-detail-page .object-contractor-grid::-webkit-scrollbar-thumb:hover {
+    background: #7893b5;
+  }
+
+  .object-detail-page .object-contractor-card {
+    min-height: 80px;
+    padding: 10px 11px 10px 15px;
+  }
+
+  .object-detail-page .object-contractor-icon,
+  .object-detail-page .object-contractor-card:nth-child(3n + 2) .object-contractor-icon,
+  .object-detail-page .object-contractor-card:nth-child(3n) .object-contractor-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .object-detail-page .object-contractor-copy > strong {
+    font-size: 14px;
+  }
+
+  .object-detail-page .object-contractor-service {
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  .object-detail-page .object-contractor-presence,
+  .object-detail-page .object-contractor-presence.is-present {
+    width: 50px;
+    min-height: 30px;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 7px;
+    font-size: 12px !important;
+  }
+
+  .object-detail-page .object-contractor-presence strong {
+    font-size: 13px;
+    font-weight: 780;
+    line-height: 1;
+  }
+
+  .object-detail-page .object-contractor-owner b {
+    font-size: 13px !important;
+  }
+
+  .object-detail-page .object-contractor-owner small {
+    font-size: 11.5px !important;
+  }
+
+  .object-detail-page .object-contractor-phone {
+    min-height: 32px;
+    font-size: 11.5px !important;
+  }
+
+  .object-detail-page .contractor-chart-card {
+    height: 322px;
+  }
+
+  .object-detail-page .object-detail-primary:has(.object-contractor-card:only-child)
+    .contractor-chart-card {
+    height: 322px;
+  }
+
+  .object-detail-page .object-detail-primary:has(.object-contractor-card:nth-child(2):last-child)
+    .contractor-chart-card {
+    height: 322px;
+  }
+
+  .object-detail-page .object-contractors-card {
+    height: 322px;
+  }
+
+  .object-detail-page .analytics-heading {
+    min-height: 52px;
+  }
+
+  .object-detail-page .analytics-heading > div:first-child > span {
+    font-size: 10.5px !important;
+  }
+
+  .object-detail-page .chart-series-picker button {
+    min-height: 27px;
+    font-size: 11px !important;
+  }
+
+  .object-detail-page .object-presence-heading h2 {
+    font-size: 17px !important;
+  }
+
+  .object-detail-page .object-presence-card::before {
+    display: none;
+  }
+
+  .object-detail-page .object-presence-heading {
+    border-left: 3px solid #4778dc;
+    padding-left: 14px;
+  }
+
+  .object-detail-page .object-presence-heading > div:first-child > span {
+    font-size: 10.5px;
+  }
+
+  .object-detail-page .object-presence-tabs > button {
+    font-size: 11.5px !important;
+  }
+
+  .object-detail-page .object-presence-filter-field > span,
+  .object-detail-page .object-presence-card .responsive-table th {
+    font-size: 10.5px !important;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table td {
+    font-size: 13px;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table td strong {
+    font-size: 14px;
+  }
+
+  .object-detail-page .object-presence-card .responsive-table td small {
+    font-size: 11.5px;
+  }
+
+  .object-detail-page .on-site-badge {
+    font-size: 11px !important;
+  }
+}
+
+@media (min-width: 1341px) {
+  .object-detail-page .object-overview-panel {
+    grid-template-columns: minmax(470px, 0.82fr) minmax(650px, 1.18fr);
+  }
+
+  .object-detail-page .object-detail-primary,
+  .object-detail-page .object-detail-primary:not(:has(.object-contractor-card:nth-child(3))),
+  .object-detail-page .object-detail-primary:has(.object-contractor-card:only-child) {
+    grid-template-columns: minmax(355px, 0.6fr) minmax(640px, 1.4fr);
+  }
+
+  .object-detail-page .object-traffic-section {
+    order: 1;
+  }
+
+  .object-detail-page .object-contractors-card {
+    order: 2;
+  }
+}
