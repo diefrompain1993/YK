@@ -1686,7 +1686,6 @@ function HomePage({
       <div className="page-intro">
         <div>
           <h1>Главная</h1>
-          <p>Кто сейчас на объектах, контакты подрядчиков и последние события.</p>
         </div>
         <div className="date-chip">
           <Clock3 size={16} />
