@@ -3086,10 +3086,6 @@ function ObjectContractors({
     <section className="object-contractors-card">
       <div className="object-contractors-heading">
         <div>
-          <span>
-            <Wrench size={14} />
-            Кому звонить
-          </span>
           <h2>Подрядчики и ответственные</h2>
         </div>
         <strong>{profile.contractors.length}</strong>
