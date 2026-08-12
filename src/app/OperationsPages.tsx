@@ -551,7 +551,7 @@ export function PresencePage({
           </div>
           <UsersRound aria-hidden="true" size={20} />
         </div>
-        <div className="op-table-scroll">
+        <div className="op-table-scroll op-export-table-wrap">
           <table className="op-table op-presence-table">
             <thead>
               <tr>
@@ -990,7 +990,9 @@ export function ExportPage({
                     </span>
                   </td>
                   <td data-label="Комната / отчёт">
-                    <span className="op-cell-main">{event.details}</span>
+                    <span className="op-cell-main op-export-details" title={event.details}>
+                      {event.details}
+                    </span>
                   </td>
                 </tr>
               ))}
