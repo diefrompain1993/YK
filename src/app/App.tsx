@@ -17,14 +17,17 @@ import {
   ChevronDown,
   ChevronLeft,
   ClipboardList,
+  Contact,
   DoorClosed,
   DoorOpen,
-  Download,
+  FileDown,
   Home,
   LayoutDashboard,
   MapPin,
+  Mail,
   Menu,
   Pencil,
+  Phone,
   Plus,
   Search,
   Settings,
@@ -37,9 +40,6 @@ import {
   LogOut,
   RefreshCw,
   GripVertical,
-  KeyRound,
-  Eye,
-  EyeOff,
   Activity,
   ArrowUpRight,
   Clock3,
@@ -49,6 +49,7 @@ import {
   BarChart3,
   FileCheck2,
   TrendingUp,
+  Wrench,
   ScrollText,
   Check,
   CheckCircle2,
@@ -57,10 +58,28 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
+  ExportPage,
+  EXPORT_EVENTS,
+  PRESENCE_RECORDS,
+  formatDuration,
+  roomForRecord,
+  type PresenceRecord,
+} from "./OperationsPages";
+import {
+  AdminUsersSettings,
+  createInitialAdminUsers,
+  type AdminUser,
+} from "./UserSettings";
+import { ContractorPresenceMatrix } from "./ContractorPresenceMatrix";
+import { DataPagination, usePaginatedItems } from "./DataPagination";
+import { DateRangePicker } from "./DateRangePicker";
+import {
   Area,
   AreaChart,
   CartesianGrid,
   ResponsiveContainer,
+  Line,
+  LineChart,
   Tooltip as ChartTooltip,
   XAxis,
   YAxis,
@@ -82,9 +101,14 @@ type ObjectItem = {
   address: string;
   code: string;
   status: "Активен" | "Неактивен";
+  access?: string;
+  contacts?: ContactPerson[];
+  contractors?: string[];
 };
 type AppPage =
   | "home"
+  | "journal"
+  | "export"
   | "contractors"
   | "contractor"
   | "objects"
@@ -285,7 +309,159 @@ const objectsInitial: ObjectItem[] = [
     status: "Активен",
   },
 ];
-const UNASSIGNED_BUSINESS = "Без бизнес-центра";
+
+type ContactPerson = {
+  name: string;
+  role: string;
+  phone: string;
+  email?: string;
+};
+
+type ContractorDetails = {
+  description: string;
+  phone: string;
+  email: string;
+  contactsByObject: Record<string, ContactPerson>;
+};
+
+const objectDetails: Record<
+  string,
+  { access: string; contacts: ContactPerson[]; rooms: string[] }
+> = {
+  "LC-ZAP-01": {
+    access: "Пост охраны, вход 1",
+    contacts: [
+      {
+        name: "Ирина Лебедева",
+        role: "Управляющая объектом",
+        phone: "+7 495 120-41-18",
+        email: "i.lebedeva@zapad.ru",
+      },
+      {
+        name: "Михаил Серов",
+        role: "Начальник смены охраны",
+        phone: "+7 926 320-18-04",
+      },
+    ],
+    rooms: ["Главный вход", "Склад А", "Зона погрузки", "Техническая"],
+  },
+  "BC-OR-02": {
+    access: "Стойка ресепшен, центральный вход",
+    contacts: [
+      {
+        name: "Олег Савельев",
+        role: "Управляющий БЦ",
+        phone: "+7 495 221-04-82",
+        email: "o.saveliev@orion.ru",
+      },
+    ],
+    rooms: ["Холл", "Паркинг", "Щитовая", "Кровля"],
+  },
+  "SKL-03": {
+    access: "КПП со стороны Коммунального проезда",
+    contacts: [
+      {
+        name: "Андрей Фомин",
+        role: "Заведующий складом",
+        phone: "+7 985 441-16-03",
+      },
+    ],
+    rooms: ["КПП", "Склад 1", "Склад 2", "Рампа"],
+  },
+  "PP-SEV-04": {
+    access: "Бюро пропусков, проходная № 2",
+    contacts: [
+      {
+        name: "Татьяна Волкова",
+        role: "Руководитель площадки",
+        phone: "+7 495 772-38-10",
+        email: "t.volkova@sever.ru",
+      },
+    ],
+    rooms: ["Проходная № 2", "Цех 1", "Цех 3", "Компрессорная"],
+  },
+};
+
+const contractorDetails: Record<string, ContractorDetails> = {
+  [contractors[0]]: {
+    description: "Строительные и отделочные работы, ремонт ворот и ограждений.",
+    phone: "+7 495 410-20-18",
+    email: "office@alfastroi.ru",
+    contactsByObject: {
+      "LC-ZAP-01": {
+        name: "Сергей Иванов",
+        role: "Прораб",
+        phone: "+7 985 120-48-11",
+        email: "s.ivanov@alfastroi.ru",
+      },
+      "SKL-03": {
+        name: "Александр Петров",
+        role: "Инженер ПТО",
+        phone: "+7 926 418-26-54",
+        email: "a.petrov@alfastroi.ru",
+      },
+      "PP-SEV-04": {
+        name: "Сергей Иванов",
+        role: "Прораб",
+        phone: "+7 985 120-48-11",
+      },
+    },
+  },
+  [contractors[1]]: {
+    description: "Слаботочные системы: шлагбаумы, СКУД, видеонаблюдение и связь.",
+    phone: "+7 495 771-09-22",
+    email: "service@techservice.ru",
+    contactsByObject: {
+      "LC-ZAP-01": {
+        name: "Владимир Крылов",
+        role: "Главный инженер",
+        phone: "+7 977 333-68-20",
+        email: "v.krylov@techservice.ru",
+      },
+      "BC-OR-02": {
+        name: "Илья Воронов",
+        role: "Сервисный инженер",
+        phone: "+7 985 318-52-09",
+        email: "i.voronov@techservice.ru",
+      },
+    },
+  },
+  [contractors[2]]: {
+    description: "Монтаж металлоконструкций, инженерных сетей и оборудования.",
+    phone: "+7 495 641-54-30",
+    email: "office@montazhpro.ru",
+    contactsByObject: {
+      "BC-OR-02": {
+        name: "Максим Волков",
+        role: "Начальник участка",
+        phone: "+7 903 208-41-65",
+      },
+      "PP-SEV-04": {
+        name: "Максим Волков",
+        role: "Начальник участка",
+        phone: "+7 903 208-41-65",
+      },
+    },
+  },
+  [contractors[3]]: {
+    description: "Эксплуатация зданий, аварийные работы и техническое обслуживание.",
+    phone: "+7 495 390-82-11",
+    email: "dispatch@stroygroup.ru",
+    contactsByObject: {
+      "LC-ZAP-01": {
+        name: "Виктор Смирнов",
+        role: "Руководитель проекта",
+        phone: "+7 916 201-73-84",
+      },
+      "PP-SEV-04": {
+        name: "Антон Зуев",
+        role: "Прораб",
+        phone: "+7 985 412-86-05",
+      },
+    },
+  },
+};
+const UNASSIGNED_BUSINESS = "Без объекта";
 const tagBusinessGroups: ObjectItem[] = [
   ...objectsInitial,
   {
@@ -323,6 +499,7 @@ type LogRecord = {
   initials: string;
   event: "Вход" | "Выход" | "Отчёт";
   object: string;
+  room?: string;
   details: string;
   status: "Успешно" | "Принято" | "На проверке";
 };
@@ -462,16 +639,18 @@ function getContractorProfile(contractor: string): ContractorProfile {
     .map((template, index) => {
       const employee =
         employees[index % Math.max(employees.length, 1)] || staff[0];
-      const object =
+      const objectItem =
         objectsInitial[
           (contractorIndex + template.objectOffset) % objectsInitial.length
-        ].name;
+        ];
+      const rooms = objectDetails[objectItem.code]?.rooms ?? ["Территория"];
       return {
         ...template,
         id: `${contractorIndex}-${index}`,
         employee: employee.name,
         initials: employee.initials,
-        object,
+        object: objectItem.name,
+        room: rooms[index % rooms.length],
       };
     })
     .map(({ objectOffset: _objectOffset, ...record }) => record);
@@ -518,10 +697,9 @@ function getObjectProfile(object: ObjectItem): ObjectProfile {
     0,
     objectsInitial.findIndex((item) => item.code === object.code),
   );
-  const metrics = objectMetricSets[objectIndex];
-  const assignedContractors = metrics.contractorIndexes.map(
-    (index) => contractors[index],
-  );
+  const metrics = objectMetricSets[objectIndex] ?? objectMetricSets[0];
+  const assignedContractors =
+    object.contractors ?? metrics.contractorIndexes.map((index) => contractors[index]);
   const employees = staff.filter((employee) =>
     assignedContractors.includes(employee.contractor),
   );
@@ -593,6 +771,10 @@ function getObjectProfile(object: ObjectItem): ObjectProfile {
       employee: employee.name,
       initials: employee.initials,
       object: object.name,
+      room:
+        (objectDetails[object.code]?.rooms ?? ["Территория"])[
+          index % (objectDetails[object.code]?.rooms.length ?? 1)
+        ],
     };
   });
   return {
@@ -666,6 +848,7 @@ function downloadLogs(rows: LogRecord[], fileName = "contractor-log.csv") {
     "Сотрудник",
     "Событие",
     "Объект",
+    "Комната",
     "Описание",
     "Статус",
   ];
@@ -678,6 +861,7 @@ function downloadLogs(rows: LogRecord[], fileName = "contractor-log.csv") {
       record.employee,
       record.event,
       record.object,
+      record.room ?? "",
       record.details,
       record.status,
     ]),
@@ -699,12 +883,14 @@ function Field({
   placeholder,
   type = "text",
   onChange,
+  readOnly = false,
 }: {
   label: string;
   value?: string;
   placeholder?: string;
   type?: string;
   onChange?: (value: string) => void;
+  readOnly?: boolean;
 }) {
   return (
     <label className="block">
@@ -713,6 +899,7 @@ function Field({
       </span>
       <input
         type={type}
+        readOnly={readOnly}
         {...(onChange
           ? {
               value: value ?? "",
@@ -721,7 +908,7 @@ function Field({
             }
           : { defaultValue: value })}
         placeholder={placeholder}
-        className="h-10 w-full rounded-lg border border-[#dce5f0] bg-white px-3 text-[15px] text-[#16223a] outline-none transition focus:border-[#3b82f6] focus:ring-2 focus:ring-blue-100"
+        className={`h-10 w-full rounded-lg border border-[#dce5f0] px-3 text-[15px] text-[#16223a] outline-none transition focus:border-[#3b82f6] focus:ring-2 focus:ring-blue-100 ${readOnly ? "bg-[#f5f8fc] text-[#526783]" : "bg-white"}`}
       />
     </label>
   );
@@ -870,6 +1057,7 @@ function Nav({
   return (
     <button
       title={compact ? label : undefined}
+      aria-label={label}
       aria-current={active ? "page" : undefined}
       onClick={onClick}
       className={`flex h-[52px] w-full items-center gap-3 rounded-2xl px-3.5 text-left transition ${active ? "border border-[#cfe2ff] bg-[#f1f7ff] text-[#17223a] shadow-[0_0_0_1px_rgba(219,234,254,.45)]" : "text-[#50617c] hover:bg-[#f6f9fd]"} ${compact ? "justify-center px-0" : ""}`}
@@ -903,6 +1091,8 @@ function useOverlayLock(close: () => void) {
   useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const scrollX = window.scrollX;
     const scrollY = window.scrollY;
     const scrollbarGap = Math.max(0, window.innerWidth - root.clientWidth);
@@ -929,7 +1119,31 @@ function useOverlayLock(close: () => void) {
     };
     const closeOnEscape = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.preventDefault();
         closeRef.current();
+        return;
+      }
+      if (event.key === "Tab") {
+        const panels = document.querySelectorAll<HTMLElement>(
+          '.overlay-drawer-panel[role="dialog"]',
+        );
+        const panel = panels[panels.length - 1];
+        if (!panel) return;
+        const focusable = Array.from(
+          panel.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        );
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
         return;
       }
       const target = event.target;
@@ -962,8 +1176,22 @@ function useOverlayLock(close: () => void) {
       capture: true,
       passive: false,
     });
+    const focusFrame = window.requestAnimationFrame(() => {
+      const panels = document.querySelectorAll<HTMLElement>(
+        '.overlay-drawer-panel[role="dialog"]',
+      );
+      const panel = panels[panels.length - 1];
+      if (panel && !panel.contains(document.activeElement)) {
+        panel
+          .querySelector<HTMLElement>(
+            '[autofocus], button:not([disabled]), a[href], input:not([disabled])',
+          )
+          ?.focus();
+      }
+    });
 
     return () => {
+      window.cancelAnimationFrame(focusFrame);
       window.removeEventListener("keydown", closeOnEscape);
       window.removeEventListener("scroll", keepPagePosition);
       document.removeEventListener("wheel", stopBackgroundWheel, true);
@@ -978,19 +1206,50 @@ function useOverlayLock(close: () => void) {
         body.style.paddingRight = overlayInitialStyles?.bodyPaddingRight || "";
         overlayInitialStyles = null;
       }
+      window.requestAnimationFrame(() => previousFocus?.focus());
     };
   }, []);
 }
 
 export default function App() {
   const [page, setPage] = useState<AppPage>("home");
+  const [managedObjects, setManagedObjects] = useState<ObjectItem[]>(objectsInitial);
+  const sessionRole: "ukp" | "nsr" = "ukp";
+  const [previewRole, setPreviewRole] = useState<"nsr" | null>(null);
+  const userRole = previewRole ?? sessionRole;
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>(() =>
+    createInitialAdminUsers(objectsInitial.map((item) => item.name)),
+  );
   const [sidebar, setSidebar] = useState(true);
   const [selectedContractor, setSelectedContractor] = useState(contractors[0]);
   const [selectedObject, setSelectedObject] = useState(objectsInitial[0]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("Все статусы");
   const [detail, setDetail] = useState<Employee | null>(null);
+  const [stickyDetailTitle, setStickyDetailTitle] = useState("");
   const [notice, setNotice] = useState("");
+  const updateManagedObjects = (nextObjects: ObjectItem[]) => {
+    const previousByName = new Map(
+      managedObjects.map((object) => [object.name, object.code]),
+    );
+    const nextByCode = new Map(
+      nextObjects.map((object) => [object.code, object.name]),
+    );
+    setAdminUsers((current) =>
+      current.map((user) => ({
+        ...user,
+        objects:
+          user.accessRole === "УКП"
+            ? nextObjects.map((object) => object.name)
+            : user.objects.flatMap((name) => {
+                const code = previousByName.get(name);
+                const nextName = code ? nextByCode.get(code) : undefined;
+                return nextName ? [nextName] : [];
+              }),
+      })),
+    );
+    setManagedObjects(nextObjects);
+  };
   useEffect(() => {
     const root = document.documentElement;
     const previousBehavior = root.style.scrollBehavior;
@@ -1001,6 +1260,7 @@ export default function App() {
   const navigate = (p: typeof page) => {
     setPage(p);
     setDetail(null);
+    setStickyDetailTitle("");
   };
   const toast = (m: string) => {
     setNotice(m);
@@ -1018,9 +1278,61 @@ export default function App() {
       ),
     [selectedContractor, query, status],
   );
+  const nsrObjectNames = useMemo(
+    () =>
+      adminUsers.find((user) => user.id === "admin-mikhail-volkov")?.objects ?? [],
+    [adminUsers],
+  );
+  const scopedObjects = useMemo(
+    () =>
+      userRole === "ukp"
+        ? managedObjects
+        : managedObjects.filter((item) => nsrObjectNames.includes(item.name)),
+    [managedObjects, nsrObjectNames, userRole],
+  );
+  const scopedObjectNames = useMemo(
+    () => scopedObjects.map((item) => item.name),
+    [scopedObjects],
+  );
+  const scopedContractors = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          scopedObjects.flatMap((item) => getObjectContractors(item)),
+        ),
+      ),
+    [scopedObjects],
+  );
+  useEffect(() => {
+    if (
+      scopedObjects.length &&
+      !scopedObjects.some((item) => item.code === selectedObject.code)
+    ) {
+      setSelectedObject(scopedObjects[0]);
+    }
+    if (scopedContractors.length && !scopedContractors.includes(selectedContractor)) {
+      setSelectedContractor(scopedContractors[0]);
+    }
+    if (!scopedObjects.length && page === "object") setPage("objects");
+    if (!scopedContractors.length && page === "contractor") setPage("contractors");
+  }, [
+    page,
+    scopedObjects,
+    scopedContractors,
+    selectedObject.code,
+    selectedContractor,
+  ]);
+  const selectedObjectInScope = scopedObjects.some(
+    (item) => item.code === selectedObject.code,
+  );
+  const selectedContractorInScope = scopedContractors.includes(selectedContractor);
   const currentTitle =
     page === "home"
       ? "Главная"
+      : page === "journal"
+        ? "Журнал"
+      : page === "export"
+        ? "Экспорт"
       : page === "objects" || page === "object"
         ? "Объекты"
       : page === "tags"
@@ -1053,13 +1365,6 @@ export default function App() {
               onClick={() => navigate("home")}
             />
             <Nav
-              icon={<BriefcaseBusiness size={19} />}
-              label="Подрядчики"
-              active={page === "contractors" || page === "contractor"}
-              compact={!sidebar}
-              onClick={() => navigate("contractors")}
-            />
-            <Nav
               icon={<MapPin size={19} />}
               label="Объекты"
               active={page === "objects" || page === "object"}
@@ -1067,19 +1372,44 @@ export default function App() {
               onClick={() => navigate("objects")}
             />
             <Nav
-              icon={<Tag size={19} />}
-              label="Метки"
-              active={page === "tags"}
+              icon={<BriefcaseBusiness size={19} />}
+              label="Подрядчики"
+              active={page === "contractors" || page === "contractor"}
               compact={!sidebar}
-              onClick={() => navigate("tags")}
+              onClick={() => navigate("contractors")}
             />
             <Nav
-              icon={<Settings size={19} />}
-              label="Настройки"
-              active={page === "settings"}
+              icon={<ClipboardList size={19} />}
+              label="Журнал"
+              active={page === "journal"}
               compact={!sidebar}
-              onClick={() => navigate("settings")}
+              onClick={() => navigate("journal")}
             />
+            <Nav
+              icon={<FileDown size={19} />}
+              label="Экспорт"
+              active={page === "export"}
+              compact={!sidebar}
+              onClick={() => navigate("export")}
+            />
+            {userRole === "ukp" && (
+              <>
+                <Nav
+                  icon={<Tag size={19} />}
+                  label="Метки"
+                  active={page === "tags"}
+                  compact={!sidebar}
+                  onClick={() => navigate("tags")}
+                />
+                <Nav
+                  icon={<Settings size={19} />}
+                  label="Настройки"
+                  active={page === "settings"}
+                  compact={!sidebar}
+                  onClick={() => navigate("settings")}
+                />
+              </>
+            )}
           </nav>
           <button
             aria-label="Свернуть меню"
@@ -1095,15 +1425,41 @@ export default function App() {
               className={`profile-summary flex items-center gap-2.5 rounded-xl bg-white p-2.5 ${!sidebar ? "justify-center" : ""}`}
             >
               <div className="profile-avatar grid size-9 place-items-center rounded-xl text-xs font-semibold text-white">
-                АМ
+                {userRole === "ukp" ? "АМ" : "МВ"}
               </div>
               {sidebar && (
                 <div>
-                  <p className="text-[13.5px] font-semibold">Анна Морозова</p>
-                  <p className="text-[12.5px] text-[#74839b]">Администратор</p>
+                  <p className="text-[13.5px] font-semibold">
+                    {userRole === "ukp" ? "Анна Морозова" : "Михаил Волков"}
+                  </p>
+                  <p className="text-[12.5px] text-[#74839b]">
+                    {userRole === "ukp" ? "УКП" : "Начальник смены"}
+                  </p>
                 </div>
               )}
             </div>
+            {sidebar && sessionRole === "ukp" && (
+              <div className="role-preview">
+                <small>Предпросмотр роли</small>
+                <div className="role-switch" role="group" aria-label="Предпросмотр интерфейса">
+                <button
+                  className={userRole === "ukp" ? "is-active" : ""}
+                  onClick={() => setPreviewRole(null)}
+                >
+                  УКП
+                </button>
+                <button
+                  className={userRole === "nsr" ? "is-active" : ""}
+                  onClick={() => {
+                    setPreviewRole("nsr");
+                    if (page === "settings" || page === "tags") navigate("home");
+                  }}
+                >
+                  НСР
+                </button>
+                </div>
+              </div>
+            )}
             <button
               aria-label="Выйти из аккаунта"
               title={!sidebar ? "Выйти" : undefined}
@@ -1119,14 +1475,10 @@ export default function App() {
       <main
         className={`app-main min-h-screen transition-all duration-300 ${sidebar ? "ml-[268px]" : "ml-[82px]"}`}
       >
-        <header className="app-header sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-[#e1e8f1] bg-white/90 px-10 backdrop-blur-xl">
-          <div>
-            <div className="text-[12.5px] font-medium uppercase tracking-[.08em] text-[#8a99ae]">
-              Система управления
-            </div>
-            <div className="mt-0.5 text-[16px] font-semibold text-[#22324b]">
-              {currentTitle}
-            </div>
+        <header className={`app-header sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-[#e1e8f1] bg-white/90 px-10 backdrop-blur-xl ${stickyDetailTitle ? "has-detail-title" : ""}`}>
+          <div className="app-header-title">
+            <small>{userRole === "ukp" ? "Все объекты" : "Объекты НСР"}</small>
+            <strong>{stickyDetailTitle || currentTitle}</strong>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -1148,23 +1500,58 @@ export default function App() {
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
           >
             {page === "home" ? (
-              <HomePage navigate={navigate} />
+              <HomePage
+                navigate={navigate}
+                objects={scopedObjects}
+                openObject={(object) => {
+                  setSelectedObject(object);
+                  navigate("object");
+                }}
+              />
+            ) : page === "journal" ? (
+              <ExportPage
+                title="Журнал"
+                exportEnabled={false}
+                allowedObjectNames={scopedObjectNames}
+                onOpenEmployee={(name) => {
+                  const employee = staff.find((item) => item.name === name);
+                  if (employee) setDetail(employee);
+                }}
+              />
+            ) : page === "export" ? (
+              <ExportPage
+                title="Экспорт данных"
+                allowedObjectNames={scopedObjectNames}
+                onOpenEmployee={(name) => {
+                  const employee = staff.find((item) => item.name === name);
+                  if (employee) setDetail(employee);
+                }}
+              />
             ) : page === "settings" ? (
-              <SettingsPage toast={toast} />
+              <SettingsPage
+                toast={toast}
+                objects={managedObjects}
+                onObjectsChange={updateManagedObjects}
+                users={adminUsers}
+                onUsersChange={setAdminUsers}
+              />
             ) : page === "tags" ? (
               <TagsPage toast={toast} />
             ) : page === "objects" ? (
               <ObjectsPage
+                objects={scopedObjects}
                 open={(object) => {
                   setSelectedObject(object);
                   navigate("object");
                 }}
               />
-            ) : page === "object" ? (
+            ) : page === "object" && selectedObjectInScope ? (
               <ObjectDetailPage
                 object={selectedObject}
+                availableContractors={scopedContractors}
                 openEmployee={setDetail}
                 goObjects={() => navigate("objects")}
+                onStickyTitleChange={setStickyDetailTitle}
                 openContractor={(contractor) => {
                   setSelectedContractor(contractor);
                   navigate("contractor");
@@ -1172,15 +1559,17 @@ export default function App() {
               />
             ) : page === "contractors" ? (
               <ContractorsPage
+                items={scopedContractors}
                 open={(name) => {
                   setSelectedContractor(name);
                   navigate("contractor");
                 }}
               />
-            ) : (
+            ) : page === "contractor" && selectedContractorInScope ? (
               <EmployeesPage
                 page={page}
                 selected={selectedContractor}
+                allowedObjectNames={scopedObjectNames}
                 rows={rows}
                 query={query}
                 setQuery={setQuery}
@@ -1188,6 +1577,22 @@ export default function App() {
                 setStatus={setStatus}
                 open={setDetail}
                 goContractors={() => navigate("contractors")}
+              />
+            ) : page === "object" ? (
+              <ObjectsPage
+                objects={scopedObjects}
+                open={(object) => {
+                  setSelectedObject(object);
+                  navigate("object");
+                }}
+              />
+            ) : (
+              <ContractorsPage
+                items={scopedContractors}
+                open={(name) => {
+                  setSelectedContractor(name);
+                  navigate("contractor");
+                }}
               />
             )}
           </motion.div>
@@ -1215,89 +1620,90 @@ export default function App() {
 }
 function HomePage({
   navigate,
+  objects,
+  openObject,
 }: {
   navigate: (page: AppPage) => void;
+  objects: ObjectItem[];
+  openObject: (object: ObjectItem) => void;
 }) {
+  const scopedObjectItems = objects;
+  const objectNames = objects.map((item) => item.name);
+  const scopedProfiles = scopedObjectItems.map(getObjectProfile);
+  const currentPresence = PRESENCE_RECORDS.filter(
+    (record) => !record.leftAt && objectNames.includes(record.object),
+  );
+  const onSite = currentPresence.length;
+  const contractorCount = new Set(
+    scopedProfiles.flatMap((item) => item.contractors),
+  ).size;
   const metrics = [
     {
-      label: "Сотрудники",
-      value: "128",
-      change: "+12 за месяц",
-      icon: <Users size={20} />,
+      label: "Сейчас на объектах",
+      value: String(onSite),
+      change: "Выбрать объект",
+      icon: <UserCheck size={20} />,
       tone: "blue",
+      target: "objects" as AppPage,
     },
     {
-      label: "Сейчас на объектах",
-      value: "46",
-      change: "36% персонала",
-      icon: <UserCheck size={20} />,
+      label: "Объекты",
+      value: String(scopedObjectItems.length),
+      change: "Контакты и подрядчики",
+      icon: <MapPin size={20} />,
       tone: "green",
+      target: "objects" as AppPage,
     },
     {
       label: "Подрядчики",
-      value: "12",
-      change: "10 активных",
+      value: String(contractorCount),
+      change: "Ответственные и телефоны",
       icon: <Building2 size={20} />,
       tone: "violet",
-    },
-    {
-      label: "Активные метки",
-      value: "184",
-      change: "98,4% в сети",
-      icon: <Radio size={20} />,
-      tone: "orange",
+      target: "contractors" as AppPage,
     },
   ];
-  const activity = [
-    {
-      name: "Александр Петров",
-      place: "ЛЦ «Запад»",
-      time: "08:42",
-      type: "Вход",
-      initials: "АП",
-    },
-    {
-      name: "Дмитрий Крылов",
-      place: "БЦ «Орион»",
-      time: "08:36",
-      type: "Вход",
-      initials: "ДК",
-    },
-    {
-      name: "Марина Орлова",
-      place: "Площадка «Север»",
-      time: "08:21",
-      type: "Вход",
-      initials: "МО",
-    },
-    {
-      name: "Елена Соколова",
-      place: "ЛЦ «Запад»",
-      time: "18:17",
-      type: "Выход",
-      initials: "ЕС",
-    },
-  ];
+  const activity = EXPORT_EVENTS.filter(
+    (event) => event.type !== "Отчёт" && objectNames.includes(event.object),
+  )
+    .slice(0, 4)
+    .map((event) => ({
+      name: event.employee,
+      place: event.object,
+      time: new Date(event.occurredAt).toLocaleTimeString("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      type: event.type,
+      initials: event.employee
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join(""),
+    }));
   return (
     <section className="dashboard-page px-10 py-8">
       <div className="page-intro">
         <div>
-          <p className="eyebrow">Обзор системы</p>
-          <h1>Доброе утро</h1>
-          <p>Актуальная картина по объектам и персоналу на сегодня.</p>
+          <h1>Главная</h1>
+          <p>Кто сейчас на объектах, контакты подрядчиков и последние события.</p>
         </div>
         <div className="date-chip">
           <Clock3 size={16} />
-          <span>Вторник, 28 июля</span>
+          <span>
+            {new Intl.DateTimeFormat("ru-RU", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }).format(new Date())}
+          </span>
         </div>
       </div>
       <div className="metric-grid">
         {metrics.map((metric, index) => (
           <motion.button
             key={metric.label}
-            onClick={() =>
-              navigate(index === 3 ? "tags" : index === 1 ? "objects" : "contractors")
-            }
+            onClick={() => navigate(metric.target)}
             className={`metric-card tone-${metric.tone}`}
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1325,9 +1731,9 @@ function HomePage({
             <div>
               <span className="section-kicker">
                 <Activity size={14} />
-                Загрузка объектов
+                По объектам
               </span>
-              <h2>Присутствие персонала</h2>
+              <h2>Кто сейчас на месте</h2>
             </div>
             <button onClick={() => navigate("objects")}>
               Все объекты
@@ -1338,28 +1744,33 @@ function HomePage({
             <div className="radial-wrap">
               <div className="radial">
                 <div>
-                  <strong>46</strong>
+                  <strong>{onSite}</strong>
                   <span>на объектах</span>
                 </div>
               </div>
             </div>
             <div className="site-bars">
-              {[
-                ["ЛЦ «Запад»", "18 чел.", 82, "blue"],
-                ["Площадка «Север»", "14 чел.", 66, "violet"],
-                ["БЦ «Орион»", "9 чел.", 48, "green"],
-                ["Склад № 3", "5 чел.", 28, "orange"],
-              ].map(([name, count, width, tone]) => (
-                <div className="site-bar" key={name as string}>
+              {scopedObjectItems.map((item, index) => {
+                const count = currentPresence.filter(
+                  (record) => record.object === item.name,
+                ).length;
+                const tones = ["blue", "violet", "green", "orange"];
+                return (
+                <button
+                  type="button"
+                  className="site-bar clickable-home-row"
+                  key={item.code}
+                  onClick={() => openObject(item)}
+                >
                   <div>
-                    <span>{name}</span>
-                    <b>{count}</b>
+                    <span>{item.name}</span>
+                    <b>{count} чел.</b>
                   </div>
                   <div className="bar-track">
                     <motion.i
-                      className={`bar-${tone}`}
+                      className={`bar-${tones[index % tones.length]}`}
                       initial={{ width: 0 }}
-                      animate={{ width: `${width}%` }}
+                      animate={{ width: `${Math.min(100, count * 24)}%` }}
                       transition={{
                         delay: 0.4,
                         duration: 0.8,
@@ -1367,8 +1778,8 @@ function HomePage({
                       }}
                     />
                   </div>
-                </div>
-              ))}
+                </button>
+              )})}
             </div>
           </div>
         </motion.article>
@@ -1381,19 +1792,18 @@ function HomePage({
           <div className="card-heading">
             <div>
               <span className="section-kicker">
-                <Radio size={14} />
-                Live
+                <ScrollText size={14} />
+                Сегодня
               </span>
-              <h2>Последние события</h2>
+              <h2>Последние входы и выходы</h2>
             </div>
-            <span className="live-indicator">
-              <i />
-              Обновляется
-            </span>
+            <button onClick={() => navigate("journal")}>Журнал</button>
           </div>
           <div className="activity-list">
-            {activity.map((item, index) => (
-              <motion.div
+            {activity.filter((item) => objectNames.includes(item.place)).map((item, index) => (
+              <motion.button
+                type="button"
+                onClick={() => navigate("journal")}
                 key={item.name}
                 initial={{ opacity: 0, x: 8 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -1410,7 +1820,7 @@ function HomePage({
                   {item.type}
                 </span>
                 <time>{item.time}</time>
-              </motion.div>
+              </motion.button>
             ))}
           </div>
         </motion.article>
@@ -1421,6 +1831,7 @@ function HomePage({
 function EmployeesPage({
   page,
   selected,
+  allowedObjectNames,
   rows,
   query,
   setQuery,
@@ -1431,6 +1842,7 @@ function EmployeesPage({
 }: {
   page: string;
   selected: string;
+  allowedObjectNames: string[];
   rows: Employee[];
   query: string;
   setQuery: (x: string) => void;
@@ -1440,46 +1852,31 @@ function EmployeesPage({
   goContractors: () => void;
 }) {
   const all = page === "employees";
-  const profile = useMemo(() => getContractorProfile(selected), [selected]);
-  const [mode, setMode] = useState<"employees" | "log">("employees");
+  const [mode, setMode] = useState<"employees" | "history">("employees");
   const [draftQuery, setDraftQuery] = useState(query);
   const [draftStatus, setDraftStatus] = useState(status);
   const [draftDepartment, setDraftDepartment] = useState("Все подразделения");
   const [department, setDepartment] = useState("Все подразделения");
-  const [logQuery, setLogQuery] = useState("");
-  const [draftLogEvent, setDraftLogEvent] = useState("Все события");
-  const [logEvent, setLogEvent] = useState("Все события");
-  const [draftLogObject, setDraftLogObject] = useState("Все объекты");
-  const [logObject, setLogObject] = useState("Все объекты");
   const filteredRows = useMemo(
     () =>
-      rows.filter(
-        (employee) =>
-          department === "Все подразделения" || employee.dept === department,
-      ),
-    [rows, department],
+      rows.filter((employee) => {
+        const worksInScope = PRESENCE_RECORDS.some(
+          (record) =>
+            record.employee === employee.name &&
+            allowedObjectNames.includes(record.object),
+        );
+        return (
+          worksInScope &&
+          (department === "Все подразделения" || employee.dept === department)
+        );
+      }),
+    [allowedObjectNames, rows, department],
   );
-  const filteredLogs = useMemo(() => {
-    const normalized = logQuery.toLowerCase();
-    return profile.logs.filter(
-      (record) =>
-        (!normalized ||
-          `${record.employee} ${record.object} ${record.details}`
-            .toLowerCase()
-            .includes(normalized)) &&
-        (logEvent === "Все события" || record.event === logEvent) &&
-        (logObject === "Все объекты" || record.object === logObject),
-    );
-  }, [profile, logQuery, logEvent, logObject]);
   const applyFilters = () => {
     if (mode === "employees") {
       setQuery(draftQuery.trim());
       setStatus(draftStatus);
       setDepartment(draftDepartment);
-    } else {
-      setLogQuery(draftQuery.trim());
-      setLogEvent(draftLogEvent);
-      setLogObject(draftLogObject);
     }
   };
   const resetFilters = () => {
@@ -1490,29 +1887,15 @@ function EmployeesPage({
       setQuery("");
       setStatus("Все статусы");
       setDepartment("Все подразделения");
-    } else {
-      setDraftLogEvent("Все события");
-      setLogEvent("Все события");
-      setDraftLogObject("Все объекты");
-      setLogObject("Все объекты");
-      setLogQuery("");
     }
   };
-  const switchMode = () => {
-    const nextMode = mode === "employees" ? "log" : "employees";
-    setMode(nextMode);
-    setDraftQuery(nextMode === "log" ? logQuery : query);
-  };
-  const logObjects = Array.from(
-    new Set(profile.logs.map((record) => record.object)),
-  );
   return (
     <section className="px-10 py-8">
       <div className="mb-7 flex items-start justify-between">
         <div>
           {all ? (
             <p className="mb-1 text-[13.5px] text-[#7b8ba3]">
-              Управление персоналом / Сотрудники
+              Сотрудники
             </p>
           ) : (
             <p className="mb-1 text-[13.5px] text-[#7b8ba3]">
@@ -1529,22 +1912,48 @@ function EmployeesPage({
           <h1 className="text-[34px] font-bold tracking-[-.025em]">
             {all ? "Управление сотрудниками" : selected}
           </h1>
-          <p className="mt-2 text-[16px] text-[#71819b]">
-            {all
-              ? "Список сотрудников всех подрядных организаций"
-              : "Сотрудники, посещаемость и отчётность подрядной организации"}
-          </p>
+          {!all && (
+            <p className="mt-2 max-w-[780px] text-[16px] text-[#71819b]">
+              {contractorDetails[selected].description}
+            </p>
+          )}
         </div>
       </div>
-      {!all && <ContractorAnalytics contractor={selected} profile={profile} />}
-      <div className="contractor-filters rounded-xl border border-[#dfe6ef] bg-white p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <SlidersHorizontal size={16} className="text-[#5d7394]" />
-          <h2 className="text-[16px] font-semibold">Фильтры</h2>
-          <span className="filter-context">
-            {mode === "employees" ? "Сотрудники" : "История событий"}
-          </span>
+      {!all && (
+        <ContractorContacts
+          contractor={selected}
+          allowedObjectNames={allowedObjectNames}
+        />
+      )}
+      {!all && (
+        <div
+          className="segmented-switch contractor-section-switch"
+          role="tablist"
+          aria-label="Раздел подрядчика"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "employees"}
+            className={mode === "employees" ? "is-active" : ""}
+            onClick={() => setMode("employees")}
+          >
+            Сотрудники
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "history"}
+            className={mode === "history" ? "is-active" : ""}
+            onClick={() => setMode("history")}
+          >
+            История
+          </button>
         </div>
+      )}
+      {mode === "employees" ? (
+      <>
+      <div className="contractor-filters rounded-xl border border-[#dfe6ef] bg-white p-5">
         <div className="grid grid-cols-[minmax(260px,2fr)_1fr_1fr_auto_auto] gap-3">
           <div className="relative">
             <Search
@@ -1556,46 +1965,27 @@ function EmployeesPage({
               onChange={(event) => setDraftQuery(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && applyFilters()}
               placeholder={
-                mode === "employees"
-                  ? "Введите ФИО, должность или email"
-                  : "Сотрудник, объект или описание события"
+                "ФИО, должность или email"
               }
               className="h-10 w-full rounded-lg border border-[#dce5f0] pl-10 pr-3 text-[13.5px] outline-none focus:border-[#3b82f6]"
             />
           </div>
-          {mode === "employees" ? (
-            <>
-              <Select
-                value={draftStatus}
-                onChange={setDraftStatus}
-                options={["Все статусы", "Активен", "Неактивен"]}
-              />
-              <Select
-                value={draftDepartment}
-                onChange={setDraftDepartment}
-                options={[
-                  "Все подразделения",
-                  "Администрация",
-                  "Производственный отдел",
-                  "Монтажный отдел",
-                  "Технический отдел",
-                ]}
-              />
-            </>
-          ) : (
-            <>
-              <Select
-                value={draftLogEvent}
-                onChange={setDraftLogEvent}
-                options={["Все события", "Вход", "Выход", "Отчёт"]}
-              />
-              <Select
-                value={draftLogObject}
-                onChange={setDraftLogObject}
-                options={["Все объекты", ...logObjects]}
-              />
-            </>
-          )}
+          <Select
+            value={draftStatus}
+            onChange={setDraftStatus}
+            options={["Все статусы", "Активен", "Неактивен"]}
+          />
+          <Select
+            value={draftDepartment}
+            onChange={setDraftDepartment}
+            options={[
+              "Все подразделения",
+              "Администрация",
+              "Производственный отдел",
+              "Монтажный отдел",
+              "Технический отдел",
+            ]}
+          />
           <button
             onClick={applyFilters}
             className="h-10 rounded-lg bg-[#2563eb] px-4 text-[13.5px] font-semibold text-white"
@@ -1614,51 +2004,84 @@ function EmployeesPage({
         <div className="flex items-center justify-between px-6 py-5">
           <div>
             <h2 className="text-[18px] font-semibold">
-              {mode === "employees"
-                ? "Список сотрудников"
-                : "История сотрудников"}
+              Сотрудники подрядчика
             </h2>
             <p className="mt-1 text-[13.5px] text-[#7788a1]">
-              {mode === "employees"
-                ? `Найдено: ${filteredRows.length}`
-                : `Событий: ${filteredLogs.length} · входы и выходы привязаны к объектам`}
+              {`Найдено: ${filteredRows.length}`}
             </p>
           </div>
-          <div className="table-header-actions">
-            <button
-              onClick={switchMode}
-              className={`table-mode-button ${mode === "log" ? "is-active" : ""}`}
-            >
-              {mode === "employees" ? (
-                <ScrollText size={15} />
-              ) : (
-                <Users size={15} />
-              )}{" "}
-              {mode === "employees" ? "История" : "Сотрудники"}
-            </button>
-            <button
-              onClick={() =>
-                mode === "employees"
-                  ? downloadEmployees(filteredRows)
-                  : downloadLogs(filteredLogs)
-              }
-              disabled={
-                mode === "employees"
-                  ? !filteredRows.length
-                  : !filteredLogs.length
-              }
-              className="flex h-9 items-center gap-2 rounded-lg border border-[#dce5ef] px-3 text-[13.5px] font-medium text-[#47607f] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Download size={15} />
-              Экспорт
-            </button>
-          </div>
         </div>
-        {mode === "employees" ? (
-          <EmployeeTable rows={filteredRows} all={all} open={open} />
-        ) : (
-          <EmployeeLogTable rows={filteredLogs} openEmployee={open} />
-        )}
+        <EmployeeTable rows={filteredRows} all={all} open={open} />
+      </div>
+      </>
+      ) : (
+        <ContractorPresenceMatrix
+          contractor={selected}
+          allowedObjectNames={allowedObjectNames}
+          records={PRESENCE_RECORDS}
+          onOpenEmployee={(name) => {
+            const employee = staff.find((item) => item.name === name);
+            if (employee) open(employee);
+          }}
+        />
+      )}
+    </section>
+  );
+}
+
+function getObjectContractors(
+  object: ObjectItem,
+  availableContractors: readonly string[] = contractors,
+) {
+  if (object.contractors) return object.contractors;
+  return availableContractors.filter((contractor) =>
+    Object.prototype.hasOwnProperty.call(
+      contractorDetails[contractor]?.contactsByObject ?? {},
+      object.code,
+    ),
+  );
+}
+
+function ContractorContacts({
+  contractor,
+  allowedObjectNames,
+}: {
+  contractor: string;
+  allowedObjectNames: string[];
+}) {
+  const details = contractorDetails[contractor];
+  return (
+    <section className="contractor-contact-card">
+      <div className="contractor-contact-main">
+        <span><Building2 size={18} /></span>
+        <div>
+          <strong>Диспетчер подрядчика</strong>
+          <small>{details.email}</small>
+        </div>
+        <a href={`mailto:${details.email}`} aria-label="Написать подрядчику">
+          <Mail size={15} />
+        </a>
+        <a className="call-link" href={`tel:${details.phone.replace(/[^+\d]/g, "")}`}>
+          <Phone size={15} />
+          {details.phone}
+        </a>
+      </div>
+      <div className="contractor-object-contacts">
+        {Object.entries(details.contactsByObject).map(([code, contact]) => {
+          const object = objectsInitial.find((item) => item.code === code);
+          if (!object || !allowedObjectNames.includes(object.name)) return null;
+          return (
+            <article key={code}>
+              <span>{object.name}</span>
+              <strong>{contact.name}</strong>
+              <small>{contact.role}</small>
+              <a href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`}>
+                <Phone size={14} />
+                {contact.phone}
+              </a>
+            </article>
+          );
+        })}
       </div>
     </section>
   );
@@ -1832,7 +2255,6 @@ function ContractorAnalytics({
           <div>
             <small>Сейчас на объектах</small>
             <strong>{profile.onSite} сотрудников</strong>
-            <em>Данные обновлены сейчас</em>
           </div>
         </motion.div>
         <motion.div
@@ -1875,6 +2297,7 @@ function EmployeeLogTable({
   rows: LogRecord[];
   openEmployee: (employee: Employee) => void;
 }) {
+  const pagination = usePaginatedItems(rows, rows.map((record) => record.id).join("|"));
   const eventIcon = (event: LogRecord["event"]) =>
     event === "Вход" ? (
       <DoorOpen size={14} />
@@ -1884,8 +2307,9 @@ function EmployeeLogTable({
       <FileText size={14} />
     );
   return (
-    <div className="responsive-table-wrap overflow-x-auto">
-      <table className="employee-log-table responsive-table w-full min-w-[1120px] text-left">
+    <div className="table-pagination-shell">
+      <div className="responsive-table-wrap overflow-x-auto">
+        <table className="employee-log-table responsive-table w-full min-w-[1120px] text-left">
         <thead>
           <tr>
             <th className="px-6 py-3.5">Дата и время</th>
@@ -1898,12 +2322,25 @@ function EmployeeLogTable({
         </thead>
         <tbody>
           {rows.length ? (
-            rows.map((record) => {
+            pagination.pageItems.map((record) => {
               const employee = staff.find(
                 (item) => item.name === record.employee,
               );
               return (
-                <tr key={record.id}>
+                <tr
+                  key={record.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Открыть событие сотрудника ${record.employee}`}
+                  onClick={() => employee && openEmployee(employee)}
+                  onKeyDown={(event) => {
+                    if ((event.key === "Enter" || event.key === " ") && employee) {
+                      event.preventDefault();
+                      openEmployee(employee);
+                    }
+                  }}
+                  className="cursor-pointer"
+                >
                   <td data-label="Дата и время" className="px-6 py-4">
                     <strong className="log-date">{record.date}</strong>
                     <time>{record.time}</time>
@@ -1911,7 +2348,10 @@ function EmployeeLogTable({
                   <td data-label="Сотрудник" className="px-3">
                     <button
                       className="log-employee"
-                      onClick={() => employee && openEmployee(employee)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (employee) openEmployee(employee);
+                      }}
                     >
                       <span>{record.initials}</span>
                       <strong>{record.employee}</strong>
@@ -1955,13 +2395,21 @@ function EmployeeLogTable({
                 <div className="empty-filter-state">
                   <ScrollText size={20} />
                   <strong>События не найдены</strong>
-                  <span>Измените параметры фильтрации</span>
+                  <span>Сбросьте фильтры или измените запрос</span>
                 </div>
               </td>
             </tr>
           )}
         </tbody>
-      </table>
+        </table>
+      </div>
+      <DataPagination
+        page={pagination.page}
+        pageCount={pagination.pageCount}
+        pageSize={pagination.pageSize}
+        totalItems={rows.length}
+        onPageChange={pagination.setPage}
+      />
     </div>
   );
 }
@@ -1974,9 +2422,11 @@ function EmployeeTable({
   all: boolean;
   open: (e: Employee) => void;
 }) {
+  const pagination = usePaginatedItems(rows, rows.map((employee) => employee.email).join("|"));
   return (
-    <div className="responsive-table-wrap overflow-x-auto">
-      <table className="employee-table responsive-table w-full min-w-[990px] text-left">
+    <div className="table-pagination-shell">
+      <div className="responsive-table-wrap overflow-x-auto">
+        <table className="employee-table responsive-table w-full min-w-[990px] text-left">
         <thead className="bg-[#f8fafc] text-[12.5px] uppercase tracking-[.06em] text-[#7485a0]">
           <tr>
             <th className="px-6 py-3.5">Сотрудник</th>
@@ -1989,7 +2439,7 @@ function EmployeeTable({
         </thead>
         <tbody>
           {rows.length ? (
-            rows.map((e) => (
+            pagination.pageItems.map((e) => (
               <tr
                 key={e.email}
                 onClick={() => open(e)}
@@ -2011,9 +2461,6 @@ function EmployeeTable({
                     </div>
                     <div>
                       <p className="text-[15px] font-semibold">{e.name}</p>
-                      <p className="mt-0.5 text-[12.5px] text-[#8190a7]">
-                        Добавлен {e.added}
-                      </p>
                     </div>
                   </div>
                 </td>
@@ -2025,8 +2472,20 @@ function EmployeeTable({
                 <td data-label="Должность" className="px-3 text-[13.5px] text-[#30425e]">{e.role}</td>
                 <td data-label="Подразделение" className="px-3 text-[13.5px] text-[#627590]">{e.dept}</td>
                 <td data-label="Контакты" className="px-3 text-[12.5px] text-[#526783]">
-                  <p>{e.phone}</p>
-                  <p className="mt-1 text-[#7e8da4]">{e.email}</p>
+                  <a
+                    href={`tel:${e.phone.replace(/[^+\d]/g, "")}`}
+                    onClick={(event) => event.stopPropagation()}
+                    className="block font-medium text-[#245ccb] hover:underline"
+                  >
+                    {e.phone}
+                  </a>
+                  <a
+                    href={`mailto:${e.email}`}
+                    onClick={(event) => event.stopPropagation()}
+                    className="mt-1 block text-[#526f96] hover:underline"
+                  >
+                    {e.email}
+                  </a>
                 </td>
                 <td data-label="Статус" className="px-3">
                   <span
@@ -2043,34 +2502,44 @@ function EmployeeTable({
                 <div className="empty-filter-state">
                   <Search size={20} />
                   <strong>Сотрудники не найдены</strong>
-                  <span>Измените параметры фильтрации</span>
+                  <span>Сбросьте фильтры или измените запрос</span>
                 </div>
               </td>
             </tr>
           )}
         </tbody>
-      </table>
+        </table>
+      </div>
+      <DataPagination
+        page={pagination.page}
+        pageCount={pagination.pageCount}
+        pageSize={pagination.pageSize}
+        totalItems={rows.length}
+        onPageChange={pagination.setPage}
+      />
     </div>
   );
 }
-function ContractorsPage({ open }: { open: (x: string) => void }) {
+function ContractorsPage({
+  open,
+  items = contractors,
+}: {
+  open: (x: string) => void;
+  items?: string[];
+}) {
   const [query, setQuery] = useState("");
   const filtered = useMemo(
     () =>
-      contractors.filter((contractor) =>
-        contractor.toLowerCase().includes(query.trim().toLowerCase()),
+      items.filter((contractor) =>
+        `${contractor} ${contractorDetails[contractor].description}`
+          .toLowerCase()
+          .includes(query.trim().toLowerCase()),
       ),
-    [query],
+    [query, items],
   );
   return (
     <section className="px-10 py-8">
-      <p className="mb-1 text-[13.5px] text-[#7b8ba3]">
-        Управление персоналом / Подрядчики
-      </p>
       <h1 className="text-[34px] font-bold tracking-[-.025em]">Подрядчики</h1>
-      <p className="mt-2 text-[16px] text-[#71819b]">
-        Список подрядных организаций и сотрудников
-      </p>
       <div className="mt-7 overflow-hidden rounded-xl border border-[#dfe6ef] bg-white">
         <div className="flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
           <div>
@@ -2095,21 +2564,23 @@ function ContractorsPage({ open }: { open: (x: string) => void }) {
         <div className="divide-y divide-[#e8edf4]">
           {filtered.length ? (
             filtered.map((item) => {
-              const index = contractors.indexOf(item);
               return (
                 <button
                   key={item}
+                  aria-label={`Открыть подрядчика ${item}`}
                   onClick={() => open(item)}
-                  className="flex w-full items-center gap-4 px-6 py-4 text-left hover:bg-[#f8fbff]"
+                  className="entity-click-row flex w-full items-center gap-4 px-6 py-4 text-left"
                 >
                   <div className="grid size-10 place-items-center rounded-xl bg-[#e9f2ff] text-[#2563eb]">
                     <Building2 size={19} />
                   </div>
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     <p className="text-[15px] font-semibold">{item}</p>
                     <p className="mt-1 text-[12.5px] text-[#7b8ca5]">
-                      ИНН 7704{index + 218}000 ·{" "}
-                      {index === 0 ? 24 : 6 + index * 3} сотрудников
+                      {contractorDetails[item].description}
+                    </p>
+                    <p className="mt-1 text-[12.5px] text-[#637894]">
+                      {contractorDetails[item].phone} · {contractorDetails[item].email}
                     </p>
                   </div>
                   <ChevronDown
@@ -2123,7 +2594,6 @@ function ContractorsPage({ open }: { open: (x: string) => void }) {
             <div className="empty-filter-state">
               <Search size={20} />
               <strong>Подрядчики не найдены</strong>
-              <span>Измените поисковый запрос</span>
               <button onClick={() => setQuery("")}>Сбросить поиск</button>
             </div>
           )}
@@ -2133,25 +2603,25 @@ function ContractorsPage({ open }: { open: (x: string) => void }) {
   );
 }
 
-function ObjectsPage({ open }: { open: (object: ObjectItem) => void }) {
+function ObjectsPage({
+  open,
+  objects = objectsInitial,
+}: {
+  open: (object: ObjectItem) => void;
+  objects?: ObjectItem[];
+}) {
   const [query, setQuery] = useState("");
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return objectsInitial.filter((object) =>
+    return objects.filter((object) =>
       `${object.name} ${object.address} ${object.code}`
         .toLowerCase()
         .includes(normalized),
     );
-  }, [query]);
+  }, [query, objects]);
   return (
     <section className="objects-page px-10 py-8">
-      <p className="mb-1 text-[13.5px] text-[#7b8ba3]">
-        Управление персоналом / Объекты
-      </p>
       <h1 className="text-[34px] font-bold tracking-[-.025em]">Объекты</h1>
-      <p className="mt-2 text-[16px] text-[#71819b]">
-        Объекты, привязанные подрядчики и история посещений
-      </p>
       <div className="entity-list mt-7 overflow-hidden rounded-xl border border-[#dfe6ef] bg-white">
         <div className="entity-list-header flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
           <div>
@@ -2205,7 +2675,6 @@ function ObjectsPage({ open }: { open: (object: ObjectItem) => void }) {
             <div className="empty-filter-state">
               <Search size={20} />
               <strong>Объекты не найдены</strong>
-              <span>Измените поисковый запрос</span>
               <button onClick={() => setQuery("")}>Сбросить поиск</button>
             </div>
           )}
@@ -2217,80 +2686,40 @@ function ObjectsPage({ open }: { open: (object: ObjectItem) => void }) {
 
 function ObjectDetailPage({
   object,
+  availableContractors,
   openEmployee,
   goObjects,
   openContractor,
+  onStickyTitleChange,
 }: {
   object: ObjectItem;
+  availableContractors: string[];
   openEmployee: (employee: Employee) => void;
   goObjects: () => void;
   openContractor: (contractor: string) => void;
+  onStickyTitleChange: (title: string) => void;
 }) {
-  const profile = useMemo(() => getObjectProfile(object), [object]);
-  const objectEmployees = useMemo(
-    () =>
-      staff.filter((employee) =>
-        profile.contractors.includes(employee.contractor),
-      ),
-    [profile],
-  );
-  const [mode, setMode] = useState<"employees" | "log">("employees");
-  const [draftQuery, setDraftQuery] = useState("");
-  const [query, setQuery] = useState("");
-  const [draftStatus, setDraftStatus] = useState("Все статусы");
-  const [status, setStatus] = useState("Все статусы");
-  const [draftContractor, setDraftContractor] = useState("Все подрядчики");
-  const [contractor, setContractor] = useState("Все подрядчики");
-  const [draftEvent, setDraftEvent] = useState("Все события");
-  const [event, setEvent] = useState("Все события");
-  const filteredEmployees = useMemo(() => {
-    const normalized = query.toLowerCase();
-    return objectEmployees.filter(
-      (employee) =>
-        (!normalized ||
-          `${employee.name} ${employee.role} ${employee.email}`
-            .toLowerCase()
-            .includes(normalized)) &&
-        (status === "Все статусы" || employee.status === status) &&
-        (contractor === "Все подрядчики" ||
-          employee.contractor === contractor),
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const profile = useMemo(() => {
+    const base = getObjectProfile(object);
+    return {
+      ...base,
+      contractors: getObjectContractors(object, availableContractors),
+    };
+  }, [availableContractors, object]);
+  useEffect(() => {
+    const title = titleRef.current;
+    if (!title) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => onStickyTitleChange(entry.isIntersecting ? "" : object.name),
+      { rootMargin: "-76px 0px 0px 0px", threshold: 0 },
     );
-  }, [objectEmployees, query, status, contractor]);
-  const filteredLogs = useMemo(() => {
-    const normalized = query.toLowerCase();
-    return profile.logs.filter((record) => {
-      const employee = staff.find((item) => item.name === record.employee);
-      return (
-        (!normalized ||
-          `${record.employee} ${record.details}`
-            .toLowerCase()
-            .includes(normalized)) &&
-        (event === "Все события" || record.event === event) &&
-        (contractor === "Все подрядчики" ||
-          employee?.contractor === contractor)
-      );
-    });
-  }, [profile, query, event, contractor]);
-  const applyFilters = () => {
-    setQuery(draftQuery.trim());
-    setContractor(draftContractor);
-    if (mode === "employees") setStatus(draftStatus);
-    else setEvent(draftEvent);
-  };
-  const resetFilters = () => {
-    setDraftQuery("");
-    setQuery("");
-    setDraftContractor("Все подрядчики");
-    setContractor("Все подрядчики");
-    setDraftStatus("Все статусы");
-    setStatus("Все статусы");
-    setDraftEvent("Все события");
-    setEvent("Все события");
-  };
-  const switchMode = () => {
-    setMode((current) => (current === "employees" ? "log" : "employees"));
-    setDraftQuery(query);
-  };
+    observer.observe(title);
+    return () => {
+      observer.disconnect();
+      onStickyTitleChange("");
+    };
+  }, [object.name, onStickyTitleChange]);
   return (
     <section className="object-detail-page px-10 py-8">
       <div className="object-detail-intro mb-7 flex items-start justify-between">
@@ -2305,7 +2734,7 @@ function ObjectDetailPage({
             <span className="px-1.5">/</span>
             {object.name}
           </p>
-          <h1 className="text-[34px] font-bold tracking-[-.025em]">
+          <h1 ref={titleRef} className="text-[34px] font-bold tracking-[-.025em]">
             {object.name}
           </h1>
           <p className="mt-2 flex items-center gap-1.5 text-[16px] text-[#71819b]">
@@ -2316,123 +2745,169 @@ function ObjectDetailPage({
           </p>
         </div>
       </div>
-      <ObjectAnalytics object={object} profile={profile} />
+      <ObjectContacts object={object} />
       <ObjectContractors
+        object={object}
         profile={profile}
         openContractor={openContractor}
       />
-      <div className="contractor-filters rounded-xl border border-[#dfe6ef] bg-white p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <SlidersHorizontal size={16} className="text-[#5d7394]" />
-          <h2 className="text-[16px] font-semibold">Фильтры</h2>
-          <span className="filter-context">
-            {mode === "employees" ? "Сотрудники объекта" : "Журнал объекта"}
-          </span>
-        </div>
-        <div className="grid grid-cols-[minmax(260px,2fr)_1fr_1fr_auto_auto] gap-3">
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8293ad]"
-              size={17}
-            />
-            <input
-              value={draftQuery}
-              onChange={(e) => setDraftQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && applyFilters()}
-              placeholder={
-                mode === "employees"
-                  ? "ФИО, должность или email"
-                  : "Сотрудник или описание события"
-              }
-              className="h-10 w-full rounded-lg border border-[#dce5f0] pl-10 pr-3 text-[13.5px] outline-none focus:border-[#3b82f6]"
-            />
-          </div>
-          {mode === "employees" ? (
-            <Select
-              value={draftStatus}
-              onChange={setDraftStatus}
-              options={["Все статусы", "Активен", "Неактивен"]}
-            />
-          ) : (
-            <Select
-              value={draftEvent}
-              onChange={setDraftEvent}
-              options={["Все события", "Вход", "Выход", "Отчёт"]}
-            />
-          )}
-          <Select
-            value={draftContractor}
-            onChange={setDraftContractor}
-            options={["Все подрядчики", ...profile.contractors]}
-          />
-          <button
-            onClick={applyFilters}
-            className="h-10 rounded-lg bg-[#2563eb] px-4 text-[13.5px] font-semibold text-white"
-          >
-            Применить
-          </button>
-          <button
-            onClick={resetFilters}
-            className="h-10 rounded-lg border border-[#dbe4ef] px-4 text-[13.5px] font-medium text-[#50637f]"
-          >
-            Сбросить
-          </button>
+      <ObjectAnalytics object={object} profile={profile} />
+      <ObjectPresence
+        object={object}
+        contractors={profile.contractors}
+        openEmployee={openEmployee}
+      />
+    </section>
+  );
+}
+
+function ObjectContacts({ object }: { object: ObjectItem }) {
+  const details = objectDetails[object.code];
+  const contacts = object.contacts ?? details?.contacts ?? [];
+  return (
+    <section className="object-contacts-card">
+      <div className="object-contacts-heading">
+        <span className="object-contact-icon">
+          <Contact size={18} />
+        </span>
+        <div>
+          <h2>Контакты объекта</h2>
+          <p>{object.access || details?.access || "Уточните порядок доступа у управляющего"}</p>
         </div>
       </div>
-      <div className="mt-5 overflow-hidden rounded-xl border border-[#dfe6ef] bg-white">
-        <div className="flex items-center justify-between px-6 py-5">
-          <div>
-            <h2 className="text-[18px] font-semibold">
-              {mode === "employees"
-                ? "Сотрудники объекта"
-                : "Журнал посещений"}
-            </h2>
-            <p className="mt-1 text-[13.5px] text-[#7788a1]">
-              {mode === "employees"
-                ? `Найдено: ${filteredEmployees.length}`
-                : `Событий: ${filteredLogs.length}`}
-            </p>
-          </div>
-          <div className="table-header-actions">
-            <button
-              onClick={switchMode}
-              className={`table-mode-button ${mode === "log" ? "is-active" : ""}`}
-            >
-              {mode === "employees" ? (
-                <ScrollText size={15} />
-              ) : (
-                <Users size={15} />
+      <div className="object-contact-list">
+        {contacts.map((contact) => (
+          <article key={`${object.code}-${contact.phone}`}>
+            <div>
+              <strong>{contact.name}</strong>
+              <span>{contact.role}</span>
+            </div>
+            <div className="contact-actions">
+              {contact.email && (
+                <a href={`mailto:${contact.email}`} aria-label={`Написать ${contact.name}`}>
+                  <Mail size={15} />
+                </a>
               )}
-              {mode === "employees" ? "История" : "Сотрудники"}
-            </button>
-            <button
-              onClick={() =>
-                mode === "employees"
-                  ? downloadEmployees(filteredEmployees)
-                  : downloadLogs(filteredLogs, "object-log.csv")
-              }
-              disabled={
-                mode === "employees"
-                  ? !filteredEmployees.length
-                  : !filteredLogs.length
-              }
-              className="flex h-9 items-center gap-2 rounded-lg border border-[#dce5ef] px-3 text-[13.5px] font-medium text-[#47607f] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Download size={15} />
-              Экспорт
-            </button>
-          </div>
-        </div>
-        {mode === "employees" ? (
-          <EmployeeTable
-            rows={filteredEmployees}
-            all
-            open={openEmployee}
-          />
-        ) : (
-          <EmployeeLogTable rows={filteredLogs} openEmployee={openEmployee} />
-        )}
+              <a className="call-link" href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`}>
+                <Phone size={15} />
+                {contact.phone}
+              </a>
+            </div>
+          </article>
+        ))}
       </div>
+    </section>
+  );
+}
+
+function ObjectPresence({
+  object,
+  openEmployee,
+}: {
+  object: ObjectItem;
+  contractors: string[];
+  openEmployee: (employee: Employee) => void;
+}) {
+  const [view, setView] = useState<"now" | "history">("now");
+  const [from, setFrom] = useState("2026-08-08T00:00");
+  const [to, setTo] = useState("2026-08-12T23:59");
+  const hasPeriod = Boolean(from && to);
+  const periodIsValid =
+    !hasPeriod || new Date(from).getTime() <= new Date(to).getTime();
+  const rows = useMemo(
+    () =>
+      PRESENCE_RECORDS.filter((record) => {
+        if (record.object !== object.name) return false;
+        if (view === "now") return !record.leftAt;
+        if (!periodIsValid) return false;
+        const entry = new Date(record.enteredAt).getTime();
+        const exit = record.leftAt
+          ? new Date(record.leftAt).getTime()
+          : Number.POSITIVE_INFINITY;
+        if (!hasPeriod) return true;
+        return entry <= new Date(to).getTime() && exit >= new Date(from).getTime();
+      }),
+    [from, hasPeriod, object.name, periodIsValid, to, view],
+  );
+  const pagination = usePaginatedItems(rows, [object.name, view, from, to].join("|"));
+  return (
+    <section className="object-presence-card">
+      <div className="object-presence-heading">
+        <div>
+          <span><Users size={14} /> Присутствие</span>
+          <h2>Работники на объекте</h2>
+        </div>
+        <div className="segmented-switch object-presence-tabs" role="tablist" aria-label="Период присутствия">
+          <button type="button" role="tab" aria-selected={view === "now"} className={view === "now" ? "is-active" : ""} onClick={() => setView("now")}>Сейчас</button>
+          <button type="button" role="tab" aria-selected={view === "history"} className={view === "history" ? "is-active" : ""} onClick={() => setView("history")}>История</button>
+        </div>
+      </div>
+      {view === "history" && (
+        <div className="object-presence-filters">
+          <DateRangePicker
+            from={from}
+            to={to}
+            withTime
+            allowEmpty
+            ariaLabel="Дата и время присутствия на объекте"
+            onChange={(value) => {
+              setFrom(value.from);
+              setTo(value.to);
+            }}
+          />
+        </div>
+      )}
+      {view === "history" && !periodIsValid && (
+        <p className="object-presence-empty" role="alert">
+          Дата начала должна быть раньше даты окончания.
+        </p>
+      )}
+      <div className="responsive-table-wrap overflow-x-auto">
+        <table className="responsive-table w-full min-w-[760px] text-left">
+          <thead>
+            <tr>
+              <th>Сотрудник</th>
+              <th>Подрядчик</th>
+              <th>Комната</th>
+              <th>Вход</th>
+              <th>Выход</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pagination.pageItems.map((record) => {
+              const employee = staff.find((item) => item.name === record.employee);
+              return (
+                <tr
+                  key={record.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => employee && openEmployee(employee)}
+                  onKeyDown={(event) => {
+                    if ((event.key === "Enter" || event.key === " ") && employee) {
+                      event.preventDefault();
+                      openEmployee(employee);
+                    }
+                  }}
+                >
+                  <td data-label="Сотрудник"><strong>{record.employee}</strong><small>{record.role}</small></td>
+                  <td data-label="Подрядчик">{record.contractor}</td>
+                  <td data-label="Комната">{roomForRecord(record)}</td>
+                  <td data-label="Вход">{new Date(record.enteredAt).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td>
+                  <td data-label="Выход">{record.leftAt ? new Date(record.leftAt).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : <span className="on-site-badge">На месте</span>}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {!rows.length && periodIsValid && <div className="object-presence-empty">За выбранный период работников не найдено.</div>}
+      <DataPagination
+        page={pagination.page}
+        pageCount={pagination.pageCount}
+        pageSize={pagination.pageSize}
+        totalItems={rows.length}
+        onPageChange={pagination.setPage}
+      />
     </section>
   );
 }
@@ -2444,6 +2919,7 @@ function ObjectAnalytics({
   object: ObjectItem;
   profile: ObjectProfile;
 }) {
+  const [selectedContractor, setSelectedContractor] = useState("Все подрядчики");
   const dayLabels = [
     "22 июл",
     "23 июл",
@@ -2453,17 +2929,26 @@ function ObjectAnalytics({
     "27 июл",
     "28 июл",
   ];
-  const chartData = profile.visits.map((visits, index) => ({
-    day: dayLabels[index],
-    visits,
-  }));
-  const contractorPercent = Math.round(
-    (profile.contractors.length / contractors.length) * 100,
-  );
+  const seriesColors = ["#2864eb", "#7558d8", "#22a979", "#d87824"];
+  const chartData = profile.visits.map((visits, dayIndex) => {
+    const point: Record<string, string | number> = { day: dayLabels[dayIndex] };
+    profile.contractors.forEach((_, contractorIndex) => {
+      const weight = profile.contractors.length - contractorIndex + 1;
+      const weightSum = profile.contractors.reduce(
+        (sum, __, index) => sum + profile.contractors.length - index + 1,
+        0,
+      );
+      point[`contractor${contractorIndex}`] = Math.max(
+        0,
+        Math.round((visits * weight) / weightSum + ((dayIndex + contractorIndex) % 3) - 1),
+      );
+    });
+    return point;
+  });
   return (
-    <div className="contractor-analytics object-analytics">
+    <div className="object-traffic-section">
       <motion.article
-        className="contractor-chart-card"
+        className="contractor-chart-card object-multiline-card"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -2471,37 +2956,33 @@ function ObjectAnalytics({
           <div>
             <span>
               <BarChart3 size={14} />
-              Посещаемость объекта
+              По подрядчикам
             </span>
-            <h2>Посещения за 7 дней</h2>
-            <p>Все входы сотрудников на территорию объекта</p>
+            <h2>Входы по дням</h2>
           </div>
-          <div className="analytics-delta">
-            <span className="analytics-delta-value">
-              <TrendingUp size={14} />
-              <strong>{profile.growth}</strong>
-            </span>
-            <small>к прошлому дню</small>
-          </div>
+        </div>
+        <div className="chart-series-picker" role="group" aria-label="Подрядчик на графике">
+          {["Все подрядчики", ...profile.contractors].map((contractor, index) => (
+            <button
+              key={contractor}
+              className={selectedContractor === contractor ? "is-active" : ""}
+              onClick={() => setSelectedContractor(contractor)}
+            >
+              {index > 0 && (
+                <i style={{ backgroundColor: seriesColors[(index - 1) % seriesColors.length] }} />
+              )}
+              {contractor === "Все подрядчики"
+                ? contractor
+                : contractor.replace("ООО ", "")}
+            </button>
+          ))}
         </div>
         <div className="contractor-chart">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
+            <LineChart
               data={chartData}
-              margin={{ top: 10, right: 8, left: -22, bottom: 0 }}
+              margin={{ top: 10, right: 12, left: -22, bottom: 0 }}
             >
-              <defs>
-                <linearGradient
-                  id={`object-visits-${object.code}`}
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop offset="0%" stopColor="#2b68ee" stopOpacity={0.28} />
-                  <stop offset="100%" stopColor="#2b68ee" stopOpacity={0.01} />
-                </linearGradient>
-              </defs>
               <CartesianGrid
                 vertical={false}
                 stroke="#edf1f6"
@@ -2527,124 +3008,39 @@ function ObjectAnalytics({
                   boxShadow: "0 12px 30px rgba(28,48,82,.12)",
                   fontSize: 13.5,
                 }}
-                formatter={(value) => [`${value} посещений`, ""]}
-              />
-              <Area
-                type="monotone"
-                dataKey="visits"
-                stroke="#2b68ee"
-                strokeWidth={2.5}
-                fill={`url(#object-visits-${object.code})`}
-                activeDot={{
-                  r: 4,
-                  fill: "#2b68ee",
-                  stroke: "white",
-                  strokeWidth: 2,
+                formatter={(value, name) => {
+                  const index = Number(String(name).replace("contractor", ""));
+                  return [`${value} входов`, profile.contractors[index] ?? ""];
                 }}
               />
-            </AreaChart>
+              {profile.contractors.map((contractor, index) =>
+                selectedContractor === "Все подрядчики" ||
+                selectedContractor === contractor ? (
+                  <Line
+                    key={`${object.code}-${contractor}`}
+                    type="monotone"
+                    dataKey={`contractor${index}`}
+                    stroke={seriesColors[index % seriesColors.length]}
+                    strokeWidth={selectedContractor === contractor ? 3 : 2.25}
+                    dot={false}
+                    activeDot={{ r: 4, stroke: "white", strokeWidth: 2 }}
+                  />
+                ) : null,
+              )}
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </motion.article>
-      <motion.article
-        className="contractor-report-card"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-      >
-        <div className="analytics-heading">
-          <div>
-            <span>
-              <Building2 size={14} />
-              Доступ к объекту
-            </span>
-            <h2>Привязанные подрядчики</h2>
-            <p>Организации с доступом на объект</p>
-          </div>
-        </div>
-        <div className="report-overview">
-          <div
-            className="report-ring"
-            style={{
-              background: `conic-gradient(#22a979 0 ${contractorPercent}%, #eaf0f5 ${contractorPercent}% 100%)`,
-            }}
-          >
-            <div>
-              <strong>
-                {profile.contractors.length} / {contractors.length}
-              </strong>
-              <span>подрядчика</span>
-            </div>
-          </div>
-          <div className="report-stats">
-            <span>
-              <i className="is-complete" />
-              <b>{profile.contractors.length}</b> имеют доступ
-            </span>
-            <span>
-              <i className="is-pending" />
-              <b>{contractors.length - profile.contractors.length}</b> не
-              привязаны
-            </span>
-            <span>
-              <i className="is-total" />
-              <b>{profile.onSite}</b> сейчас на объекте
-            </span>
-          </div>
-        </div>
-      </motion.article>
-      <div className="contractor-kpis">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <span className="kpi-icon is-blue">
-            <UserCheck size={17} />
-          </span>
-          <div>
-            <small>Сейчас на объекте</small>
-            <strong>{profile.onSite} сотрудников</strong>
-            <em>Данные обновлены сейчас</em>
-          </div>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.14 }}
-        >
-          <span className="kpi-icon is-violet">
-            <DoorOpen size={17} />
-          </span>
-          <div>
-            <small>Посещений сегодня</small>
-            <strong>{profile.visitsToday} посещений</strong>
-            <em>Входы на текущую дату</em>
-          </div>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.18 }}
-        >
-          <span className="kpi-icon is-orange">
-            <Radio size={17} />
-          </span>
-          <div>
-            <small>Активные метки</small>
-            <strong>{profile.activeTags} меток</strong>
-            <em>Закреплены за объектом</em>
-          </div>
-        </motion.div>
-      </div>
     </div>
   );
 }
 
 function ObjectContractors({
+  object,
   profile,
   openContractor,
 }: {
+  object: ObjectItem;
   profile: ObjectProfile;
   openContractor: (contractor: string) => void;
 }) {
@@ -2653,56 +3049,72 @@ function ObjectContractors({
       <div className="object-contractors-heading">
         <div>
           <span>
-            <Building2 size={14} />
-            Организации на объекте
+            <Wrench size={14} />
+            Кому звонить
           </span>
-          <h2>Привязанные подрядчики</h2>
-          <p>Нажмите на организацию, чтобы открыть её карточку</p>
+          <h2>Подрядчики и ответственные</h2>
         </div>
         <strong>{profile.contractors.length}</strong>
       </div>
       <div className="object-contractor-grid">
-        {profile.contractors.map((contractor, index) => {
-          const employees = staff.filter(
-            (employee) => employee.contractor === contractor,
-          );
-          const visits = Math.max(
-            1,
-            Math.round(profile.visitsToday / profile.contractors.length) -
-              index * 3,
-          );
+        {profile.contractors.map((contractor) => {
+          const details = contractorDetails[contractor];
+          const responsible = details.contactsByObject[object.code];
+          const onSiteCount = PRESENCE_RECORDS.filter(
+            (record) =>
+              !record.leftAt &&
+              record.object === object.name &&
+              record.contractor === contractor,
+          ).length;
           return (
-            <button
+            <article
               key={contractor}
+              role="button"
+              tabIndex={0}
               aria-label={`Открыть подрядчика ${contractor}`}
               onClick={() => openContractor(contractor)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openContractor(contractor);
+                }
+              }}
               className="object-contractor-card"
             >
               <span className="object-contractor-icon">
                 <Building2 size={18} />
               </span>
-              <span className="min-w-0 flex-1">
+              <span className="object-contractor-copy min-w-0 flex-1">
                 <strong>{contractor}</strong>
-                <small>
-                  {employees.length}{" "}
-                  {pluralizeRu(
-                    employees.length,
-                    "сотрудник",
-                    "сотрудника",
-                    "сотрудников",
-                  )}{" "}
-                  · {visits}{" "}
-                  {pluralizeRu(
-                    visits,
-                    "посещение",
-                    "посещения",
-                    "посещений",
-                  )}{" "}
-                  сегодня
+                <small className="object-contractor-service">{details.description}</small>
+                <small className="object-contractor-presence">
+                  {onSiteCount
+                    ? `${onSiteCount} ${pluralizeRu(onSiteCount, "работник", "работника", "работников")} на месте`
+                    : "Сейчас работников нет"}
                 </small>
+                {responsible ? (
+                  <span className="object-responsible">
+                    <span>
+                      <b>{responsible.name}</b>
+                      <small>{responsible.role}</small>
+                    </span>
+                    <a
+                      href={`tel:${responsible.phone.replace(/[^+\d]/g, "")}`}
+                      onClick={(event) => event.stopPropagation()}
+                      aria-label={`Позвонить ${responsible.name}`}
+                    >
+                      <Phone size={14} />
+                      {responsible.phone}
+                    </a>
+                  </span>
+                ) : (
+                  <span className="object-responsible is-empty">
+                    Ответственный не назначен
+                  </span>
+                )}
               </span>
               <ChevronDown size={17} className="-rotate-90" />
-            </button>
+            </article>
           );
         })}
       </div>
@@ -2710,22 +3122,33 @@ function ObjectContractors({
   );
 }
 
-function SettingsPage({ toast }: { toast: (m: string) => void }) {
-  const [tab, setTab] = useState<"objects" | "contractors">("objects");
-  const [objects, setObjects] = useState(objectsInitial);
+function SettingsPage({
+  toast,
+  objects,
+  onObjectsChange,
+  users,
+  onUsersChange,
+}: {
+  toast: (m: string) => void;
+  objects: ObjectItem[];
+  onObjectsChange: (objects: ObjectItem[]) => void;
+  users: AdminUser[];
+  onUsersChange: (users: AdminUser[]) => void;
+}) {
+  const [tab, setTab] = useState<"users" | "objects" | "contractors">("users");
   const [modal, setModal] = useState<"add" | "edit" | "delete" | null>(null);
   const [chosen, setChosen] = useState<ObjectItem | null>(null);
-  const [contractorModal, setContractorModal] = useState(false);
+  const [contractorModal, setContractorModal] = useState<string | null>(null);
   return (
     <section className="px-10 py-8">
-      <p className="mb-1 text-[13.5px] text-[#7b8ba3]">
-        Управление персоналом / Настройки
-      </p>
       <h1 className="text-[34px] font-bold tracking-[-.025em]">Настройки</h1>
-      <p className="mt-2 text-[16px] text-[#71819b]">
-        Управление объектами и подрядными организациями
-      </p>
       <div className="settings-tabs mt-7 flex w-fit rounded-xl border border-[#dce5ef] bg-white p-1">
+        <button
+          onClick={() => setTab("users")}
+          className={`rounded-lg px-4 py-2 text-[15px] font-semibold ${tab === "users" ? "bg-[#2563eb] text-white" : "text-[#61738f]"}`}
+        >
+          Пользователи
+        </button>
         <button
           onClick={() => setTab("objects")}
           className={`rounded-lg px-4 py-2 text-[15px] font-semibold ${tab === "objects" ? "bg-[#2563eb] text-white" : "text-[#61738f]"}`}
@@ -2739,7 +3162,14 @@ function SettingsPage({ toast }: { toast: (m: string) => void }) {
           Подрядчики
         </button>
       </div>
-      {tab === "objects" ? (
+      {tab === "users" ? (
+        <AdminUsersSettings
+          objectNames={objects.map((object) => object.name)}
+          toast={toast}
+          users={users}
+          onUsersChange={onUsersChange}
+        />
+      ) : tab === "objects" ? (
         <div className="mt-5 overflow-hidden rounded-xl border border-[#dfe6ef] bg-white">
           <div className="flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
             <div>
@@ -2763,7 +3193,20 @@ function SettingsPage({ toast }: { toast: (m: string) => void }) {
             {objects.map((item) => (
               <div
                 key={item.code}
-                className="flex items-center gap-4 px-6 py-4"
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  setChosen(item);
+                  setModal("edit");
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setChosen(item);
+                    setModal("edit");
+                  }
+                }}
+                className="entity-click-row flex cursor-pointer items-center gap-4 px-6 py-4"
               >
                 <div className="grid size-10 place-items-center rounded-xl bg-[#e9f2ff] text-[#2563eb]">
                   <MapPin size={19} />
@@ -2781,7 +3224,8 @@ function SettingsPage({ toast }: { toast: (m: string) => void }) {
                 </span>
                 <button
                   aria-label={`Редактировать ${item.name}`}
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
                     setChosen(item);
                     setModal("edit");
                   }}
@@ -2791,7 +3235,8 @@ function SettingsPage({ toast }: { toast: (m: string) => void }) {
                 </button>
                 <button
                   aria-label={`Удалить ${item.name}`}
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
                     setChosen(item);
                     setModal("delete");
                   }}
@@ -2811,20 +3256,25 @@ function SettingsPage({ toast }: { toast: (m: string) => void }) {
                 Подрядные организации
               </h2>
               <p className="mt-1 text-[13.5px] text-[#7788a1]">
-                Контакты и данные для входа подрядчиков
+                Описание, ответственные и привязанные объекты
               </p>
             </div>
-            <button
-              onClick={() => setContractorModal(true)}
-              className="settings-add-button flex h-10 items-center gap-2 rounded-lg bg-[#2563eb] px-4 text-[15px] font-semibold text-white"
-            >
-              <Plus size={16} />
-              Добавить подрядчика
-            </button>
           </div>
           <div className="divide-y divide-[#e8edf4]">
             {contractors.map((item, i) => (
-              <div key={item} className="flex items-center gap-4 px-6 py-4">
+              <div
+                key={item}
+                role="button"
+                tabIndex={0}
+                onClick={() => setContractorModal(item)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setContractorModal(item);
+                  }
+                }}
+                className="entity-click-row flex cursor-pointer items-center gap-4 px-6 py-4"
+              >
                 <div className="grid size-10 place-items-center rounded-xl bg-[#e9f2ff] text-[#2563eb]">
                   <Building2 size={19} />
                 </div>
@@ -2836,7 +3286,10 @@ function SettingsPage({ toast }: { toast: (m: string) => void }) {
                 </div>
                 <button
                   aria-label={`Редактировать ${item}`}
-                  onClick={() => setContractorModal(true)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setContractorModal(item);
+                  }}
                   className="grid size-9 place-items-center rounded-lg text-[#617894] hover:bg-blue-50 hover:text-blue-600"
                 >
                   <Pencil size={16} />
@@ -2855,14 +3308,14 @@ function SettingsPage({ toast }: { toast: (m: string) => void }) {
             close={() => setModal(null)}
             done={(message, saved) => {
               if (modal === "delete" && chosen)
-                setObjects((items) =>
-                  items.filter((value) => value.code !== chosen.code),
+                onObjectsChange(
+                  objects.filter((value) => value.code !== chosen.code),
                 );
               if (modal === "add" && saved)
-                setObjects((items) => [...items, saved]);
+                onObjectsChange([...objects, saved]);
               if (modal === "edit" && saved && chosen)
-                setObjects((items) =>
-                  items.map((value) =>
+                onObjectsChange(
+                  objects.map((value) =>
                     value.code === chosen.code ? saved : value,
                   ),
                 );
@@ -2875,10 +3328,22 @@ function SettingsPage({ toast }: { toast: (m: string) => void }) {
       <AnimatePresence>
         {contractorModal && (
           <ContractorModal
-            key="contractor-modal"
-            close={() => setContractorModal(false)}
-            done={(m) => {
-              setContractorModal(false);
+            key={`contractor-modal-${contractorModal}`}
+            contractor={contractorModal}
+            objects={objects}
+            close={() => setContractorModal(null)}
+            done={(m, linkedCodes) => {
+              onObjectsChange(
+                objects.map((object) => {
+                  const current = getObjectContractors(object);
+                  const shouldBeLinked = linkedCodes.includes(object.code);
+                  const next = shouldBeLinked
+                    ? Array.from(new Set([...current, contractorModal]))
+                    : current.filter((name) => name !== contractorModal);
+                  return { ...object, contractors: next };
+                }),
+              );
+              setContractorModal(null);
               toast(m);
             }}
           />
@@ -2899,11 +3364,23 @@ function ObjectModal({
   done: (m: string, saved?: ObjectItem) => void;
 }) {
   const [drawer, setDrawer] = useState(false);
-  const [linked, setLinked] = useState([contractors[0], contractors[1]]);
+  const [linked, setLinked] = useState(
+    item?.contractors ||
+      (item ? getObjectContractors(item) : [contractors[0], contractors[1]]),
+  );
   const [find, setFind] = useState("");
   const [name, setName] = useState(item?.name || "");
   const [code, setCode] = useState(item?.code || "");
   const [address, setAddress] = useState(item?.address || "");
+  const [access, setAccess] = useState(
+    item?.access || (item ? objectDetails[item.code]?.access : "") || "",
+  );
+  const [contacts, setContacts] = useState<ContactPerson[]>(
+    item?.contacts ||
+      (item ? objectDetails[item.code]?.contacts : undefined) || [
+        { name: "", role: "", phone: "", email: "" },
+      ],
+  );
   const [objectStatus, setObjectStatus] = useState<"Активен" | "Неактивен">(
     item?.status || "Активен",
   );
@@ -2924,6 +3401,9 @@ function ObjectModal({
       code: code.trim(),
       address: address.trim() || "Адрес не указан",
       status: objectStatus,
+      access: access.trim(),
+      contacts: contacts.filter((contact) => contact.name.trim()),
+      contractors: linked,
     });
   };
   if (type === "delete")
@@ -2964,7 +3444,7 @@ function ObjectModal({
           title={
             type === "add" ? "Добавление объекта" : "Редактирование объекта"
           }
-          sub="Основные данные объекта"
+          sub="Контакты и подрядчики"
           close={close}
         />
         <div className="overlay-scroll-region flex-1 overflow-y-auto space-y-6 px-7 py-6">
@@ -3001,7 +3481,90 @@ function ObjectModal({
               onChange={setAddress}
               placeholder="Город, улица, дом"
             />
+            <Field
+              label="Как попасть на объект"
+              value={access}
+              onChange={setAccess}
+              placeholder="Например: пост охраны, вход 1"
+            />
           </div>
+          <section className="rounded-xl border border-[#e3eaf3] bg-[#f8fbff] p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-[15px] font-semibold text-[#1e293b]">Контакты объекта</h3>
+              <button
+                onClick={() =>
+                  setContacts((items) => [
+                    ...items,
+                    { name: "", role: "", phone: "", email: "" },
+                  ])
+                }
+                className="drawer-section-action"
+              >
+                <Plus size={14} /> Добавить
+              </button>
+            </div>
+            <div className="space-y-3">
+              {contacts.map((contact, contactIndex) => (
+                <div key={contactIndex} className="relative space-y-3 rounded-lg border border-[#dce5ef] bg-white p-3.5">
+                  <Field
+                    label="ФИО"
+                    value={contact.name}
+                    onChange={(value) =>
+                      setContacts((items) =>
+                        items.map((entry, index) =>
+                          index === contactIndex ? { ...entry, name: value } : entry,
+                        ),
+                      )
+                    }
+                  />
+                  <Field
+                    label="Должность"
+                    value={contact.role}
+                    onChange={(value) =>
+                      setContacts((items) =>
+                        items.map((entry, index) =>
+                          index === contactIndex ? { ...entry, role: value } : entry,
+                        ),
+                      )
+                    }
+                    placeholder="Например: начальник смены"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field
+                      label="Телефон"
+                      value={contact.phone}
+                      onChange={(value) =>
+                        setContacts((items) =>
+                          items.map((entry, index) =>
+                            index === contactIndex ? { ...entry, phone: value } : entry,
+                          ),
+                        )
+                      }
+                    />
+                    <Field
+                      label="Email"
+                      value={contact.email}
+                      onChange={(value) =>
+                        setContacts((items) =>
+                          items.map((entry, index) =>
+                            index === contactIndex ? { ...entry, email: value } : entry,
+                          ),
+                        )
+                      }
+                    />
+                  </div>
+                  <button
+                    aria-label="Удалить контакт"
+                    disabled={contacts.length === 1}
+                    onClick={() => setContacts((items) => items.filter((_, index) => index !== contactIndex))}
+                    className="absolute right-2 top-2 grid size-7 place-items-center rounded-md text-[#9aa8b9] hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
           <section className="rounded-xl border border-[#e3eaf3] bg-[#f8fbff] p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
@@ -3117,7 +3680,7 @@ function ObjectModal({
               )}
             </div>
           </section>
-          <Field label="Комментарий" placeholder="Дополнительная информация" />
+          <Field label="Примечание для сотрудников" placeholder="Что важно знать об объекте" />
         </div>
         <ModalFoot
           close={close}
@@ -3129,36 +3692,70 @@ function ObjectModal({
   );
 }
 function ContractorModal({
+  contractor,
+  objects,
   close,
   done,
 }: {
+  contractor: string;
+  objects: ObjectItem[];
   close: () => void;
-  done: (m: string) => void;
+  done: (m: string, linkedCodes: string[]) => void;
 }) {
-  const [contacts, setContacts] = useState([
-    {
-      name: "Александр Крылов",
-      phone: "+7 495 123-45-67",
-      email: "office@company.ru",
-    },
-  ]);
-  const [show, setShow] = useState(false);
+  const existingDetails = contractorDetails[contractor];
+  const [contactsByObject, setContactsByObject] = useState<
+    Record<string, ContactPerson>
+  >(() =>
+    Object.fromEntries(
+      Object.entries(existingDetails.contactsByObject).map(([code, contact]) => [
+        code,
+        { ...contact },
+      ]),
+    ),
+  );
+  const [description, setDescription] = useState(
+    existingDetails.description,
+  );
+  const [dispatcherPhone, setDispatcherPhone] = useState(existingDetails.phone);
+  const [dispatcherEmail, setDispatcherEmail] = useState(existingDetails.email);
   const [drawer, setDrawer] = useState(false);
-  const [linked, setLinked] = useState([
-    objectsInitial[0].code,
-    objectsInitial[1].code,
-  ]);
+  const [linked, setLinked] = useState(
+    Object.keys(existingDetails.contactsByObject),
+  );
   const [find, setFind] = useState("");
   useOverlayLock(close);
-  const shown = objectsInitial.filter(
+  const shown = objects.filter(
     (object) =>
       object.name.toLowerCase().includes(find.toLowerCase()) ||
       object.address.toLowerCase().includes(find.toLowerCase()),
   );
-  const toggle = (code: string) =>
-    setLinked((x) =>
-      x.includes(code) ? x.filter((v) => v !== code) : [...x, code],
+  const toggle = (code: string) => {
+    setLinked((current) =>
+      current.includes(code)
+        ? current.filter((value) => value !== code)
+        : [...current, code],
     );
+    setContactsByObject((current) =>
+      current[code]
+        ? current
+        : {
+            ...current,
+            [code]: { name: "", role: "", phone: "", email: "" },
+          },
+    );
+  };
+  const updateContact = (
+    code: string,
+    field: keyof ContactPerson,
+    value: string,
+  ) =>
+    setContactsByObject((current) => ({
+      ...current,
+      [code]: {
+        ...(current[code] || { name: "", role: "", phone: "", email: "" }),
+        [field]: value,
+      },
+    }));
   return (
     <motion.div
       className="overlay-layer fixed inset-0 z-[60] isolate"
@@ -3184,105 +3781,37 @@ function ContractorModal({
       >
         <ModalHead
           title="Редактирование подрядчика"
-          sub="Основные данные подрядной организации"
+          sub="Описание и контакты"
           close={close}
         />
         <div className="overlay-scroll-region flex-1 overflow-y-auto space-y-7 px-7 py-6">
           <div className="space-y-4">
-            <Field label="Название организации *" value="ООО «Альфа Строй»" />
+            <Field label="Название организации" value={contractor} readOnly />
+            <label className="block">
+              <span className="mb-1.5 block text-[13.5px] font-medium text-[#40516d]">
+                Что делает подрядчик
+              </span>
+              <textarea
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                rows={3}
+                placeholder="Например: шлагбаумы, СКУД и видеонаблюдение"
+                className="w-full resize-none rounded-lg border border-[#dce5f0] bg-white px-3 py-2.5 text-[15px] text-[#16223a] outline-none focus:border-[#3b82f6]"
+              />
+            </label>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="ИНН *" value="7704218000" />
+              <Field
+                label="Телефон диспетчера"
+                value={dispatcherPhone}
+                onChange={setDispatcherPhone}
+              />
+              <Field
+                label="Email диспетчера"
+                value={dispatcherEmail}
+                onChange={setDispatcherEmail}
+              />
             </div>
           </div>
-          <section className="rounded-xl border border-[#e3eaf3] bg-[#f8fbff] p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-[15px] font-semibold text-[#1e293b]">
-                Контактные лица
-              </h3>
-              <button
-                onClick={() =>
-                  setContacts([...contacts, { name: "", phone: "", email: "" }])
-                }
-                className="flex h-8 items-center gap-1.5 rounded-lg border border-[#cfe0f7] bg-white px-2.5 text-[12.5px] font-semibold text-[#2563eb] transition hover:bg-[#eef5ff]"
-              >
-                <Plus size={14} />
-                Добавить
-              </button>
-            </div>
-            <div className="space-y-3">
-              {contacts.map((c, i) => (
-                <div
-                  key={i}
-                  className="relative rounded-lg border border-[#dce5ef] bg-white p-3.5"
-                >
-                  <div className="space-y-3">
-                    <div className="pr-8">
-                      <Field
-                        label="ФИО"
-                        value={c.name}
-                        placeholder="Контактное лицо"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field
-                        label="Телефон"
-                        value={c.phone}
-                        placeholder="+7 999 000-00-00"
-                      />
-                      <Field
-                        label="Email"
-                        value={c.email}
-                        placeholder="email@company.ru"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    disabled={contacts.length === 1}
-                    onClick={() =>
-                      setContacts(contacts.filter((_, x) => x !== i))
-                    }
-                    className="absolute right-2 top-2 grid size-7 place-items-center rounded-md text-[#9aa8b9] hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section className="rounded-xl border border-[#dce8fa] bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2">
-              <div className="grid size-7 place-items-center rounded-lg bg-[#eef5ff] text-[#2563eb]">
-                <KeyRound size={14} />
-              </div>
-              <h3 className="text-[15px] font-semibold">Данные для входа</h3>
-            </div>
-            <p className="mt-1.5 text-[12.5px] text-[#71839e]">
-              Пароль выдаётся представителю подрядной организации.
-            </p>
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <Field label="Логин" value="alfa-stroy" />
-              <label className="block">
-                <span className="mb-1.5 block text-[13.5px] font-medium text-[#40516d]">
-                  Пароль
-                </span>
-                <div className="relative">
-                  <input
-                    type={show ? "text" : "password"}
-                    defaultValue="Contractor-2026"
-                    className="h-10 w-full rounded-lg border border-[#dce5f0] bg-white px-3 pr-12 text-[15px] outline-none"
-                  />
-                  <button
-                    type="button"
-                    aria-label={show ? "Скрыть пароль" : "Показать пароль"}
-                    onClick={() => setShow(!show)}
-                    className="password-visibility absolute inset-y-0 right-1 grid w-9 place-items-center rounded-lg text-[#71839e]"
-                  >
-                    {show ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </label>
-            </div>
-          </section>
           <section className="rounded-xl border border-[#e3eaf3] bg-[#f8fbff] p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
@@ -3352,14 +3881,14 @@ function ContractorModal({
                         <button
                           onClick={() =>
                             setLinked(
-                              linked.length === objectsInitial.length
+                              linked.length === objects.length
                                 ? []
-                                : objectsInitial.map((x) => x.code),
+                                : objects.map((x) => x.code),
                             )
                           }
                           className="text-[12.5px] font-medium text-[#61738f] hover:text-[#2563eb]"
                         >
-                          {linked.length === objectsInitial.length
+                          {linked.length === objects.length
                             ? "Снять все"
                             : "Выбрать все"}
                         </button>
@@ -3378,7 +3907,8 @@ function ContractorModal({
             <div className="flex min-h-[44px] flex-wrap gap-2 rounded-lg border border-[#dce5ef] bg-white p-2.5">
               {linked.length ? (
                 linked.map((code) => {
-                  const item = objectsInitial.find((x) => x.code === code)!;
+                  const item = objects.find((x) => x.code === code);
+                  if (!item) return null;
                   return (
                     <span
                       key={code}
@@ -3402,10 +3932,93 @@ function ContractorModal({
               )}
             </div>
           </section>
+          <section className="rounded-xl border border-[#e3eaf3] bg-[#f8fbff] p-5">
+            <div className="mb-4">
+              <h3 className="text-[15px] font-semibold text-[#1e293b]">
+                Ответственные на объектах
+              </h3>
+              <p className="mt-1 text-[12.5px] text-[#71839e]">
+                Эти контакты видны в рабочей карточке объекта.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {linked.length ? (
+                linked.map((code) => {
+                  const object = objects.find((item) => item.code === code);
+                  if (!object) return null;
+                  const contact = contactsByObject[code] || {
+                    name: "",
+                    role: "",
+                    phone: "",
+                    email: "",
+                  };
+                  return (
+                    <div
+                      key={code}
+                      className="space-y-3 rounded-lg border border-[#dce5ef] bg-white p-3.5"
+                    >
+                      <div className="flex items-center gap-2 text-[13.5px] font-semibold text-[#263956]">
+                        <MapPin size={14} className="text-[#2563eb]" />
+                        {object.name}
+                      </div>
+                      <Field
+                        label="ФИО"
+                        value={contact.name}
+                        placeholder="Ответственный сотрудник"
+                        onChange={(value) => updateContact(code, "name", value)}
+                      />
+                      <Field
+                        label="Должность"
+                        value={contact.role}
+                        placeholder="Любая должность"
+                        onChange={(value) => updateContact(code, "role", value)}
+                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field
+                          label="Телефон"
+                          value={contact.phone}
+                          placeholder="+7 999 000-00-00"
+                          onChange={(value) => updateContact(code, "phone", value)}
+                        />
+                        <Field
+                          label="Email"
+                          value={contact.email}
+                          placeholder="email@company.ru"
+                          onChange={(value) => updateContact(code, "email", value)}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="rounded-lg border border-dashed border-[#d5dfeb] bg-white px-4 py-5 text-center text-[13px] text-[#71839e]">
+                  Сначала выберите объект.
+                </p>
+              )}
+            </div>
+          </section>
         </div>
         <ModalFoot
           close={close}
-          save={() => done("Данные подрядчика сохранены")}
+          save={() => {
+            contractorDetails[contractor] = {
+              ...existingDetails,
+              description: description.trim() || existingDetails.description,
+              phone: dispatcherPhone.trim(),
+              email: dispatcherEmail.trim(),
+              contactsByObject: Object.fromEntries(
+                linked.map((code) => [
+                  code,
+                  contactsByObject[code] || {
+                    name: "Ответственный не назначен",
+                    role: "",
+                    phone: dispatcherPhone.trim(),
+                  },
+                ]),
+              ),
+            };
+            done("Данные подрядчика сохранены", linked);
+          }}
           label="Сохранить"
         />
       </motion.aside>
@@ -3446,16 +4059,15 @@ function TagsPage({
     null,
   );
   const [returnToBusiness, setReturnToBusiness] = useState<string | null>(null);
-  const [business, setBusiness] = useState("Все бизнес-центры");
+  const [business, setBusiness] = useState("Все объекты");
   const [query, setQuery] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
 
   const visibleGroups = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return tagBusinessGroups
       .filter(
         (object) =>
-          business === "Все бизнес-центры" || object.name === business,
+          business === "Все объекты" || object.name === business,
       )
       .map((object) => {
         const objectTags = tags.filter((tag) => tag.business === object.name);
@@ -3486,13 +4098,17 @@ function TagsPage({
     const normalized = query.trim().toLowerCase();
     return tags.filter(
       (tag) =>
-        (business === "Все бизнес-центры" || tag.business === business) &&
+        (business === "Все объекты" || tag.business === business) &&
         (!normalized ||
           `${tag.id} ${tag.uid} ${tag.title} ${tag.type} ${tag.business} ${tag.contractors.join(" ")}`
             .toLowerCase()
             .includes(normalized)),
     );
   }, [tags, business, query]);
+  const groupPagination = usePaginatedItems(
+    visibleGroups,
+    [view, business, query, visibleGroups.map((group) => group.object.code).join("|")].join("|"),
+  );
   const toneFor = (type: TagType) =>
     type === "Посещение"
       ? "is-visit"
@@ -3552,35 +4168,17 @@ function TagsPage({
           : tag,
       ),
     );
-    toast("Метка отвязана от бизнес-центра");
-  };
-  const refresh = () => {
-    setRefreshing(true);
-    window.setTimeout(() => {
-      setRefreshing(false);
-      toast("Данные обновлены");
-    }, 550);
+    toast("Метка отвязана от объекта");
   };
   return (
     <section className="px-10 py-8">
       <div className="flex items-start justify-between">
         <div>
-          <p className="mb-1 text-[13.5px] text-[#7b8ba3]">
-            Управление персоналом / Метки
-          </p>
           <h1 className="text-[34px] font-bold tracking-[-.025em]">Метки</h1>
           <p className="mt-2 text-[16px] text-[#71819b]">
-            Список NFC-меток и управление привязками к бизнес-центрам
+            NFC-метки и их привязка к объектам
           </p>
         </div>
-        <button
-          onClick={refresh}
-          disabled={refreshing}
-          className="flex h-10 items-center gap-2 rounded-lg border border-[#dce5ef] bg-white px-4 text-[15px] font-medium text-[#4f617b] disabled:opacity-60"
-        >
-          <RefreshCw className={refreshing ? "animate-spin" : ""} size={15} />
-          Обновить
-        </button>
       </div>
       <div className="business-tags-toolbar mt-6 flex items-center gap-3 rounded-xl border border-[#dfe6ef] bg-white p-4">
         <div className="w-72">
@@ -3588,7 +4186,7 @@ function TagsPage({
             value={business}
             onChange={setBusiness}
             options={[
-              "Все бизнес-центры",
+              "Все объекты",
               ...tagBusinessGroups.map((x) => x.name),
             ]}
           />
@@ -3626,13 +4224,13 @@ function TagsPage({
         <div className="business-tags-header flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
           <div>
             <h2 className="text-[18px] font-semibold">
-              {view === "tags" ? "Все метки" : "Связь с бизнес-центрами"}
+              {view === "tags" ? "Все метки" : "Связь с объектами"}
             </h2>
-            <p className="mt-1 text-[13.5px] text-[#7788a1]">
-              {view === "tags"
-                ? "Цвет метки соответствует выбранному типу"
-                : "Выберите БЦ, чтобы посмотреть или изменить связанные метки"}
-            </p>
+            {view === "businesses" && (
+              <p className="mt-1 text-[13.5px] text-[#7788a1]">
+                Выберите объект, чтобы посмотреть или изменить связанные метки
+              </p>
+            )}
           </div>
           <div className="tag-view-controls">
             <div
@@ -3656,13 +4254,13 @@ function TagsPage({
                 onClick={() => setView("businesses")}
               >
                 <Building2 size={14} />
-                Связь с БЦ
+                Связь с объектами
               </button>
             </div>
             <span className="tag-view-count">
               {view === "tags"
                 ? `Найдено: ${visibleTags.length}`
-                : `${visibleGroups.filter((group) => group.object.code !== "NO-LINK").length} БЦ · ${tagCountLabel(totalVisibleTags)}`}
+                : `${visibleGroups.filter((group) => group.object.code !== "NO-LINK").length} объектов · ${tagCountLabel(totalVisibleTags)}`}
             </span>
           </div>
         </div>
@@ -3674,22 +4272,23 @@ function TagsPage({
               setEditingTag(tag);
             }}
             reset={() => {
-              setBusiness("Все бизнес-центры");
+              setBusiness("Все объекты");
               setQuery("");
             }}
           />
         ) : (
+          <div className="table-pagination-shell">
           <table className="business-tags-table w-full text-left">
             <thead className="bg-[#f8fafc] text-[12.5px] uppercase tracking-[.06em] text-[#7485a0]">
               <tr>
-                <th className="px-6 py-3">Бизнес-центр</th>
+                <th className="px-6 py-3">Объект</th>
                 <th className="px-3 py-3">Связанные метки</th>
                 <th className="px-6 py-3 text-right">Действия</th>
               </tr>
             </thead>
             <tbody>
               {visibleGroups.length ? (
-                visibleGroups.map(({ object, tags: objectTags }) => {
+                groupPagination.pageItems.map(({ object, tags: objectTags }) => {
                   const isUnassigned = object.code === "NO-LINK";
                   const activeTags = objectTags.filter((tag) => tag.active);
                   return (
@@ -3788,11 +4387,10 @@ function TagsPage({
                   <td colSpan={3}>
                     <div className="empty-filter-state">
                       <Search size={20} />
-                      <strong>Бизнес-центры не найдены</strong>
-                      <span>Измените фильтр или поисковый запрос</span>
+                      <strong>Объекты не найдены</strong>
                       <button
                         onClick={() => {
-                          setBusiness("Все бизнес-центры");
+                          setBusiness("Все объекты");
                           setQuery("");
                         }}
                       >
@@ -3804,6 +4402,14 @@ function TagsPage({
               )}
             </tbody>
           </table>
+          <DataPagination
+            page={groupPagination.page}
+            pageCount={groupPagination.pageCount}
+            pageSize={groupPagination.pageSize}
+            totalItems={visibleGroups.length}
+            onPageChange={groupPagination.setPage}
+          />
+          </div>
         )}
       </div>
       <AnimatePresence>
@@ -3946,7 +4552,7 @@ function BusinessTagsManager({
           title={isUnassigned ? "Метки без привязки" : object.name}
           sub={
             isUnassigned
-              ? "Назначьте меткам нужный бизнес-центр"
+              ? "Назначьте меткам нужный объект"
               : `${object.code} · Управление связанными метками`
           }
           close={close}
@@ -4066,7 +4672,7 @@ function BusinessTagsManager({
                           ? `Удалить ${tag.id}`
                           : `Отвязать ${tag.id} от ${object.name}`
                       }
-                      title={isUnassigned ? "Удалить" : "Отвязать от БЦ"}
+                      title={isUnassigned ? "Удалить" : "Отвязать от объекта"}
                       onClick={() => detach(tag.id)}
                     >
                       {isUnassigned ? <Trash2 size={14} /> : <X size={14} />}
@@ -4115,6 +4721,7 @@ function TagsListTable({
   edit: (tag: ManagedTag) => void;
   reset: () => void;
 }) {
+  const pagination = usePaginatedItems(tags, tags.map((tag) => tag.id).join("|"));
   const colorFor = (type: TagType) =>
     type === "Посещение"
       ? "bg-[#2563eb]"
@@ -4122,10 +4729,11 @@ function TagsListTable({
         ? "bg-[#e87918]"
         : "bg-[#a5b1c2]";
   return (
+    <div className="table-pagination-shell">
     <table className="tags-table responsive-table w-full text-left">
       <thead className="bg-[#f8fafc] text-[12.5px] uppercase tracking-[.06em] text-[#7485a0]">
         <tr>
-          <th className="px-6 py-3">Бизнес-центр</th>
+          <th className="px-6 py-3">Объект</th>
           <th className="px-3 py-3">Название</th>
           <th className="px-3 py-3">Тип</th>
           <th className="px-6 py-3">Подрядчики</th>
@@ -4134,10 +4742,23 @@ function TagsListTable({
       </thead>
       <tbody>
         {tags.length ? (
-          tags.map((tag) => (
-            <tr key={tag.id} className="border-t border-[#e8edf4]">
+          pagination.pageItems.map((tag) => (
+            <tr
+              key={tag.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`Редактировать метку ${tag.id}`}
+              onClick={() => edit(tag)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  edit(tag);
+                }
+              }}
+              className="cursor-pointer border-t border-[#e8edf4]"
+            >
               <td
-                data-label="Бизнес-центр"
+                data-label="Объект"
                 className="px-6 py-4 text-[13.5px] text-[#526783]"
               >
                 <span
@@ -4197,7 +4818,10 @@ function TagsListTable({
               <td data-label="Действия" className="px-6 text-right">
                 <button
                   aria-label={`Редактировать ${tag.id}`}
-                  onClick={() => edit(tag)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    edit(tag);
+                  }}
                   className="ml-auto grid size-8 place-items-center rounded-lg text-[#8293ad] transition hover:bg-[#edf5ff] hover:text-[#2563eb]"
                 >
                   <Pencil size={15} />
@@ -4219,9 +4843,18 @@ function TagsListTable({
         )}
       </tbody>
     </table>
+    <DataPagination
+      page={pagination.page}
+      pageCount={pagination.pageCount}
+      pageSize={pagination.pageSize}
+      totalItems={tags.length}
+      onPageChange={pagination.setPage}
+    />
+    </div>
   );
 }
 
+/* Legacy prototype retained for reference while the active TagsPage above is used. */
 function LegacyTagsPage({ toast }: { toast: (m: string) => void }) {
   const [tags, setTags] = useState(
     initialTags.map((tag, i) => ({
@@ -4252,6 +4885,10 @@ function LegacyTagsPage({ toast }: { toast: (m: string) => void }) {
             .includes(normalized)),
     );
   }, [tags, business, query]);
+  const legacyPagination = usePaginatedItems(
+    visibleTags,
+    [business, query, visibleTags.map((tag) => tag.id).join("|")].join("|"),
+  );
   const colorFor = (type: string) =>
     type === "Посещение"
       ? "bg-[#2563eb]"
@@ -4269,9 +4906,6 @@ function LegacyTagsPage({ toast }: { toast: (m: string) => void }) {
     <section className="px-10 py-8">
       <div className="flex items-start justify-between">
         <div>
-          <p className="mb-1 text-[13.5px] text-[#7b8ba3]">
-            Управление персоналом / Метки
-          </p>
           <h1 className="text-[34px] font-bold tracking-[-.025em]">Метки</h1>
           <p className="mt-2 text-[16px] text-[#71819b]">
             Список NFC-меток и привязок к подрядным организациям
@@ -4349,7 +4983,7 @@ function LegacyTagsPage({ toast }: { toast: (m: string) => void }) {
           </thead>
           <tbody>
             {visibleTags.length ? (
-              visibleTags.map((tag) => (
+              legacyPagination.pageItems.map((tag) => (
                 <tr key={tag.id} className="border-t border-[#e8edf4]">
                   <td data-label="Метка" className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -4436,6 +5070,13 @@ function LegacyTagsPage({ toast }: { toast: (m: string) => void }) {
             )}
           </tbody>
         </table>
+        <DataPagination
+          page={legacyPagination.page}
+          pageCount={legacyPagination.pageCount}
+          pageSize={legacyPagination.pageSize}
+          totalItems={visibleTags.length}
+          onPageChange={legacyPagination.setPage}
+        />
       </div>
       <AnimatePresence>
         {editingTag && (
@@ -4565,7 +5206,7 @@ function TagDrawer({
                 ]}
               />
               <small className="mt-1.5 block text-[12px] leading-5 text-[#8191a7]">
-                Выберите другой БЦ для переноса метки или снимите привязку.
+                Выберите другой объект для переноса метки или снимите привязку.
               </small>
             </label>
             <div
@@ -4580,7 +5221,7 @@ function TagDrawer({
               </span>
               <div>
                 <strong>
-                  {selectedBusiness?.name || "Метка без бизнес-центра"}
+                  {selectedBusiness?.name || "Метка без объекта"}
                 </strong>
                 <small>
                   {selectedBusiness
@@ -4814,45 +5455,44 @@ function EmployeePanel({
   employee: Employee;
   close: () => void;
 }) {
-  const [tab, setTab] = useState<"profile" | "history">("profile");
+  const [tab, setTab] = useState<"contacts" | "history">("contacts");
   const [object, setObject] = useState("Все объекты");
   const [period, setPeriod] = useState("За всё время");
   useOverlayLock(close);
-  const history = [
-    {
-      object: "Логистический центр «Запад»",
-      address: "г. Москва, ул. Рябиновая, 22",
-      events: [
-        ["Сегодня, 14 мая", "08:42", "Вход", "0"],
-        ["Вчера, 13 мая", "18:17", "Выход", "1"],
-        ["Вчера, 13 мая", "08:35", "Вход", "1"],
-      ],
-    },
-    {
-      object: "БЦ «Орион»",
-      address: "г. Москва, Ленинградский пр-т, 80",
-      events: [
-        ["12 мая 2026", "17:56", "Выход", "2"],
-        ["12 мая 2026", "09:03", "Вход", "2"],
-        ["8 апреля 2026", "09:18", "Вход", "36"],
-      ],
-    },
-  ];
-  const limit =
-    period === "Последние 7 дней"
-      ? 7
-      : period === "Последние 30 дней"
-        ? 30
-        : Infinity;
-  const visibleHistory = history
-    .filter((group) => object === "Все объекты" || group.object === object)
-    .map((group) => ({
-      ...group,
-      events: group.events
-        .filter((event) => Number(event[3]) <= limit)
-        .map((event) => event.slice(0, 3)),
-    }))
-    .filter((group) => group.events.length);
+  const employeeRecords = useMemo(
+    () => PRESENCE_RECORDS.filter((record) => record.employee === employee.name),
+    [employee.name],
+  );
+  const employeeObjects = useMemo(
+    () => Array.from(new Set(employeeRecords.map((record) => record.object))),
+    [employeeRecords],
+  );
+  const visibleHistory = useMemo(() => {
+    const limit =
+      period === "Последние 7 дней"
+        ? 7
+        : period === "Последние 30 дней"
+          ? 30
+          : Number.POSITIVE_INFINITY;
+    const newestRecordTime = Math.max(
+      ...employeeRecords.map((record) => new Date(record.enteredAt).getTime()),
+      Date.now(),
+    );
+    const earliestTime = newestRecordTime - limit * 24 * 60 * 60 * 1000;
+    return employeeRecords
+      .filter((record) => {
+        if (object !== "Все объекты" && record.object !== object) return false;
+        return new Date(record.enteredAt).getTime() >= earliestTime;
+      })
+      .sort((a, b) => b.enteredAt.localeCompare(a.enteredAt));
+  }, [employeeRecords, object, period]);
+  const groupedHistory = useMemo(() => {
+    const groups = new Map<string, PresenceRecord[]>();
+    visibleHistory.forEach((record) => {
+      groups.set(record.object, [...(groups.get(record.object) ?? []), record]);
+    });
+    return [...groups.entries()];
+  }, [visibleHistory]);
   return (
     <motion.div
       className="overlay-layer fixed inset-0 z-40 isolate"
@@ -4868,7 +5508,7 @@ function EmployeePanel({
         transition={{ duration: 0.22, ease: "easeOut" }}
       />
       <motion.aside
-        aria-label="Карточка сотрудника"
+        aria-label={`Сотрудник ${employee.name}`}
         aria-modal="true"
         role="dialog"
         className="overlay-drawer-panel fixed bottom-0 right-0 top-0 z-10 w-[540px] border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.14)]"
@@ -4878,10 +5518,8 @@ function EmployeePanel({
       >
         <div className="flex h-[76px] items-center justify-between border-b border-[#e4eaf2] px-6">
           <div>
-            <p className="text-[17px] font-semibold">Карточка сотрудника</p>
-            <p className="mt-0.5 text-[12.5px] text-[#7a8ca5]">
-              Данные сотрудника
-            </p>
+            <p className="text-[17px] font-semibold">{employee.name}</p>
+            <p className="mt-0.5 text-[12.5px] text-[#7a8ca5]">{employee.role}</p>
           </div>
           <button
             aria-label="Закрыть карточку сотрудника"
@@ -4893,19 +5531,19 @@ function EmployeePanel({
         </div>
         <div className="flex gap-5 border-b border-[#e5ebf3] px-6">
           <button
-            onClick={() => setTab("profile")}
-            className={`border-b-2 py-3 text-[13.5px] font-semibold ${tab === "profile" ? "border-[#2563eb] text-[#2563eb]" : "border-transparent text-[#71839e]"}`}
+            onClick={() => setTab("contacts")}
+            className={`border-b-2 py-3 text-[13.5px] font-semibold ${tab === "contacts" ? "border-[#2563eb] text-[#2563eb]" : "border-transparent text-[#71839e]"}`}
           >
-            Основная информация
+            Контакты
           </button>
           <button
             onClick={() => setTab("history")}
             className={`border-b-2 py-3 text-[13.5px] font-semibold ${tab === "history" ? "border-[#2563eb] text-[#2563eb]" : "border-transparent text-[#71839e]"}`}
           >
-            История посещений
+            Посещения
           </button>
         </div>
-        {tab === "profile" ? (
+        {tab === "contacts" ? (
           <div className="overlay-scroll-region h-[calc(100%-132px)] overflow-y-auto px-6 py-6">
             <div className="flex items-center gap-4">
               <div className="grid size-16 place-items-center rounded-2xl bg-[#e9f2ff] text-base font-bold text-[#2563eb]">
@@ -4923,28 +5561,32 @@ function EmployeePanel({
                 </span>
               </div>
             </div>
-            <Info
-              title="Основная информация"
-              rows={[
-                ["Дата рождения", "12.04.1989"],
-                ["Дата добавления", employee.added],
-              ]}
-            />
-            <Info
-              title="Работа"
-              rows={[
-                ["Подрядчик", employee.contractor],
-                ["Должность", employee.role],
-                ["Подразделение", employee.dept],
-              ]}
-            />
-            <Info
-              title="Контакты"
-              rows={[
-                ["Телефон", employee.phone],
-                ["Email", employee.email],
-              ]}
-            />
+            <section className="mt-7 overflow-hidden rounded-xl border border-[#e2e8f1]">
+              <div className="flex justify-between gap-4 px-4 py-3 text-[13.5px]">
+                <span className="text-[#7889a2]">Подрядчик</span>
+                <strong className="text-right text-[#2d3d57]">{employee.contractor}</strong>
+              </div>
+              <div className="flex justify-between gap-4 border-t border-[#e8edf4] px-4 py-3 text-[13.5px]">
+                <span className="text-[#7889a2]">Подразделение</span>
+                <strong className="text-right text-[#2d3d57]">{employee.dept}</strong>
+              </div>
+            </section>
+            <section className="mt-5 grid gap-3">
+              <a
+                href={`tel:${employee.phone.replace(/[^+\d]/g, "")}`}
+                className="flex items-center gap-3 rounded-xl border border-[#dce5ef] bg-[#f8fbff] px-4 py-3 text-[14px] font-semibold text-[#245ccb] hover:bg-[#eef5ff]"
+              >
+                <Phone size={17} />
+                {employee.phone}
+              </a>
+              <a
+                href={`mailto:${employee.email}`}
+                className="flex items-center gap-3 rounded-xl border border-[#dce5ef] bg-[#f8fbff] px-4 py-3 text-[14px] font-semibold text-[#245ccb] hover:bg-[#eef5ff]"
+              >
+                <Mail size={17} />
+                {employee.email}
+              </a>
+            </section>
           </div>
         ) : (
           <div className="overlay-scroll-region h-[calc(100%-132px)] overflow-y-auto px-6 py-5">
@@ -4952,29 +5594,22 @@ function EmployeePanel({
               <Select
                 value={object}
                 onChange={setObject}
-                options={[
-                  "Все объекты",
-                  ...history.map((group) => group.object),
-                ]}
+                options={["Все объекты", ...employeeObjects]}
               />
               <Select
                 value={period}
                 onChange={setPeriod}
-                options={[
-                  "За всё время",
-                  "Последние 7 дней",
-                  "Последние 30 дней",
-                ]}
+                options={["За всё время", "Последние 7 дней", "Последние 30 дней"]}
               />
             </div>
             <div className="mt-5">
-              {visibleHistory.length ? (
-                visibleHistory.map((group) => (
-                  <HistoryGroup
-                    key={group.object}
-                    object={group.object}
-                    address={group.address}
-                    events={group.events}
+              {groupedHistory.length ? (
+                groupedHistory.map(([objectName, records]) => (
+                  <EmployeeHistoryGroup
+                    key={objectName}
+                    object={objectName}
+                    address={objectsInitial.find((item) => item.name === objectName)?.address ?? ""}
+                    records={records}
                   />
                 ))
               ) : (
@@ -4999,68 +5634,80 @@ function EmployeePanel({
     </motion.div>
   );
 }
-function HistoryGroup({
+
+function EmployeeHistoryGroup({
   object,
   address,
-  events,
+  records,
 }: {
   object: string;
   address: string;
-  events: string[][];
+  records: PresenceRecord[];
 }) {
+  const events = records
+    .flatMap((record) => [
+      {
+        key: `${record.id}-entry`,
+        type: "Вход" as const,
+        occurredAt: record.enteredAt,
+        record,
+      },
+      ...(record.leftAt
+        ? [{
+            key: `${record.id}-exit`,
+            type: "Выход" as const,
+            occurredAt: record.leftAt,
+            record,
+          }]
+        : []),
+    ])
+    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
   return (
     <div className="relative pb-6 pl-7 before:absolute before:bottom-0 before:left-[7px] before:top-3 before:w-px before:bg-[#dbe5f2]">
       <div className="absolute left-0 top-1 size-[15px] rounded-full border-4 border-[#dcebff] bg-[#2563eb]" />
-      <div className="rounded-xl border border-[#e0e8f2] bg-white">
+      <div className="overflow-hidden rounded-xl border border-[#e0e8f2] bg-white">
         <div className="border-b border-[#e8edf4] px-4 py-3">
-          <p className="text-[15px] font-semibold">{object}</p>
-          <p className="mt-1 text-[12.5px] text-[#7a8ba3]">{address}</p>
-        </div>
-        {events.map(([date, time, type], i) => (
-          <div
-            key={`${date}${time}`}
-            className={`flex items-center gap-3 px-4 py-3 ${i ? "border-t border-[#eef2f6]" : ""}`}
-          >
-            <span className="grid size-7 place-items-center rounded-lg bg-[#edf5ff] text-[#2563eb]">
-              {type === "Вход" ? (
-                <DoorOpen size={14} />
-              ) : (
-                <DoorClosed size={14} />
-              )}
-            </span>
-            <div className="flex-1">
-              <p className="text-[13.5px] font-medium">{type}</p>
-              <p className="text-[12.5px] text-[#8493a8]">{date}</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[15px] font-semibold">{object}</p>
+              {address && <p className="mt-1 text-[12.5px] text-[#7a8ba3]">{address}</p>}
             </div>
-            <span className="font-mono text-[13.5px] font-semibold text-[#435775]">
-              {time}
-            </span>
+            {records.some((record) => !record.leftAt) && (
+              <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700">
+                На месте
+              </span>
+            )}
           </div>
-        ))}
+        </div>
+        {events.map((event, index) => {
+          const date = new Date(event.occurredAt);
+          return (
+            <div
+              key={event.key}
+              className={`flex items-center gap-3 px-4 py-3 ${index ? "border-t border-[#eef2f6]" : ""}`}
+            >
+              <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-[#edf5ff] text-[#2563eb]">
+                {event.type === "Вход" ? <DoorOpen size={14} /> : <DoorClosed size={14} />}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13.5px] font-medium">{event.type}</p>
+                <p className="truncate text-[12.5px] text-[#8493a8]">
+                  {date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
+                  <span className="px-1">·</span>
+                  {roomForRecord(event.record)}
+                </p>
+              </div>
+              <span className="font-mono text-[13.5px] font-semibold text-[#435775]">
+                {date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
-function Info({ title, rows }: { title: string; rows: string[][] }) {
-  return (
-    <section className="mt-7">
-      <h3 className="mb-3 text-[12.5px] font-semibold uppercase tracking-[.08em] text-[#71829c]">
-        {title}
-      </h3>
-      <div className="overflow-hidden rounded-xl border border-[#e2e8f1]">
-        {rows.map(([a, b], i) => (
-          <div
-            key={a}
-            className={`flex justify-between gap-4 px-4 py-3 text-[13.5px] ${i ? "border-t border-[#e8edf4]" : ""}`}
-          >
-            <span className="text-[#7889a2]">{a}</span>
-            <span className="text-right font-medium text-[#2d3d57]">{b}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
+
 function ModalHead({
   title,
   sub,

@@ -10,6 +10,795 @@
   --shadow-lg: 0 24px 60px rgba(25, 45, 82, 0.14);
 }
 
+/* Operational workflow additions */
+.app-header-title {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-header-title small {
+  color: #8998ac;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.app-header-title strong {
+  max-width: min(70vw, 820px);
+  overflow: hidden;
+  color: #22324b;
+  font-size: 16px;
+  font-weight: 680;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: font-size 180ms ease, color 180ms ease;
+}
+
+.app-header.has-detail-title .app-header-title strong {
+  color: #14213a;
+  font-size: 21px;
+  letter-spacing: -0.02em;
+}
+
+.role-preview > small {
+  display: block;
+  margin: 9px 2px -3px;
+  color: #8a98ab;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.role-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  margin-top: 8px;
+  padding: 3px;
+  border: 1px solid #dfe7f1;
+  border-radius: 10px;
+  background: #edf2f8;
+}
+
+.role-switch button {
+  height: 29px;
+  border-radius: 7px;
+  color: #6a7d97;
+  font-size: 11.5px;
+  font-weight: 750;
+}
+
+.role-switch button.is-active {
+  background: white;
+  color: #245ccb;
+  box-shadow: 0 1px 3px rgba(28, 48, 82, 0.12);
+}
+
+.metric-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.clickable-home-row {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.site-bar.clickable-home-row {
+  margin: -6px;
+  padding: 6px;
+  border-radius: 10px;
+}
+
+.site-bar.clickable-home-row:hover {
+  background: #f4f8ff;
+}
+
+.activity-list > button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  width: 100%;
+  gap: 9px;
+  padding: 10px 9px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  text-align: left;
+}
+
+.activity-list > button + button {
+  border-top: 1px solid #edf1f5;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.activity-list > button:hover {
+  background: #f7faff;
+}
+
+.entity-click-row {
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.entity-click-row:hover,
+.entity-click-row:focus-visible {
+  background: #f5f9ff !important;
+  box-shadow: inset 3px 0 0 #4d83ee;
+  outline: none;
+}
+
+.object-contacts-card,
+.contractor-contact-card,
+.contractor-presence-card,
+.object-presence-card {
+  margin: 14px 0;
+  overflow: hidden;
+  border: 1px solid rgba(218, 227, 239, 0.94);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: var(--shadow-sm);
+}
+
+.object-contacts-card {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.85fr) minmax(0, 1.7fr);
+}
+
+.object-contacts-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 18px;
+  border-right: 1px solid #e7edf4;
+  background: #fbfdff;
+}
+
+.object-contact-icon,
+.contractor-contact-main > span:first-child {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border-radius: 12px;
+  background: #eaf3ff;
+  color: #2864eb;
+}
+
+.object-contacts-heading h2,
+.object-contacts-heading p {
+  margin: 0;
+}
+
+.object-contacts-heading h2 {
+  color: #243650;
+  font-size: 16px;
+  font-weight: 680;
+}
+
+.object-contacts-heading p {
+  margin-top: 4px;
+  color: #73849b;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.object-contact-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.object-contact-list article {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.object-contact-list article + article {
+  border-left: 1px solid #e7edf4;
+}
+
+.object-contact-list strong,
+.object-contact-list span {
+  display: block;
+}
+
+.object-contact-list strong {
+  color: #2b3d58;
+  font-size: 13.5px;
+}
+
+.object-contact-list span {
+  margin-top: 3px;
+  color: #7789a1;
+  font-size: 12px;
+}
+
+.contact-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+}
+
+.contact-actions > a,
+.call-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid #cfe0f5;
+  border-radius: 9px;
+  background: #f7faff;
+  color: #255dc9;
+  font-size: 12.5px;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.object-contractor-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.object-contractor-card {
+  min-height: 168px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.object-contractor-card:focus-visible {
+  border-color: #82a9ef;
+  outline: 3px solid rgba(40, 100, 235, 0.12);
+}
+
+.object-contractor-service {
+  display: -webkit-box !important;
+  min-height: 34px;
+  margin-top: 6px !important;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #536a87 !important;
+  font-size: 12.5px !important;
+}
+
+.object-contractor-presence {
+  margin-top: 7px !important;
+}
+
+.object-responsible {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e5ebf3;
+}
+
+.object-responsible b,
+.object-responsible small {
+  display: block;
+}
+
+.object-responsible b {
+  color: #263a57;
+  font-size: 12.5px;
+}
+
+.object-responsible small {
+  margin-top: 2px !important;
+}
+
+.object-responsible > a {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 32px;
+  gap: 5px;
+  padding: 0 9px;
+  border-radius: 9px;
+  background: #eaf3ff;
+  color: #245ecc;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.object-responsible.is-empty {
+  color: #8b99aa;
+  font-size: 12px;
+}
+
+.contractor-contact-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e7edf4;
+}
+
+.contractor-contact-main > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.contractor-contact-main strong,
+.contractor-contact-main small {
+  display: block;
+}
+
+.contractor-contact-main strong {
+  color: #2a3c58;
+  font-size: 13.5px;
+}
+
+.contractor-contact-main small {
+  margin-top: 3px;
+  color: #74859c;
+  font-size: 12.5px;
+}
+
+.contractor-contact-main > a:not(.call-link) {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 1px solid #d5e2f2;
+  border-radius: 9px;
+  color: #2864eb;
+}
+
+.contractor-object-contacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.contractor-object-contacts article {
+  padding: 14px 16px;
+  border-right: 1px solid #e7edf4;
+}
+
+.contractor-object-contacts span,
+.contractor-object-contacts strong,
+.contractor-object-contacts small {
+  display: block;
+}
+
+.contractor-object-contacts span {
+  color: #6d809a;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.contractor-object-contacts strong {
+  margin-top: 7px;
+  color: #263a56;
+  font-size: 13.5px;
+}
+
+.contractor-object-contacts small {
+  margin-top: 2px;
+  color: #7c8da3;
+  font-size: 12px;
+}
+
+.contractor-object-contacts a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 9px;
+  color: #245ecc;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.contractor-presence-heading,
+.object-presence-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 18px;
+  border-bottom: 1px solid #e7edf4;
+}
+
+.contractor-presence-heading span,
+.object-presence-heading > div:first-child > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #647a98;
+  font-size: 11.5px;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.contractor-presence-heading h2,
+.object-presence-heading h2 {
+  margin: 4px 0 0;
+  color: #20334f;
+  font-size: 17px;
+  font-weight: 680;
+}
+
+.contractor-presence-heading > strong {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eaf8f3;
+  color: #14815f;
+  font-size: 12.5px;
+}
+
+.contractor-presence-card table th,
+.contractor-presence-card table td,
+.object-presence-card table th,
+.object-presence-card table td {
+  padding: 12px 16px;
+}
+
+.contractor-presence-card tbody tr,
+.object-presence-card tbody tr {
+  cursor: pointer;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.contractor-presence-card tbody tr:hover,
+.object-presence-card tbody tr:hover,
+.employee-log-table tbody tr:hover,
+.tags-table tbody tr:hover {
+  background: #f5f9ff;
+  box-shadow: inset 3px 0 0 #6b97ef;
+}
+
+.contractor-presence-card tbody tr:focus-visible,
+.object-presence-card tbody tr:focus-visible {
+  background: #f3f8ff;
+  outline: 2px solid #93b7f4;
+  outline-offset: -2px;
+}
+
+.contractor-presence-card td strong,
+.contractor-presence-card td small,
+.object-presence-card td strong,
+.object-presence-card td small {
+  display: block;
+}
+
+.contractor-presence-card td small,
+.object-presence-card td small {
+  margin-top: 3px;
+  color: #7a8ba1;
+  font-size: 12px;
+}
+
+.on-site-badge {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #e9f8f2;
+  color: #15815f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.object-traffic-section {
+  margin: 14px 0;
+}
+
+.object-multiline-card .contractor-chart {
+  height: 230px;
+}
+
+.object-chart-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.object-chart-summary > span {
+  padding: 7px 10px;
+  border-radius: 9px;
+  background: #f1f5fa;
+  color: #687c98;
+  font-size: 12px;
+}
+
+.object-chart-summary strong {
+  color: #2b405f;
+}
+
+.chart-series-picker {
+  display: flex;
+  gap: 6px;
+  padding: 6px 18px 10px;
+  overflow-x: auto;
+}
+
+.chart-series-picker button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 31px;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid #dbe4ef;
+  border-radius: 9px;
+  background: white;
+  color: #637792;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.chart-series-picker button:hover,
+.chart-series-picker button.is-active {
+  border-color: #bcd1f2;
+  background: #eff5ff;
+  color: #245ccb;
+}
+
+.chart-series-picker i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.object-presence-tabs {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+  background: #eef2f7;
+}
+
+.object-presence-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e7edf4;
+  background: #fbfdff;
+}
+
+.object-contractor-picker {
+  display: grid;
+  width: min(100%, 460px);
+  gap: 6px;
+}
+
+.object-contractor-picker > span {
+  color: #61748e;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.object-contractor-picker select {
+  width: 100%;
+  height: 39px;
+  border: 1px solid #dbe4ef;
+  border-radius: 9px;
+  background: white;
+  padding: 0 10px;
+  color: #334963;
+  font-size: 13px;
+}
+
+.object-presence-tabs button {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 7px;
+  color: #647791;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.object-presence-tabs button.is-active {
+  background: white;
+  color: #245ccb;
+  box-shadow: 0 1px 3px rgba(26, 46, 76, 0.12);
+}
+
+.object-presence-filters {
+  display: grid;
+  grid-template-columns: 280px;
+  gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid #e7edf4;
+  background: #fbfdff;
+}
+
+.object-presence-filters label,
+.object-presence-filters label > span {
+  display: block;
+}
+
+.object-presence-filters label > span {
+  margin-bottom: 6px;
+  color: #61748e;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.object-presence-filters input,
+.object-presence-filters select {
+  width: 100%;
+  height: 39px;
+  border: 1px solid #dbe4ef;
+  border-radius: 9px;
+  background: white;
+  padding: 0 10px;
+  color: #334963;
+  font-size: 13px;
+}
+
+.object-presence-empty {
+  padding: 30px 18px;
+  color: #71849e;
+  font-size: 13px;
+  text-align: center;
+}
+
+.object-presence-card .responsive-table th,
+.object-presence-card .responsive-table td {
+  padding-block: 9px;
+}
+
+.object-presence-card .data-pagination {
+  min-height: 46px;
+  padding-block: 6px;
+}
+
+.table-pagination-shell {
+  min-width: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 1100px) {
+  .object-contacts-card {
+    grid-template-columns: 1fr;
+  }
+
+  .object-contacts-heading {
+    border-right: 0;
+    border-bottom: 1px solid #e7edf4;
+  }
+
+  .object-contractor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .object-contact-list {
+    grid-template-columns: 1fr;
+  }
+
+  .object-contact-list article + article {
+    border-top: 1px solid #e7edf4;
+    border-left: 0;
+  }
+
+  .object-contact-list article,
+  .contractor-contact-main,
+  .contractor-presence-heading,
+  .object-presence-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .contact-actions,
+  .contractor-contact-main .call-link {
+    width: 100%;
+  }
+
+  .contact-actions .call-link,
+  .contractor-contact-main .call-link {
+    flex: 1;
+  }
+
+  .object-presence-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .object-chart-summary {
+    display: none;
+  }
+
+  .object-contractor-card {
+    min-height: 0;
+  }
+
+  .app-sidebar.app-sidebar,
+  .app-sidebar.app-sidebar.is-open {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .app-sidebar.app-sidebar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-sidebar.app-sidebar nav {
+    display: flex !important;
+    width: max-content;
+    min-width: 100%;
+    grid-template-columns: none !important;
+  }
+
+  .app-sidebar.app-sidebar nav button {
+    width: 74px !important;
+    flex: 0 0 74px;
+  }
+}
+
+/* Shared compact action used inside settings drawers. */
+.overlay-drawer-panel .drawer-section-action {
+  display: inline-flex;
+  width: auto;
+  height: 32px !important;
+  min-height: 32px !important;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #cfe0f7;
+  border-radius: 9px;
+  background: #fff;
+  padding: 0 10px !important;
+  color: #2563eb;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  line-height: 1 !important;
+}
+
+.overlay-drawer-panel .drawer-section-action:hover {
+  border-color: #b8d0f2;
+  background: #eef5ff;
+}
+
+.overlay-drawer-panel .drawer-section-action svg {
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 920px) {
+  .role-preview {
+    display: none;
+  }
+
+  .object-contact-list {
+    grid-template-columns: 1fr;
+  }
+
+  .object-contact-list article + article {
+    border-top: 1px solid #e7edf4;
+    border-left: 0;
+  }
+}
+
 * {
   box-sizing: border-box;
   scrollbar-width: thin;
@@ -2085,7 +2874,15 @@ aside select:focus {
 }
 
 .employee-log-table tbody tr {
-  cursor: default;
+  cursor: pointer;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.employee-log-table tbody tr:focus-visible,
+.tags-table tbody tr:focus-visible {
+  background: #f3f8ff;
+  outline: 2px solid #93b7f4;
+  outline-offset: -2px;
 }
 
 .log-date,
@@ -4980,5 +5777,134 @@ html.overlay-open::-webkit-scrollbar {
     font-size: 14px !important;
     font-weight: 600 !important;
     line-height: 1.35 !important;
+  }
+}
+
+/* Overrides placed after the legacy responsive layer. */
+.metric-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.object-contractor-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.object-contractor-card {
+  min-height: 168px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .object-contractor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .object-contractor-card {
+    min-height: 0;
+  }
+}
+
+/* A single visual language for compact view switches. */
+.segmented-switch,
+.role-switch,
+.object-presence-tabs,
+.tag-view-switcher {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #dce5ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(22, 42, 72, 0.04);
+}
+
+.segmented-switch > button,
+.role-switch > button,
+.object-presence-tabs > button,
+.tag-view-switcher > button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #60728d;
+  font-size: 13.5px;
+  font-weight: 650;
+  box-shadow: none;
+  transition: color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.segmented-switch > button:hover,
+.role-switch > button:hover,
+.object-presence-tabs > button:hover,
+.tag-view-switcher > button:hover {
+  background: #f5f8fc;
+  color: #17243c;
+}
+
+.segmented-switch > button.is-active,
+.role-switch > button.is-active,
+.object-presence-tabs > button.is-active,
+.tag-view-switcher > button.is-active {
+  background: #111b32;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(17, 27, 50, 0.18);
+}
+
+.segmented-switch > button:focus-visible,
+.role-switch > button:focus-visible,
+.object-presence-tabs > button:focus-visible,
+.tag-view-switcher > button:focus-visible {
+  outline: 3px solid rgba(40, 100, 235, 0.22);
+  outline-offset: 2px;
+}
+
+.role-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 8px;
+}
+
+.role-switch > button {
+  min-height: 29px;
+  padding-inline: 8px;
+  font-size: 11.5px;
+}
+
+.contractor-section-switch {
+  margin: 18px 0;
+}
+
+@media (max-width: 700px) {
+  .contractor-section-switch,
+  .object-presence-tabs,
+  .object-presence-toolbar {
+    width: 100%;
+  }
+
+  .contractor-section-switch > button,
+  .object-presence-tabs > button {
+    flex: 1;
+  }
+
+  .object-presence-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .object-contractor-picker {
+    width: 100%;
   }
 }

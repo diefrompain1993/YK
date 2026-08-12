@@ -1,0 +1,260 @@
+.data-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 54px;
+  padding: 9px 18px;
+  border-top: 1px solid #e2e9f2;
+  background: #fff;
+  color: #657894;
+  font-size: 13px;
+}
+
+.data-pagination__buttons,
+.data-pagination__page-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.data-pagination .data-pagination__buttons button {
+  display: grid;
+  min-width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid #dce5f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #526783;
+  font-family: Inter, Arial, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 700;
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease;
+}
+
+.data-pagination .data-pagination__buttons button:hover:not(:disabled) {
+  border-color: #bcd0ec;
+  background: #f4f8ff;
+  color: #2563eb;
+}
+
+.data-pagination .data-pagination__buttons button.is-active {
+  border-color: #1e5ee9;
+  background: #1e5ee9;
+  color: #fff;
+}
+
+.data-pagination .data-pagination__buttons button:disabled {
+  cursor: default;
+  opacity: .4;
+}
+
+.data-pagination__ellipsis { padding: 0 2px; }
+
+.date-range-picker {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.date-range-picker .date-range-picker__trigger {
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border: 1px solid #d7e1ee;
+  border-radius: 12px;
+  background: #fff;
+  color: #20314d;
+  font-family: Inter, Arial, sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 650 !important;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.date-range-picker__trigger svg {
+  flex: 0 0 auto;
+  color: #647d9f;
+}
+
+.date-range-picker__trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.date-range-picker__trigger:hover,
+.date-range-picker__trigger[aria-expanded="true"] {
+  border-color: #9ebcf0;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .08);
+}
+
+.date-range-picker__popover {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 276px;
+  padding: 10px;
+  border: 1px solid #dbe4ef;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(22, 42, 75, .18);
+  color: #20314d;
+  font-family: Inter, Arial, sans-serif !important;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+
+.date-range-picker__popover button,
+.date-range-picker__popover input {
+  font-family: Inter, Arial, sans-serif !important;
+}
+
+.date-range-picker__popover.is-portaled {
+  position: fixed;
+  z-index: 1000;
+}
+
+.date-range-picker__month-head {
+  display: grid;
+  grid-template-columns: 34px 1fr 34px;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.date-range-picker__month-head strong {
+  font-family: Inter, Arial, sans-serif;
+  font-size: 12.5px;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.date-range-picker__popover .date-range-picker__month-head button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #536b8b;
+}
+
+.date-range-picker__month-head button:hover { background: #f0f5fc; }
+
+.date-range-picker__weekdays,
+.date-range-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.date-range-picker__weekdays span {
+  padding: 4px 0;
+  color: #8797ad;
+  font-family: Inter, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.date-range-picker__popover .date-range-picker__grid button {
+  position: relative;
+  height: 29px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #263953;
+  font-family: Inter, Arial, sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 650 !important;
+}
+
+.date-range-picker__grid button:hover { background: #edf4ff; color: #1e5ee9; }
+.date-range-picker__grid button.is-outside { color: #bcc7d5; }
+.date-range-picker__grid button.is-in-range { border-radius: 0; background: #eaf2ff; color: #2357b9; }
+.date-range-picker__grid button.is-selected { background: #1f5fe8; color: #fff; }
+
+.date-range-picker__times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e5ebf3;
+}
+
+.date-range-picker__times label { display: grid; gap: 5px; }
+.date-range-picker__times span { color: #687c98; font-size: 11px; font-weight: 700; }
+.date-range-picker__times input {
+  width: 100%;
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid #d8e2ef;
+  border-radius: 9px;
+  color: #223650;
+  font: inherit;
+}
+
+.date-range-picker__popover .date-range-picker__clear,
+.date-range-picker__popover .date-range-picker__done {
+  min-height: 30px;
+  border: 1px solid #dce5f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #4f6686;
+  font-family: Inter, Arial, sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 650 !important;
+  line-height: 1;
+}
+
+.date-range-picker__clear:hover { background: #f3f7fd; color: #1e5ee9; }
+
+.date-range-picker__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e5ebf3;
+}
+
+.date-range-picker__clear { margin-right: auto; padding: 0 12px; }
+.date-range-picker__done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-color: #1f5fe8;
+  background: #1f5fe8;
+  color: #fff;
+}
+
+.date-range-picker__popover .date-range-picker__done,
+.date-range-picker__popover .date-range-picker__clear {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 11.5px !important;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+@media (max-width: 620px) {
+  .data-pagination { align-items: flex-start; flex-direction: column; }
+  .date-range-picker__popover {
+    position: fixed;
+    top: auto !important;
+    right: 10px;
+    bottom: 10px;
+    left: 10px !important;
+    width: auto;
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
+  }
+}
