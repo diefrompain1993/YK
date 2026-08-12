@@ -90,14 +90,69 @@
 
 .cpm__toolbar {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) 280px auto;
-  align-items: center;
+  grid-template-columns: minmax(220px, 1fr) 280px 108px 108px auto;
+  align-items: end;
   gap: 10px;
   margin-bottom: 10px;
 }
 
-.cpm__toolbar > .date-range-picker {
+.cpm__filter-field,
+.cpm__filter-field > span {
+  display: block;
+}
+
+.cpm__filter-field > span {
+  margin-bottom: 6px;
+  color: #61748e;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.cpm__filter-field .date-range-picker,
+.cpm__filter-field .date-range-picker__trigger {
   width: 100%;
+}
+
+.cpm__filter-field .date-range-picker__trigger,
+.cpm__filter-field > input {
+  height: 42px;
+  min-height: 42px;
+  border: 1px solid var(--cpm-border);
+  border-radius: 11px;
+  background: #fff;
+}
+
+.cpm__filter-field .time-picker {
+  height: 42px;
+}
+
+.cpm__filter-field > input {
+  width: 100%;
+  padding: 0 11px;
+  outline: none;
+  color: #334966;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cpm__filter-field > input:focus {
+  border-color: #94b5f8;
+  box-shadow: 0 0 0 3px rgba(40, 100, 235, 0.11);
+}
+
+.cpm__filter-field > input.is-invalid,
+.cpm__filter-field > input[aria-invalid="true"] {
+  border-color: #e05252;
+  background: #fffafa;
+  color: #a82f2f;
+  box-shadow: 0 0 0 3px rgba(224, 82, 82, 0.1);
+}
+
+.cpm__filter-error {
+  grid-column: 1 / -1;
+  color: #c33f3f;
+  font-size: 11.5px;
+  font-weight: 600;
 }
 
 .cpm__search {
@@ -591,7 +646,7 @@
 
 @media (max-width: 1160px) {
   .cpm__toolbar {
-    grid-template-columns: 280px auto;
+    grid-template-columns: 240px 108px 108px auto;
   }
 
   .cpm__search {

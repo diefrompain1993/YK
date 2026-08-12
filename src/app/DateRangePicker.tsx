@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CalendarDays, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { TimePicker } from "./TimePicker";
 import "../styles/data-controls.css";
 
 export type DateRangeValue = { from: string; to: string };
@@ -76,11 +78,30 @@ export function DateRangePicker({
     () => new Date(fromIsoDate(initialDate).getFullYear(), fromIsoDate(initialDate).getMonth(), 1),
   );
 
+  const updatePopoverPosition = () => {
+    const rect = rootRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const popoverWidth = 276;
+    const estimatedHeight = withTime ? 390 : 320;
+    const fitsBelow = window.innerHeight - rect.bottom >= estimatedHeight + 10;
+    setPopoverPosition({
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - popoverWidth - 8)),
+      top: fitsBelow
+        ? rect.bottom + 6
+        : Math.max(8, rect.top - estimatedHeight - 6),
+    });
+  };
+
   useEffect(() => {
     if (!open) return;
     const close = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (!rootRef.current?.contains(target) && !popoverRef.current?.contains(target)) {
+      const targetElement = target instanceof Element ? target : null;
+      if (
+        !rootRef.current?.contains(target) &&
+        !popoverRef.current?.contains(target) &&
+        !targetElement?.closest(".time-picker__popover")
+      ) {
         setOpen(false);
       }
     };
@@ -97,25 +118,12 @@ export function DateRangePicker({
 
   useEffect(() => {
     if (!open) return;
-    const updatePosition = () => {
-      const rect = rootRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const popoverWidth = 276;
-      const estimatedHeight = withTime ? 390 : 320;
-      const fitsBelow = window.innerHeight - rect.bottom >= estimatedHeight + 10;
-      setPopoverPosition({
-        left: Math.max(8, Math.min(rect.left, window.innerWidth - popoverWidth - 8)),
-        top: fitsBelow
-          ? rect.bottom + 6
-          : Math.max(8, rect.top - estimatedHeight - 6),
-      });
-    };
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
+    updatePopoverPosition();
+    window.addEventListener("resize", updatePopoverPosition);
+    window.addEventListener("scroll", updatePopoverPosition, true);
     return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePopoverPosition);
+      window.removeEventListener("scroll", updatePopoverPosition, true);
     };
   }, [open, withTime]);
 
@@ -166,18 +174,31 @@ export function DateRangePicker({
         className="date-range-picker__trigger"
         aria-label={ariaLabel}
         aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          if (open) {
+            setOpen(false);
+            return;
+          }
+          updatePopoverPosition();
+          setOpen(true);
+        }}
       >
         <CalendarDays size={17} aria-hidden="true" />
         <span>{label}</span>
       </button>
-      {open && typeof document !== "undefined" && createPortal(
-        <div
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {open && (
+        <motion.div
           ref={popoverRef}
           className="date-range-picker__popover is-portaled"
           role="dialog"
           aria-label={ariaLabel}
-          style={{ top: popoverPosition.top, left: popoverPosition.left }}
+          style={{ top: popoverPosition.top, left: popoverPosition.left, transformOrigin: "top left" }}
+          initial={{ opacity: 0, y: -5, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -4, scale: 0.985 }}
+          transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="date-range-picker__month-head">
             <button
@@ -230,23 +251,25 @@ export function DateRangePicker({
             <div className="date-range-picker__times">
               <label>
                 <span>Время с</span>
-                <input
-                  type="time"
+                <TimePicker
                   value={startTime}
-                  onChange={(event) => onChange({
-                    from: withLocalTime(fromDate, event.target.value, true),
+                  ariaLabel="Время с"
+                  invalid={!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)}
+                  onChange={(value) => onChange({
+                    from: withLocalTime(fromDate, value, true),
                     to: withLocalTime(toDate || fromDate, endTime, true),
                   })}
                 />
               </label>
               <label>
                 <span>Время по</span>
-                <input
-                  type="time"
+                <TimePicker
                   value={endTime}
-                  onChange={(event) => onChange({
+                  ariaLabel="Время по"
+                  invalid={!/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime)}
+                  onChange={(value) => onChange({
                     from: withLocalTime(fromDate, startTime, true),
-                    to: withLocalTime(toDate || fromDate, event.target.value, true),
+                    to: withLocalTime(toDate || fromDate, value, true),
                   })}
                 />
               </label>
@@ -270,7 +293,9 @@ export function DateRangePicker({
               <Check size={15} aria-hidden="true" /> Готово
             </button>
           </div>
-        </div>,
+        </motion.div>
+          )}
+        </AnimatePresence>,
         document.body,
       )}
     </div>

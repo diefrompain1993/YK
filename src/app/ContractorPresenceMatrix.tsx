@@ -13,6 +13,7 @@ import {
 } from "./OperationsPages";
 import { DataPagination, usePaginatedItems } from "./DataPagination";
 import { DateRangePicker } from "./DateRangePicker";
+import { TimePicker } from "./TimePicker";
 import "../styles/contractor-presence-matrix.css";
 
 type GroupMode = "employees" | "objects";
@@ -52,10 +53,6 @@ function toDateInput(value: Date) {
   const month = String(value.getMonth() + 1).padStart(2, "0");
   const day = String(value.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function fromDateInput(value: string) {
-  return startOfDay(new Date(`${value}T00:00:00`));
 }
 
 function latestRecordDate(records: readonly PresenceRecord[]) {
@@ -117,6 +114,8 @@ export function ContractorPresenceMatrix({
     toDateInput(addDays(initialEnd, -6)),
   );
   const [periodTo, setPeriodTo] = useState(() => toDateInput(initialEnd));
+  const [timeFrom, setTimeFrom] = useState("00:00");
+  const [timeTo, setTimeTo] = useState("23:59");
   const [query, setQuery] = useState("");
   const [onlyActive, setOnlyActive] = useState(false);
 
@@ -124,26 +123,34 @@ export function ContractorPresenceMatrix({
     const end = latestRecordDate(scopedRecords);
     setPeriodFrom(toDateInput(addDays(end, -6)));
     setPeriodTo(toDateInput(end));
+    setTimeFrom("00:00");
+    setTimeTo("23:59");
     setQuery("");
     setOnlyActive(false);
   }, [contractor]);
 
+  const isValidTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+  const timeFromIsValid = isValidTime(timeFrom);
+  const timeToIsValid = isValidTime(timeTo);
   const hasPeriod = Boolean(periodFrom && periodTo);
-  const from = hasPeriod ? fromDateInput(periodFrom) : new Date(0);
-  const to = hasPeriod ? fromDateInput(periodTo) : new Date(8640000000000000);
-  const effectiveFrom = from <= to ? from : to;
-  const effectiveTo = hasPeriod
-    ? addDays(from <= to ? to : from, 1)
+  const effectiveFrom = hasPeriod && timeFromIsValid
+    ? new Date(`${periodFrom}T${timeFrom}`)
+    : new Date(0);
+  const effectiveTo = hasPeriod && timeToIsValid
+    ? new Date(`${periodTo}T${timeTo}`)
     : new Date(8640000000000000);
+  const periodOrderIsValid = !hasPeriod || effectiveFrom <= effectiveTo;
+  const filtersAreValid = timeFromIsValid && timeToIsValid && periodOrderIsValid;
   const normalizedQuery = normalize(query);
 
   const filteredRecords = useMemo(
     () =>
       scopedRecords
         .filter((record) => {
+          if (!filtersAreValid) return false;
           const entered = new Date(record.enteredAt);
           const left = record.leftAt ? new Date(record.leftAt) : new Date();
-          const overlapsPeriod = entered < effectiveTo && left >= effectiveFrom;
+          const overlapsPeriod = entered <= effectiveTo && left >= effectiveFrom;
           if (!overlapsPeriod || (onlyActive && record.leftAt)) return false;
           if (!normalizedQuery) return true;
           return normalize(
@@ -162,6 +169,7 @@ export function ContractorPresenceMatrix({
     [
       effectiveFrom,
       effectiveTo,
+      filtersAreValid,
       normalizedQuery,
       onlyActive,
       scopedRecords,
@@ -170,7 +178,7 @@ export function ContractorPresenceMatrix({
 
   const pagination = usePaginatedItems(
     filteredRecords,
-    [contractor, mode, periodFrom, periodTo, query, String(onlyActive)].join("|"),
+    [contractor, mode, periodFrom, periodTo, timeFrom, timeTo, query, String(onlyActive)].join("|"),
   );
 
   const pageObjects = useMemo(() => {
@@ -241,16 +249,41 @@ export function ContractorPresenceMatrix({
           />
         </label>
 
-        <DateRangePicker
-          from={periodFrom}
-          to={periodTo}
-          allowEmpty
-          ariaLabel="Дата или период посещений"
-          onChange={(value) => {
-            setPeriodFrom(value.from);
-            setPeriodTo(value.to);
-          }}
-        />
+        <div className="cpm__filter-field cpm__filter-field--date">
+          <span>Дата или период</span>
+          <DateRangePicker
+            from={periodFrom}
+            to={periodTo}
+            allowEmpty
+            ariaLabel="Дата или период посещений"
+            onChange={(value) => {
+              setPeriodFrom(value.from);
+              setPeriodTo(value.to);
+            }}
+          />
+        </div>
+
+        <label className="cpm__filter-field">
+          <span>Время с</span>
+          <TimePicker
+            placeholder="00:00"
+            value={timeFrom}
+            ariaLabel="Время с"
+            invalid={!timeFromIsValid}
+            onChange={setTimeFrom}
+          />
+        </label>
+
+        <label className="cpm__filter-field">
+          <span>Время по</span>
+          <TimePicker
+            placeholder="23:59"
+            value={timeTo}
+            ariaLabel="Время по"
+            invalid={!timeToIsValid}
+            onChange={setTimeTo}
+          />
+        </label>
 
         <label className="cpm__active-control">
           <input
@@ -261,15 +294,16 @@ export function ContractorPresenceMatrix({
           <span className="cpm__checkbox" aria-hidden="true" />
           Только сейчас
         </label>
-      </div>
-
-      <div className="cpm__summary" aria-live="polite">
-        <CalendarDays size={15} aria-hidden="true" />
-        {hasPeriod
-          ? `${dateFormatter.format(effectiveFrom)} — ${dateFormatter.format(addDays(effectiveTo, -1))}`
-          : "Все даты"}
-        <span aria-hidden="true">·</span>
-        {filteredRecords.length} {pluralize(filteredRecords.length, "посещение", "посещения", "посещений")}
+        {(!timeFromIsValid || !timeToIsValid) && (
+          <small className="cpm__filter-error" role="alert">
+            Укажите время от 00:00 до 23:59.
+          </small>
+        )}
+        {timeFromIsValid && timeToIsValid && !periodOrderIsValid && (
+          <small className="cpm__filter-error" role="alert">
+            Начало периода должно быть раньше его окончания.
+          </small>
+        )}
       </div>
 
       {mode === "employees" ? (

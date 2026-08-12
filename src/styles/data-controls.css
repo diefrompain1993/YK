@@ -194,6 +194,7 @@
 
 .date-range-picker__times label { display: grid; gap: 5px; }
 .date-range-picker__times span { color: #687c98; font-size: 11px; font-weight: 700; }
+.date-range-picker__times .time-picker { height: 34px; }
 .date-range-picker__times input {
   width: 100%;
   height: 34px;
@@ -258,6 +259,195 @@
 .date-range-picker__popover .date-range-picker__done:hover {
   border-color: #1d4ed8;
   background: #1d4ed8;
+}
+
+.time-picker {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.time-picker > svg {
+  position: absolute;
+  top: 50%;
+  left: 11px;
+  z-index: 1;
+  color: #647d9f;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.time-picker .time-picker__input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 9px 0 34px;
+  border: 1px solid #d7e1ee;
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  color: #334966;
+  font-family: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-picker.is-open .time-picker__input,
+.time-picker .time-picker__input:focus {
+  border-color: #94b5f8;
+  box-shadow: 0 0 0 3px rgba(40, 100, 235, 0.11);
+}
+
+.time-picker .time-picker__input[aria-invalid="true"] {
+  border-color: #e05252;
+  background: #fffafa;
+  color: #a82f2f;
+  box-shadow: 0 0 0 3px rgba(224, 82, 82, 0.1);
+}
+
+.time-picker__popover {
+  position: fixed;
+  z-index: 1000;
+  display: grid;
+  width: 204px;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid #dbe4ef;
+  border-radius: 13px;
+  background: #fff;
+  color: #20314d;
+  box-shadow: 0 18px 48px rgba(22, 42, 75, 0.18);
+  font-family: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+.time-picker__column {
+  min-width: 0;
+}
+
+.time-picker__column > strong {
+  display: block;
+  padding: 4px 4px 7px;
+  color: #71839b;
+  font-size: 11.5px;
+  font-weight: 650;
+  text-align: center;
+}
+
+.time-picker__list {
+  height: 190px;
+  overflow-y: auto;
+  padding: 2px;
+  border-radius: 9px;
+  background: #f7f9fc;
+  scrollbar-width: thin;
+}
+
+.time-picker__list button {
+  width: 100%;
+  height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #405571;
+  font-family: inherit !important;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.time-picker__list button:hover {
+  background: #eaf2ff;
+  color: #1f5fe8;
+}
+
+.time-picker__list button.is-selected {
+  background: #2563eb;
+  color: #fff;
+}
+
+.time-picker__list button:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.45);
+  outline-offset: -2px;
+}
+
+/* Shared table typography: journal, objects, contractors, users and tags. */
+.app-shell :is(
+  .op-table,
+  .responsive-table,
+  .aus-table,
+  .cpm__people-table,
+  .business-tags-table,
+  .tags-table
+) {
+  color: #334760;
+  font-family: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.42;
+}
+
+.app-shell :is(
+  .op-table,
+  .responsive-table,
+  .aus-table,
+  .cpm__people-table,
+  .business-tags-table,
+  .tags-table
+) thead th {
+  height: 43px;
+  background: #f8fafc;
+  color: #6a7c94 !important;
+  font-family: inherit !important;
+  font-size: 11.5px !important;
+  font-weight: 750 !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+}
+
+.app-shell :is(
+  .op-table,
+  .responsive-table,
+  .aus-table,
+  .cpm__people-table,
+  .business-tags-table,
+  .tags-table
+) tbody td {
+  color: #40546f;
+  font-family: inherit !important;
+  font-size: 13.5px !important;
+  line-height: 1.42 !important;
+}
+
+.app-shell :is(
+  .op-table,
+  .responsive-table,
+  .aus-table,
+  .cpm__people-table,
+  .business-tags-table,
+  .tags-table
+) tbody td strong {
+  font-family: inherit !important;
+  font-size: 13.5px !important;
+  font-weight: 650 !important;
+  line-height: 1.4 !important;
+}
+
+.app-shell :is(
+  .op-table,
+  .responsive-table,
+  .aus-table,
+  .cpm__people-table,
+  .business-tags-table,
+  .tags-table
+) tbody td small {
+  font-family: inherit !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
 }
 
 @media (max-width: 620px) {

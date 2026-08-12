@@ -618,23 +618,34 @@
 
 .object-presence-filters {
   display: grid;
-  grid-template-columns: 280px;
+  grid-template-columns: 280px 132px 132px;
+  align-items: start;
   gap: 12px;
   padding: 10px 18px;
   border-bottom: 1px solid #e7edf4;
   background: #fbfdff;
 }
 
-.object-presence-filters label,
-.object-presence-filters label > span {
+.object-presence-filter-field,
+.object-presence-filter-field > span {
   display: block;
 }
 
-.object-presence-filters label > span {
+.object-presence-filter-field > span {
   margin-bottom: 6px;
   color: #61748e;
   font-size: 12px;
   font-weight: 650;
+}
+
+.object-presence-filter-field--date .date-range-picker__trigger {
+  height: 39px;
+  min-height: 39px;
+  border-radius: 9px;
+}
+
+.object-presence-filter-field .time-picker {
+  height: 39px;
 }
 
 .object-presence-filters input,
@@ -647,6 +658,22 @@
   padding: 0 10px;
   color: #334963;
   font-size: 13px;
+}
+
+.object-presence-filters input.is-invalid,
+.object-presence-filters input[aria-invalid="true"] {
+  border-color: #e05252;
+  background: #fffafa;
+  color: #a82f2f;
+  box-shadow: 0 0 0 3px rgba(224, 82, 82, 0.1);
+}
+
+.object-presence-filter-error {
+  grid-column: 1 / -1;
+  margin-top: -3px;
+  color: #c33f3f;
+  font-size: 11.5px;
+  font-weight: 600;
 }
 
 .object-presence-empty {

@@ -73,6 +73,7 @@ import {
 import { ContractorPresenceMatrix } from "./ContractorPresenceMatrix";
 import { DataPagination, usePaginatedItems } from "./DataPagination";
 import { DateRangePicker } from "./DateRangePicker";
+import { TimePicker } from "./TimePicker";
 import {
   Area,
   AreaChart,
@@ -2808,11 +2809,22 @@ function ObjectPresence({
   openEmployee: (employee: Employee) => void;
 }) {
   const [view, setView] = useState<"now" | "history">("now");
-  const [from, setFrom] = useState("2026-08-08T00:00");
-  const [to, setTo] = useState("2026-08-12T23:59");
-  const hasPeriod = Boolean(from && to);
-  const periodIsValid =
-    !hasPeriod || new Date(from).getTime() <= new Date(to).getTime();
+  const [dateFrom, setDateFrom] = useState("2026-08-08");
+  const [dateTo, setDateTo] = useState("2026-08-12");
+  const [timeFrom, setTimeFrom] = useState("00:00");
+  const [timeTo, setTimeTo] = useState("23:59");
+  const isValidTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+  const timeFromIsValid = isValidTime(timeFrom);
+  const timeToIsValid = isValidTime(timeTo);
+  const hasPeriod = Boolean(dateFrom && dateTo);
+  const from = hasPeriod && timeFromIsValid ? `${dateFrom}T${timeFrom}` : "";
+  const to = hasPeriod && timeToIsValid ? `${dateTo}T${timeTo}` : "";
+  const periodOrderIsValid =
+    !hasPeriod ||
+    !timeFromIsValid ||
+    !timeToIsValid ||
+    new Date(`${dateFrom}T${timeFrom}`).getTime() <= new Date(`${dateTo}T${timeTo}`).getTime();
+  const periodIsValid = timeFromIsValid && timeToIsValid && periodOrderIsValid;
   const rows = useMemo(
     () =>
       PRESENCE_RECORDS.filter((record) => {
@@ -2843,22 +2855,49 @@ function ObjectPresence({
       </div>
       {view === "history" && (
         <div className="object-presence-filters">
-          <DateRangePicker
-            from={from}
-            to={to}
-            withTime
-            allowEmpty
-            ariaLabel="Дата и время присутствия на объекте"
-            onChange={(value) => {
-              setFrom(value.from);
-              setTo(value.to);
-            }}
-          />
+          <div className="object-presence-filter-field object-presence-filter-field--date">
+            <span>Дата или период</span>
+            <DateRangePicker
+              from={dateFrom}
+              to={dateTo}
+              allowEmpty
+              ariaLabel="Дата или период присутствия на объекте"
+              onChange={(value) => {
+                setDateFrom(value.from);
+                setDateTo(value.to);
+              }}
+            />
+          </div>
+          <label className="object-presence-filter-field">
+            <span>Время с</span>
+            <TimePicker
+              placeholder="00:00"
+              value={timeFrom}
+              ariaLabel="Время с"
+              invalid={!timeFromIsValid}
+              onChange={setTimeFrom}
+            />
+          </label>
+          <label className="object-presence-filter-field">
+            <span>Время по</span>
+            <TimePicker
+              placeholder="23:59"
+              value={timeTo}
+              ariaLabel="Время по"
+              invalid={!timeToIsValid}
+              onChange={setTimeTo}
+            />
+          </label>
+          {(!timeFromIsValid || !timeToIsValid) && (
+            <small id="object-time-error" className="object-presence-filter-error">
+              Укажите время от 00:00 до 23:59.
+            </small>
+          )}
         </div>
       )}
-      {view === "history" && !periodIsValid && (
+      {view === "history" && timeFromIsValid && timeToIsValid && !periodOrderIsValid && (
         <p className="object-presence-empty" role="alert">
-          Дата начала должна быть раньше даты окончания.
+          Начало периода должно быть раньше его окончания.
         </p>
       )}
       <div className="responsive-table-wrap overflow-x-auto">
