@@ -67,7 +67,7 @@
 .objects-page .objects-table-columns,
 .objects-page .objects-table-row {
   display: grid;
-  grid-template-columns: minmax(260px, 1.15fr) minmax(340px, 1.55fr) minmax(150px, 0.6fr) minmax(170px, 0.65fr);
+  grid-template-columns: minmax(260px, 1.15fr) minmax(360px, 1.55fr) minmax(170px, 0.65fr) minmax(150px, 0.6fr);
   align-items: center;
 }
 
@@ -190,9 +190,15 @@
 }
 
 .objects-page .objects-table-count--contractors > strong {
-  border-color: #bfe1d8;
-  background: #eef9f6;
-  color: #16725e;
+  border-color: #d1dff0;
+  background: #f0f5fc;
+  color: #2c63c7;
+}
+
+.objects-page .objects-table-count--tags > strong {
+  border-color: #d1dff0;
+  background: #f0f5fc;
+  color: #2c63c7;
 }
 
 .objects-page .objects-table-count > small {
@@ -290,9 +296,9 @@
 }
 
 .contractors-page .contractors-table-count > strong {
-  border-color: #cfe3db;
-  background: #edf8f4;
-  color: #19735e;
+  border-color: #d1dff0;
+  background: #f0f5fc;
+  color: #2c63c7;
 }
 
 @media (max-width: 900px) {

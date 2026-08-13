@@ -1723,7 +1723,8 @@
   position: relative;
   display: flex;
   width: min(1180px, calc(100vw - 44px));
-  max-height: min(760px, calc(100vh - 44px));
+  height: min(650px, calc(100vh - 44px));
+  max-height: min(650px, calc(100vh - 44px));
   flex-direction: column;
   overflow: hidden;
   border: 1px solid rgba(218, 227, 239, 0.9);
@@ -1795,14 +1796,17 @@
 }
 
 .export-preview-main {
+  display: flex;
   min-width: 0;
+  min-height: 0;
+  flex-direction: column;
   overflow-y: auto;
   padding: 12px;
 }
 
 .export-preview-criteria {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   overflow: hidden;
   gap: 1px;
   margin-bottom: 10px;
@@ -1841,6 +1845,10 @@
 }
 
 .export-preview-table-wrap {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid #dce5ef;
   border-radius: 12px;
@@ -1865,12 +1873,11 @@
   text-transform: uppercase;
 }
 
-.export-preview-table th:nth-child(1) { width: 14%; }
-.export-preview-table th:nth-child(2) { width: 18%; }
-.export-preview-table th:nth-child(3) { width: 19%; }
-.export-preview-table th:nth-child(4) { width: 21%; }
-.export-preview-table th:nth-child(5) { width: 16%; }
-.export-preview-table th:nth-child(6) { width: 12%; }
+.export-preview-table th:nth-child(1) { width: 16%; }
+.export-preview-table th:nth-child(2) { width: 21%; }
+.export-preview-table th:nth-child(3) { width: 22%; }
+.export-preview-table th:nth-child(4) { width: 26%; }
+.export-preview-table th:nth-child(5) { width: 15%; }
 
 .export-preview-table td {
   height: 52px;
@@ -1924,6 +1931,7 @@
 
 .export-preview-table-wrap .data-pagination {
   min-height: 43px;
+  margin-top: auto;
   padding: 5px 9px 5px 12px;
   font-size: 10.5px;
 }
@@ -2008,8 +2016,7 @@
   color: #245dcc;
 }
 
-.export-format-options strong,
-.export-format-options small {
+.export-format-options strong {
   display: block;
 }
 
@@ -2017,13 +2024,6 @@
   color: #2a405b;
   font-size: 11.5px;
   font-weight: 700;
-}
-
-.export-format-options small {
-  margin-top: 2px;
-  color: #8493a7;
-  font-size: 9px;
-  line-height: 1.3;
 }
 
 .export-format-radio {
@@ -2349,13 +2349,12 @@
   table-layout: fixed;
 }
 
-.export-main-table th:nth-child(1) { width: 12%; }
-.export-main-table th:nth-child(2) { width: 17%; }
-.export-main-table th:nth-child(3) { width: 16%; }
-.export-main-table th:nth-child(4) { width: 20%; }
-.export-main-table th:nth-child(5) { width: 12%; }
-.export-main-table th:nth-child(6) { width: 8%; }
-.export-main-table th:nth-child(7) { width: 15%; }
+.export-main-table th:nth-child(1) { width: 14%; }
+.export-main-table th:nth-child(2) { width: 19%; }
+.export-main-table th:nth-child(3) { width: 18%; }
+.export-main-table th:nth-child(4) { width: 22%; }
+.export-main-table th:nth-child(5) { width: 10%; }
+.export-main-table th:nth-child(6) { width: 17%; }
 
 .export-main-table th,
 .export-main-table td {
@@ -2895,10 +2894,15 @@
 
 /* Final export filter alignment: keep the controls and their menus inside the data card. */
 .export-primary-filter-grid {
-  grid-template-columns: minmax(290px, 1.35fr) repeat(5, minmax(0, 1fr));
+  grid-template-columns: minmax(290px, 1.35fr) repeat(4, minmax(0, 1fr));
 }
 
 .export-primary-filter-grid > * {
+  min-width: 0;
+}
+
+.export-progressive-filter,
+.export-progressive-filter > .export-multiselect {
   min-width: 0;
 }
 
@@ -2930,10 +2934,10 @@
   flex: 0 0 38px;
   padding: 0;
   place-items: center;
-  border: 1px solid #efb9bd;
+  border: 1px solid #cfd8e4;
   border-radius: 9px;
-  background: #fff5f5;
-  color: #cf3f49;
+  background: #fff;
+  color: #26384f;
   box-shadow: none;
   cursor: pointer;
 }
@@ -2944,13 +2948,13 @@
 }
 
 .export-table-reset-button:hover:not(:disabled) {
-  border-color: #dc7880;
-  background: #fee9ea;
-  color: #b4232e;
+  border-color: #99a9bc;
+  background: #f3f5f8;
+  color: #101820;
 }
 
 .export-table-reset-button:focus-visible {
-  outline: 2px solid #d94b55;
+  outline: 2px solid #57697f;
   outline-offset: 2px;
 }
 
@@ -2969,6 +2973,7 @@
   }
 
   .export-primary-filter-grid > .export-multiselect:nth-child(3n) .export-multiselect__menu,
+  .export-primary-filter-grid > .export-progressive-filter:nth-child(3n) .export-multiselect__menu,
   .export-primary-filter-grid > .export-multiselect:last-child .export-multiselect__menu {
     right: 0;
     left: auto;

@@ -22,8 +22,6 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
-  SlidersHorizontal,
-  Tag,
   UserRound,
   UsersRound,
   X,
@@ -624,7 +622,7 @@ export function PresencePage({
               <tr>
                 <th>Сотрудник</th>
                 <th>Объект</th>
-                <th>Помещение</th>
+                <th>Метка</th>
                 <th>Подрядчик</th>
                 <th>Вход</th>
                 <th>Выход</th>
@@ -652,7 +650,7 @@ export function PresencePage({
                   <td data-label="Объект">
                     <span className="op-cell-main">{record.object}</span>
                   </td>
-                  <td data-label="Помещение">
+                  <td data-label="Метка">
                     <span className="op-cell-main">{roomForRecord(record)}</span>
                   </td>
                   <td data-label="Подрядчик">
@@ -844,11 +842,9 @@ function exportRows(events: readonly ExportEvent[]) {
       dateFormatter.format(occurredAt),
       timeFormatter.format(occurredAt),
       event.employee,
-      event.role,
       event.contractor,
       event.object,
       event.type,
-      event.tag,
       event.details,
     ];
   });
@@ -858,12 +854,10 @@ const EXPORT_HEADERS = [
   "Дата",
   "Время",
   "Сотрудник",
-  "Должность",
   "Подрядчик",
   "Объект",
   "Тип события",
-  "Метка",
-  "Помещение / отчёт",
+  "Метка / отчёт",
 ];
 
 function downloadBlob(content: BlobPart[], type: string, extension: string) {
@@ -901,11 +895,9 @@ function downloadExport(events: readonly ExportEvent[], format: ExportFormat) {
       date: event.occurredAt.slice(0, 10),
       time: event.occurredAt.slice(11, 16),
       employee: event.employee,
-      role: event.role,
       contractor: event.contractor,
       object: event.object,
       eventType: event.type,
-      tag: event.tag,
       details: event.details,
     }));
     downloadBlob(
@@ -937,7 +929,7 @@ function ExportPreviewDialog({ events, criteria, onClose }: ExportPreviewDialogP
   const pagination = usePaginatedItems(
     [...events],
     events.map((event) => event.id).join("|"),
-    5,
+    7,
   );
 
   useEffect(() => {
@@ -980,25 +972,21 @@ function ExportPreviewDialog({ events, criteria, onClose }: ExportPreviewDialogP
   const formatOptions: Array<{
     value: ExportFormat;
     title: string;
-    description: string;
     icon: ReactNode;
   }> = [
     {
       value: "xls",
       title: "Excel",
-      description: "Для анализа и отчётности",
       icon: <FileSpreadsheet size={18} />,
     },
     {
       value: "csv",
       title: "CSV",
-      description: "Универсальный табличный формат",
       icon: <FileText size={18} />,
     },
     {
       value: "json",
       title: "JSON",
-      description: "Для интеграций и обработки",
       icon: <Braces size={18} />,
     },
   ];
@@ -1060,7 +1048,6 @@ function ExportPreviewDialog({ events, criteria, onClose }: ExportPreviewDialogP
                     <th>Сотрудник</th>
                     <th>Подрядчик</th>
                     <th>Объект</th>
-                    <th>Метка</th>
                     <th>Событие</th>
                   </tr>
                 </thead>
@@ -1068,10 +1055,9 @@ function ExportPreviewDialog({ events, criteria, onClose }: ExportPreviewDialogP
                   {pagination.pageItems.map((event) => (
                     <tr key={event.id}>
                       <td><time dateTime={event.occurredAt}>{formatDateTime(event.occurredAt)}</time></td>
-                      <td><strong>{event.employee}</strong><small>{event.role}</small></td>
+                      <td><strong>{event.employee}</strong></td>
                       <td title={event.contractor}>{event.contractor}</td>
                       <td title={event.object}>{event.object}</td>
-                      <td><span className="export-preview-tag">{event.tag}</span></td>
                       <td><span className={`op-event-badge ${eventTone(event.type)}`}>{event.type}</span></td>
                     </tr>
                   ))}
@@ -1102,7 +1088,7 @@ function ExportPreviewDialog({ events, criteria, onClose }: ExportPreviewDialogP
                   onClick={() => setFormat(option.value)}
                 >
                   <span className="export-format-icon" aria-hidden="true">{option.icon}</span>
-                  <span><strong>{option.title}</strong><small>{option.description}</small></span>
+                  <strong>{option.title}</strong>
                   <span className="export-format-radio" aria-hidden="true">
                     {format === option.value && <span />}
                   </span>
@@ -1141,11 +1127,8 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
   const [selectedObjects, setSelectedObjects] = useState<string[]>([]);
   const [selectedContractors, setSelectedContractors] = useState<string[]>([]);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<ExportEventType[]>([]);
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [resetIconTurns, setResetIconTurns] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedExportReport, setSelectedExportReport] = useState<ExportEvent | null>(null);
@@ -1162,47 +1145,43 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
     [scopedEvents],
   );
   const contractorOptions = useMemo(
-    () => unique(scopedEvents.map((event) => event.contractor)),
-    [scopedEvents],
-  );
-  const tagOptions = useMemo(
-    () => unique(scopedEvents.map((event) => event.tag)),
-    [scopedEvents],
+    () => unique(
+      scopedEvents
+        .filter((event) =>
+          !selectedObjects.length || selectedObjects.includes(event.object),
+        )
+        .map((event) => event.contractor),
+    ),
+    [scopedEvents, selectedObjects],
   );
   const employeeOptions = useMemo(
     () => unique(
       scopedEvents
         .filter((event) =>
-          (!selectedContractors.length || selectedContractors.includes(event.contractor)) &&
-          (!selectedObjects.length || selectedObjects.includes(event.object)),
+          !selectedObjects.length || selectedObjects.includes(event.object),
         )
         .map((event) => event.employee),
     ),
-    [scopedEvents, selectedContractors, selectedObjects],
-  );
-  const roleOptions = useMemo(
-    () => unique(
-      scopedEvents
-        .filter((event) =>
-          (!selectedContractors.length || selectedContractors.includes(event.contractor)) &&
-          (!selectedObjects.length || selectedObjects.includes(event.object)),
-        )
-        .map((event) => event.role),
-    ),
-    [scopedEvents, selectedContractors, selectedObjects],
+    [scopedEvents, selectedObjects],
   );
   const roomOptions = useMemo(
     () => unique(
       scopedEvents
         .filter((event) =>
           event.type !== "Отчёт" &&
-          (!selectedContractors.length || selectedContractors.includes(event.contractor)) &&
           (!selectedObjects.length || selectedObjects.includes(event.object)),
         )
         .map((event) => event.details),
     ),
-    [scopedEvents, selectedContractors, selectedObjects],
+    [scopedEvents, selectedObjects],
   );
+
+  useEffect(() => {
+    const available = new Set(contractorOptions);
+    setSelectedContractors((current) =>
+      current.filter((contractor) => available.has(contractor)),
+    );
+  }, [contractorOptions]);
 
   useEffect(() => {
     const available = new Set(employeeOptions);
@@ -1210,11 +1189,17 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
   }, [employeeOptions]);
 
   useEffect(() => {
-    const availableRoles = new Set(roleOptions);
     const availableRooms = new Set(roomOptions);
-    setSelectedRoles((current) => current.filter((role) => availableRoles.has(role)));
     setSelectedRooms((current) => current.filter((room) => availableRooms.has(room)));
-  }, [roleOptions, roomOptions]);
+  }, [roomOptions]);
+
+  useEffect(() => {
+    if (!selectedObjects.length) {
+      setSelectedContractors([]);
+      setSelectedEmployees([]);
+      setSelectedRooms([]);
+    }
+  }, [selectedObjects]);
 
   const activePeriods = periods.filter((period) => period.from || period.to);
   const periodsAreValid = periods.every(
@@ -1234,9 +1219,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
           (!selectedObjects.length || selectedObjects.includes(event.object)) &&
           (!selectedContractors.length || selectedContractors.includes(event.contractor)) &&
           (!selectedEmployees.length || selectedEmployees.includes(event.employee)) &&
-          (!selectedTags.length || selectedTags.includes(event.tag)) &&
           (!selectedTypes.length || selectedTypes.includes(event.type)) &&
-          (!selectedRoles.length || selectedRoles.includes(event.role)) &&
           (!selectedRooms.length || selectedRooms.includes(event.details))
         );
       })
@@ -1248,9 +1231,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
     selectedContractors,
     selectedEmployees,
     selectedObjects,
-    selectedRoles,
     selectedRooms,
-    selectedTags,
     selectedTypes,
   ]);
 
@@ -1259,9 +1240,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
     selectedObjects.length > 0,
     selectedContractors.length > 0,
     selectedEmployees.length > 0,
-    selectedTags.length > 0,
     selectedTypes.length > 0,
-    selectedRoles.length > 0,
     selectedRooms.length > 0,
   ].filter(Boolean).length;
 
@@ -1272,9 +1251,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
       ...selectedObjects,
       ...selectedContractors,
       ...selectedEmployees,
-      ...selectedTags,
       ...selectedTypes,
-      ...selectedRoles,
       ...selectedRooms,
     ].join("|"),
   );
@@ -1294,13 +1271,9 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
     { label: "Объекты", value: selectionSummary(selectedObjects, "Все объекты") },
     { label: "Подрядчики", value: selectionSummary(selectedContractors, "Все подрядчики") },
     { label: "Сотрудники", value: selectionSummary(selectedEmployees, "Все сотрудники") },
-    { label: "Метки", value: selectionSummary(selectedTags, "Все метки") },
     { label: "События", value: selectionSummary(selectedTypes, "Все типы") },
-    ...(selectedRoles.length
-      ? [{ label: "Должности", value: selectionSummary(selectedRoles, "Все должности") }]
-      : []),
     ...(selectedRooms.length
-      ? [{ label: "Помещения", value: selectionSummary(selectedRooms, "Все помещения") }]
+      ? [{ label: "Метки", value: selectionSummary(selectedRooms, "Все метки") }]
       : []),
   ];
 
@@ -1324,9 +1297,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
     setSelectedObjects([]);
     setSelectedContractors([]);
     setSelectedEmployees([]);
-    setSelectedTags([]);
     setSelectedTypes([]);
-    setSelectedRoles([]);
     setSelectedRooms([]);
   };
 
@@ -1468,34 +1439,48 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
               icon={<MapPinned size={16} />}
               onChange={setSelectedObjects}
             />
-            <ExportMultiSelect
-              label="Подрядчики"
-              ariaLabel="Выбрать подрядчиков"
-              placeholder="Все подрядчики"
-              options={contractorOptions}
-              selected={selectedContractors}
-              icon={<Building2 size={16} />}
-              onChange={setSelectedContractors}
-            />
-            <ExportMultiSelect
-              label="Сотрудники"
-              ariaLabel="Выбрать сотрудников"
-              placeholder="Все сотрудники"
-              options={employeeOptions}
-              selected={selectedEmployees}
-              icon={<UserRound size={16} />}
-              hint={selectedContractors.length || selectedObjects.length ? "Список сужен выбранными условиями" : undefined}
-              onChange={setSelectedEmployees}
-            />
-            <ExportMultiSelect
-              label="Метки"
-              ariaLabel="Выбрать метки"
-              placeholder="Все метки"
-              options={tagOptions}
-              selected={selectedTags}
-              icon={<Tag size={16} />}
-              onChange={setSelectedTags}
-            />
+            <AnimatePresence initial={false}>
+              {selectedObjects.length > 0 && (
+                <motion.div
+                  className="export-progressive-filter"
+                  initial={{ opacity: 0, y: -6, scale: 0.985 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.985 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <ExportMultiSelect
+                    label="Подрядчики"
+                    ariaLabel="Выбрать подрядчиков"
+                    placeholder="Все подрядчики"
+                    options={contractorOptions}
+                    selected={selectedContractors}
+                    icon={<Building2 size={16} />}
+                    onChange={setSelectedContractors}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <AnimatePresence initial={false}>
+              {selectedObjects.length > 0 && (
+                <motion.div
+                  className="export-progressive-filter"
+                  initial={{ opacity: 0, y: -6, scale: 0.985 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.985 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <ExportMultiSelect
+                    label="Сотрудники"
+                    ariaLabel="Выбрать сотрудников"
+                    placeholder="Все сотрудники"
+                    options={employeeOptions}
+                    selected={selectedEmployees}
+                    icon={<UserRound size={16} />}
+                    onChange={setSelectedEmployees}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
             <ExportMultiSelect
               label="Тип события"
               ariaLabel="Выбрать типы событий"
@@ -1507,21 +1492,34 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
             />
           </div>
 
-          <div className="export-filter-options-row">
-            <button
-              type="button"
-              className={`export-advanced-toggle export-filter-head-advanced ${showAdvanced ? "is-open" : ""}`}
-              aria-expanded={showAdvanced}
-              onClick={() => setShowAdvanced((value) => !value)}
-            >
-              <SlidersHorizontal size={15} aria-hidden="true" />
-              <span>Расширенные фильтры</span>
-              {(selectedRoles.length > 0 || selectedRooms.length > 0) && (
-                <b>{selectedRoles.length + selectedRooms.length}</b>
-              )}
-              <ChevronDown size={15} aria-hidden="true" />
-            </button>
-          </div>
+          <AnimatePresence initial={false}>
+            {selectedObjects.length > 0 && (
+              <motion.div
+                className="export-table-advanced-motion"
+                initial={{ opacity: 0, height: 0, overflow: "hidden" }}
+                animate={{ opacity: 1, height: "auto", overflow: "visible" }}
+                exit={{ opacity: 0, height: 0, overflow: "hidden" }}
+                transition={{
+                  height: { duration: 0.36, ease: [0.22, 1, 0.36, 1] },
+                  opacity: { duration: 0.22, ease: "easeOut" },
+                }}
+              >
+                <div className="export-table-advanced-panel">
+                  <div className="export-advanced-fields">
+                    <ExportMultiSelect
+                      label="Метка"
+                      ariaLabel="Выбрать метки"
+                      placeholder="Все метки"
+                      options={roomOptions}
+                      selected={selectedRooms}
+                      icon={<MapPinned size={16} />}
+                      onChange={setSelectedRooms}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <AnimatePresence initial={false}>
             {periods.length > 1 && (
@@ -1577,49 +1575,6 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
             )}
           </AnimatePresence>
 
-          <AnimatePresence initial={false}>
-            {showAdvanced && (
-              <motion.div
-                className="export-table-advanced-motion"
-                initial={{ opacity: 0, height: 0, overflow: "hidden" }}
-                animate={{
-                  opacity: 1,
-                  height: "auto",
-                  overflow: "visible",
-                }}
-                exit={{ opacity: 0, height: 0, overflow: "hidden" }}
-                transition={{
-                  height: { duration: 0.44, ease: [0.22, 1, 0.36, 1] },
-                  opacity: { duration: 0.24, ease: "easeOut" },
-                }}
-              >
-                <div className="export-table-advanced-panel">
-                  <div className="export-advanced-fields">
-                  <ExportMultiSelect
-                    label="Должности"
-                    ariaLabel="Выбрать должности"
-                    placeholder="Все должности"
-                    options={roleOptions}
-                    selected={selectedRoles}
-                    icon={<UserRound size={16} />}
-                    onChange={setSelectedRoles}
-                  />
-                  <ExportMultiSelect
-                    label="Помещения"
-                    ariaLabel="Выбрать помещения"
-                    placeholder="Все помещения"
-                    options={roomOptions}
-                    selected={selectedRooms}
-                    icon={<MapPinned size={16} />}
-                    hint="Отчёты без помещения не попадут в выборку"
-                    onChange={setSelectedRooms}
-                  />
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {!periodsAreValid && (
             <p className="export-table-filter-error" role="alert">В одном из периодов дата начала позже даты окончания.</p>
           )}
@@ -1633,9 +1588,8 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
                 <th>Сотрудник</th>
                 <th>Подрядчик</th>
                 <th>Объект</th>
-                <th>Метка</th>
                 <th>Тип</th>
-                <th>Помещение / отчёт</th>
+                <th>Метка / отчёт</th>
               </tr>
             </thead>
             <tbody>
@@ -1657,13 +1611,12 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
                 >
                   <td data-label="Дата и время"><time dateTime={event.occurredAt}>{formatDateTime(event.occurredAt)}</time></td>
                   <td data-label="Сотрудник">
-                    <div className="op-person op-person--compact"><span><strong>{event.employee}</strong><small>{event.role}</small></span></div>
+                    <div className="op-person op-person--compact"><span><strong>{event.employee}</strong></span></div>
                   </td>
                   <td data-label="Подрядчик"><span className="op-cell-main" title={event.contractor}>{event.contractor}</span></td>
                   <td data-label="Объект"><span className="op-cell-main" title={event.object}>{event.object}</span></td>
-                  <td data-label="Метка"><span className="export-preview-tag">{event.tag}</span></td>
                   <td data-label="Тип"><span className={`op-event-badge ${eventTone(event.type)}`}>{event.type}</span></td>
-                  <td data-label="Помещение / отчёт"><span className="op-cell-main op-export-details" title={event.details}>{event.details}</span></td>
+                  <td data-label="Метка / отчёт"><span className="op-cell-main op-export-details" title={event.details}>{event.details}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -1731,7 +1684,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
                   <dl className="op-report-meta">
                     <div className="op-report-meta__person">
                       <dt>Сотрудник</dt>
-                      <dd><strong>{selectedExportReport.employee}</strong><small>{selectedExportReport.role}</small></dd>
+                      <dd><strong>{selectedExportReport.employee}</strong></dd>
                     </div>
                     <div className="op-report-meta__contractor"><dt>Подрядчик</dt><dd>{selectedExportReport.contractor}</dd></div>
                     <div className="op-report-meta__time"><dt>Дата и время</dt><dd><time>{formatDateTime(selectedExportReport.occurredAt)}</time></dd></div>
@@ -1891,7 +1844,7 @@ export function ExportPage({
       "Подрядчик",
       "Объект",
       "Тип",
-      "Помещение / отчёт",
+      "Метка / отчёт",
     ];
     const rows = visibleEvents.map((event) => {
       const occurredAt = new Date(event.occurredAt);
@@ -2045,7 +1998,7 @@ export function ExportPage({
                 <th>Подрядчик</th>
                 <th>Объект</th>
                 <th>Тип</th>
-                <th>Помещение / отчёт</th>
+                <th>Метка / отчёт</th>
               </tr>
             </thead>
             <tbody>
@@ -2100,7 +2053,7 @@ export function ExportPage({
                       {event.type}
                     </span>
                   </td>
-                  <td data-label="Помещение / отчёт">
+                  <td data-label="Метка / отчёт">
                     <span className="op-cell-main op-export-details" title={event.details}>
                       {event.details}
                     </span>

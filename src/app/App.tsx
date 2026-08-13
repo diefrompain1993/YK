@@ -1026,7 +1026,7 @@ function downloadLogs(rows: LogRecord[], fileName = "contractor-log.csv") {
     "Сотрудник",
     "Событие",
     "Объект",
-    "Помещение",
+    "Метка",
     "Описание",
     "Статус",
   ];
@@ -1671,15 +1671,7 @@ export default function App() {
             </button>
           </div>
         </header>
-        <AnimatePresence mode="wait">
-          <motion.div
-            className="page-stage"
-            key={page}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-          >
+        <div className="page-stage">
             {page === "home" ? (
               <HomePage
                 navigate={navigate}
@@ -1779,8 +1771,7 @@ export default function App() {
                 }}
               />
             )}
-          </motion.div>
-        </AnimatePresence>
+        </div>
       </main>
       <AnimatePresence>
         {detail && (
@@ -2131,7 +2122,7 @@ function EmployeesPage({
               allowedObjectNames={allowedObjectNames}
               onOpen={() => setContractorContactsOpen(true)}
             />
-            <ContractorDispatcher contractor={selected} />
+            <ContractorCompany contractor={selected} />
           </div>
         </>
       )}
@@ -2374,26 +2365,26 @@ function ContractorContacts({
   );
 }
 
-function ContractorDispatcher({ contractor }: { contractor: string }) {
+function ContractorCompany({ contractor }: { contractor: string }) {
   const details = contractorDetails[contractor];
   return (
-    <section className="contractor-dispatcher-card" aria-label="Диспетчер подрядчика">
+    <section className="contractor-dispatcher-card" aria-label="Контакты компании">
       <header>
         <Building2 size={16} aria-hidden="true" />
-        <h2>Диспетчер подрядчика</h2>
+        <h2>Компания</h2>
       </header>
       <div className="contractor-dispatcher-actions">
         <a href={`mailto:${details.email}`}>
           <Mail size={16} aria-hidden="true" />
           <span>
-            <small>Email</small>
+            <small>Email компании</small>
             <strong>{details.email}</strong>
           </span>
         </a>
         <a href={`tel:${details.phone.replace(/[^+\d]/g, "")}`}>
           <Phone size={16} aria-hidden="true" />
           <span>
-            <small>Телефон</small>
+            <small>Телефон компании</small>
             <strong>{details.phone}</strong>
           </span>
         </a>
@@ -2410,6 +2401,7 @@ function getVisibleContractorContacts(
     ([code, contact]) => {
       const object = objectsInitial.find((item) => item.code === code);
       if (!object || !allowedObjectNames.includes(object.name)) return [];
+      if (!contact.name.trim() && !contact.phone.trim() && !contact.email?.trim()) return [];
       return [{ code, objectName: object.name, contact }];
     },
   );
@@ -2983,7 +2975,7 @@ function ContractorsPage({
         <div className="objects-table-scroll">
           <div className="objects-table-columns contractors-table-columns" aria-hidden="true">
             <span>Подрядчик</span>
-            <span>Специализация</span>
+            <span>Описание</span>
             <span>Контакты</span>
             <span>Кол-во объектов</span>
           </div>
@@ -3088,13 +3080,13 @@ function ObjectsPage({
           <div className="objects-table-columns" aria-hidden="true">
             <span>Название</span>
             <span>Адрес</span>
-            <span>Кол-во помещений</span>
             <span>Кол-во подрядчиков</span>
+            <span>Кол-во меток</span>
           </div>
           {filtered.length ? (
             filtered.map((object) => {
-              const roomsCount = objectDetails[object.code]?.rooms.length ?? 0;
               const contractorsCount = getObjectContractors(object).length;
+              const tagsCount = getObjectProfile(object).activeTags;
               return (
                 <button
                   type="button"
@@ -3110,13 +3102,13 @@ function ObjectsPage({
                     <MapPin size={15} aria-hidden="true" />
                     <span>{object.address}</span>
                   </span>
-                  <span className="objects-table-count">
-                    <strong>{roomsCount}</strong>
-                    <small>помещений</small>
-                  </span>
                   <span className="objects-table-count objects-table-count--contractors">
                     <strong>{contractorsCount}</strong>
                     <small>подрядчиков</small>
+                  </span>
+                  <span className="objects-table-count objects-table-count--tags">
+                    <strong>{tagsCount}</strong>
+                    <small>меток</small>
                     <span className="objects-table-open" aria-hidden="true">
                       <ChevronDown size={17} />
                     </span>
@@ -3196,7 +3188,7 @@ function ObjectDetailPage({
           </div>
         </header>
         <ObjectContacts object={object} onOpen={() => setContactsOpen(true)} />
-        <ObjectRooms object={object} />
+        <ObjectTags object={object} />
       </div>
 
       <div className="object-detail-primary">
@@ -3222,24 +3214,33 @@ function ObjectDetailPage({
   );
 }
 
-function ObjectRooms({ object }: { object: ObjectItem }) {
+function ObjectTags({ object }: { object: ObjectItem }) {
   const details = objectDetails[object.code];
-  const rooms = details?.rooms ?? [];
+  const configuredTags = details?.rooms;
+  const tags = useMemo(() => {
+    const objectIndex = objectsInitial.findIndex((item) => item.code === object.code);
+    const count = objectIndex >= 0
+      ? getObjectProfile(object).activeTags
+      : (configuredTags?.length ?? 0);
+    return Array.from({ length: count }, (_, index) =>
+      configuredTags?.[index] ?? `NFC-${object.code}-${String(index + 1).padStart(3, "0")}`,
+    );
+  }, [configuredTags, object]);
   const tagsRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
-  const [visibleRoomCount, setVisibleRoomCount] = useState(rooms.length);
+  const [visibleTagCount, setVisibleTagCount] = useState(tags.length);
 
   useLayoutEffect(() => {
-    const tags = tagsRef.current;
+    const tagContainer = tagsRef.current;
     const measureRack = measureRef.current;
-    if (!tags || !measureRack || !rooms.length) {
-      setVisibleRoomCount(rooms.length);
+    if (!tagContainer || !measureRack || !tags.length) {
+      setVisibleTagCount(tags.length);
       return;
     }
 
-    const calculateVisibleRooms = () => {
-      const availableWidth = tags.clientWidth;
-      const availableHeight = tags.clientHeight;
+    const calculateVisibleTags = () => {
+      const availableWidth = tagContainer.clientWidth;
+      const availableHeight = tagContainer.clientHeight;
       const measuredTags = Array.from(
         measureRack.querySelectorAll<HTMLElement>("[data-room-measure]"),
       );
@@ -3268,58 +3269,58 @@ function ObjectRooms({ object }: { object: ObjectItem }) {
         return rows <= maxRows;
       };
 
-      if (fits(rooms.length, false)) {
-        setVisibleRoomCount(rooms.length);
+      if (fits(tags.length, false)) {
+        setVisibleTagCount(tags.length);
         return;
       }
 
       let nextVisibleCount = 0;
-      for (let count = 1; count < rooms.length; count += 1) {
+      for (let count = 1; count < tags.length; count += 1) {
         if (!fits(count, true)) break;
         nextVisibleCount = count;
       }
-      setVisibleRoomCount(nextVisibleCount);
+      setVisibleTagCount(nextVisibleCount);
     };
 
-    calculateVisibleRooms();
-    const resizeObserver = new ResizeObserver(calculateVisibleRooms);
-    resizeObserver.observe(tags);
+    calculateVisibleTags();
+    const resizeObserver = new ResizeObserver(calculateVisibleTags);
+    resizeObserver.observe(tagContainer);
     resizeObserver.observe(measureRack);
-    void document.fonts?.ready.then(calculateVisibleRooms);
+    void document.fonts?.ready.then(calculateVisibleTags);
     return () => resizeObserver.disconnect();
-  }, [rooms]);
+  }, [tags]);
 
-  const visibleRooms = rooms.slice(0, visibleRoomCount);
-  const hiddenRooms = rooms.slice(visibleRoomCount);
+  const visibleTags = tags.slice(0, visibleTagCount);
+  const hiddenTags = tags.slice(visibleTagCount);
   return (
-    <section className="object-rooms-card" aria-label="Помещения объекта">
+    <section className="object-rooms-card" aria-label="Метки объекта">
       <div className="object-rooms-heading">
-        <DoorOpen size={15} aria-hidden="true" />
-        <h2>Помещения</h2>
-        <strong>{rooms.length}</strong>
+        <Tag size={15} aria-hidden="true" />
+        <h2>Метки</h2>
+        <strong>{tags.length}</strong>
       </div>
       <div className="object-room-tags" ref={tagsRef}>
-        {rooms.length ? (
+        {tags.length ? (
           <>
-            {visibleRooms.map((room) => (
-              <span className="object-room-tag" key={`${object.code}-${room}`}>
-                {room}
+            {visibleTags.map((tag) => (
+              <span className="object-room-tag" key={`${object.code}-${tag}`}>
+                {tag}
               </span>
             ))}
-            {hiddenRooms.length > 0 && (
+            {hiddenTags.length > 0 && (
               <span className="object-room-overflow">
                 <button
                   type="button"
                   className="object-room-more"
-                  aria-label={`Ещё ${hiddenRooms.length}: ${hiddenRooms.join(", ")}`}
+                  aria-label={`Ещё ${hiddenTags.length}: ${hiddenTags.join(", ")}`}
                 >
-                  +{hiddenRooms.length}
+                  +{hiddenTags.length}
                 </button>
                 <span className="object-room-tooltip" role="tooltip">
-                  <strong>Остальные помещения</strong>
+                  <strong>Остальные метки</strong>
                   <span className="object-room-tooltip-tags">
-                    {hiddenRooms.map((room) => (
-                      <span key={`${object.code}-hidden-${room}`}>{room}</span>
+                    {hiddenTags.map((tag) => (
+                      <span key={`${object.code}-hidden-${tag}`}>{tag}</span>
                     ))}
                   </span>
                 </span>
@@ -3330,12 +3331,12 @@ function ObjectRooms({ object }: { object: ObjectItem }) {
           <span className="object-room-empty">Не указаны</span>
         )}
         <span className="object-room-measure" ref={measureRef} aria-hidden="true">
-          {rooms.map((room) => (
-            <span className="object-room-tag" data-room-measure key={`${object.code}-measure-${room}`}>
-              {room}
+          {tags.map((tag) => (
+            <span className="object-room-tag" data-room-measure key={`${object.code}-measure-${tag}`}>
+              {tag}
             </span>
           ))}
-          <span className="object-room-more" data-room-more-measure>+{rooms.length}</span>
+          <span className="object-room-more" data-room-more-measure>+{tags.length}</span>
         </span>
       </div>
     </section>
@@ -3357,7 +3358,6 @@ function ObjectContacts({
         <div>
           <h2>
             Контактные лица
-            <span className="object-contacts-count">{contacts.length}</span>
           </h2>
           <p>Телефоны и роли ответственных</p>
         </div>
@@ -3759,13 +3759,13 @@ function ObjectPresence({
           />
         </div>
         <div className="object-presence-filter-field object-presence-filter-field--room">
-          <span>Помещение</span>
+          <span>Метка</span>
           <ObjectPresenceCombobox
             value={roomQuery}
             onChange={setRoomQuery}
             options={roomOptions}
-            placeholder="Введите помещение"
-            ariaLabel="Фильтр по помещению"
+            placeholder="Введите метку"
+            ariaLabel="Фильтр по метке"
           />
         </div>
         <label className="object-presence-filter-field">
@@ -3851,7 +3851,7 @@ function ObjectPresence({
             <tr>
               <th>Сотрудник</th>
               <th>Подрядчик</th>
-              <th>Помещение</th>
+              <th>Метка</th>
               <th>Вход</th>
               <th>Выход</th>
             </tr>
@@ -3874,7 +3874,7 @@ function ObjectPresence({
                 >
                   <td data-label="Сотрудник"><strong>{record.employee}</strong><small>{record.role}</small></td>
                   <td data-label="Подрядчик">{record.contractor}</td>
-                  <td data-label="Помещение">
+                  <td data-label="Метка">
                     <span className="object-room-tag object-room-tag--table">
                       {roomForRecord(record)}
                     </span>
@@ -4085,7 +4085,10 @@ function ObjectContractors({
       <div className="object-contractor-grid">
         {profile.contractors.map((contractor) => {
           const details = contractorDetails[contractor];
-          const responsible = details.contactsByObject[object.code];
+          const savedResponsible = details.contactsByObject[object.code];
+          const responsible = savedResponsible?.name.trim()
+            ? savedResponsible
+            : undefined;
           const onSiteCount = PRESENCE_RECORDS.filter(
             (record) =>
               !record.leftAt &&
@@ -4135,14 +4138,18 @@ function ObjectContractors({
                     <b>{responsible.name}</b>
                     <small>{responsible.role}</small>
                   </span>
-                  <a
-                    className="object-contractor-phone"
-                    href={`tel:${responsible.phone.replace(/[^+\d]/g, "")}`}
-                    aria-label={`Позвонить ${responsible.name}`}
-                  >
-                    <Phone size={14} aria-hidden="true" />
-                    {responsible.phone}
-                  </a>
+                  {responsible.phone ? (
+                    <a
+                      className="object-contractor-phone"
+                      href={`tel:${responsible.phone.replace(/[^+\d]/g, "")}`}
+                      aria-label={`Позвонить ${responsible.name}`}
+                    >
+                      <Phone size={14} aria-hidden="true" />
+                      {responsible.phone}
+                    </a>
+                  ) : (
+                    <span className="object-contractor-phone is-empty" aria-hidden="true">—</span>
+                  )}
                 </>
               ) : (
                 <>
@@ -4747,21 +4754,9 @@ function ContractorModal({
   done: (m: string, linkedCodes: string[]) => void;
 }) {
   const existingDetails = contractorDetails[contractor];
-  const [contactsByObject, setContactsByObject] = useState<
-    Record<string, ContactPerson>
-  >(() =>
-    Object.fromEntries(
-      Object.entries(existingDetails.contactsByObject).map(([code, contact]) => [
-        code,
-        { ...contact },
-      ]),
-    ),
-  );
   const [description, setDescription] = useState(
     existingDetails.description,
   );
-  const [dispatcherPhone, setDispatcherPhone] = useState(existingDetails.phone);
-  const [dispatcherEmail, setDispatcherEmail] = useState(existingDetails.email);
   const [drawer, setDrawer] = useState(false);
   const [linked, setLinked] = useState(
     Object.keys(existingDetails.contactsByObject),
@@ -4779,27 +4774,7 @@ function ContractorModal({
         ? current.filter((value) => value !== code)
         : [...current, code],
     );
-    setContactsByObject((current) =>
-      current[code]
-        ? current
-        : {
-            ...current,
-            [code]: { name: "", role: "", phone: "", email: "" },
-          },
-    );
   };
-  const updateContact = (
-    code: string,
-    field: keyof ContactPerson,
-    value: string,
-  ) =>
-    setContactsByObject((current) => ({
-      ...current,
-      [code]: {
-        ...(current[code] || { name: "", role: "", phone: "", email: "" }),
-        [field]: value,
-      },
-    }));
   return (
     <motion.div
       className="overlay-layer fixed inset-0 z-[60] isolate"
@@ -4825,7 +4800,7 @@ function ContractorModal({
       >
         <ModalHead
           title="Редактирование подрядчика"
-          sub="Описание и контакты"
+          sub="Описание и привязанные объекты"
           close={close}
         />
         <div className="overlay-scroll-region flex-1 overflow-y-auto space-y-7 px-7 py-6">
@@ -4833,7 +4808,7 @@ function ContractorModal({
             <Field label="Название организации" value={contractor} readOnly />
             <label className="block">
               <span className="mb-1.5 block text-[13.5px] font-medium text-[#40516d]">
-                Что делает подрядчик
+                Описание
               </span>
               <textarea
                 value={description}
@@ -4843,18 +4818,6 @@ function ContractorModal({
                 className="w-full resize-none rounded-lg border border-[#dce5f0] bg-white px-3 py-2.5 text-[15px] text-[#16223a] outline-none focus:border-[#3b82f6]"
               />
             </label>
-            <div className="grid grid-cols-2 gap-4">
-              <Field
-                label="Телефон диспетчера"
-                value={dispatcherPhone}
-                onChange={setDispatcherPhone}
-              />
-              <Field
-                label="Email диспетчера"
-                value={dispatcherEmail}
-                onChange={setDispatcherEmail}
-              />
-            </div>
           </div>
           <section className="rounded-xl border border-[#e3eaf3] bg-[#f8fbff] p-5">
             <div className="mb-4 flex items-center justify-between">
@@ -4976,71 +4939,6 @@ function ContractorModal({
               )}
             </div>
           </section>
-          <section className="rounded-xl border border-[#e3eaf3] bg-[#f8fbff] p-5">
-            <div className="mb-4">
-              <h3 className="text-[15px] font-semibold text-[#1e293b]">
-                Ответственные на объектах
-              </h3>
-              <p className="mt-1 text-[12.5px] text-[#71839e]">
-                Эти контакты видны в рабочей карточке объекта.
-              </p>
-            </div>
-            <div className="space-y-3">
-              {linked.length ? (
-                linked.map((code) => {
-                  const object = objects.find((item) => item.code === code);
-                  if (!object) return null;
-                  const contact = contactsByObject[code] || {
-                    name: "",
-                    role: "",
-                    phone: "",
-                    email: "",
-                  };
-                  return (
-                    <div
-                      key={code}
-                      className="space-y-3 rounded-lg border border-[#dce5ef] bg-white p-3.5"
-                    >
-                      <div className="flex items-center gap-2 text-[13.5px] font-semibold text-[#263956]">
-                        <MapPin size={14} className="text-[#2563eb]" />
-                        {object.name}
-                      </div>
-                      <Field
-                        label="ФИО"
-                        value={contact.name}
-                        placeholder="Ответственный сотрудник"
-                        onChange={(value) => updateContact(code, "name", value)}
-                      />
-                      <Field
-                        label="Должность"
-                        value={contact.role}
-                        placeholder="Любая должность"
-                        onChange={(value) => updateContact(code, "role", value)}
-                      />
-                      <div className="grid grid-cols-2 gap-3">
-                        <Field
-                          label="Телефон"
-                          value={contact.phone}
-                          placeholder="+7 999 000-00-00"
-                          onChange={(value) => updateContact(code, "phone", value)}
-                        />
-                        <Field
-                          label="Email"
-                          value={contact.email}
-                          placeholder="email@company.ru"
-                          onChange={(value) => updateContact(code, "email", value)}
-                        />
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="rounded-lg border border-dashed border-[#d5dfeb] bg-white px-4 py-5 text-center text-[13px] text-[#71839e]">
-                  Сначала выберите объект.
-                </p>
-              )}
-            </div>
-          </section>
         </div>
         <ModalFoot
           close={close}
@@ -5048,15 +4946,14 @@ function ContractorModal({
             contractorDetails[contractor] = {
               ...existingDetails,
               description: description.trim() || existingDetails.description,
-              phone: dispatcherPhone.trim(),
-              email: dispatcherEmail.trim(),
               contactsByObject: Object.fromEntries(
                 linked.map((code) => [
                   code,
-                  contactsByObject[code] || {
-                    name: "Ответственный не назначен",
+                  existingDetails.contactsByObject[code] || {
+                    name: "",
                     role: "",
-                    phone: dispatcherPhone.trim(),
+                    phone: "",
+                    email: "",
                   },
                 ]),
               ),
@@ -5079,7 +4976,7 @@ function TagsPage({
       ...tag,
       business:
         index % 2 ? "БЦ «Орион»" : "Логистический центр «Запад»",
-      title: ["Архив", "Помещение 1", "Помещение 2", "Переговорная", "Склад"][
+      title: ["Архив", "Метка 1", "Метка 2", "Переговорная", "Склад"][
         index
       ],
       type:
@@ -5902,7 +5799,7 @@ function LegacyTagsPage({ toast }: { toast: (m: string) => void }) {
     initialTags.map((tag, i) => ({
       ...tag,
       business: i % 2 ? "БЦ «Орион»" : "Логистический центр «Запад»",
-      title: ["Архив", "Помещение 1", "Помещение 2", "Переговорная", "Склад"][i],
+      title: ["Архив", "Метка 1", "Метка 2", "Переговорная", "Склад"][i],
       type: i === 1 ? "Журнал" : i === 2 ? "Не выбран" : "Посещение",
       contractors:
         i === 0
@@ -6231,7 +6128,7 @@ function TagDrawer({
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Например, помещение 1"
+                placeholder="Например, метка 1"
                 className="h-10 w-full rounded-lg border border-[#dce5f0] bg-white px-3 text-[15px] text-[#16223a] outline-none transition focus:border-[#3b82f6] focus:ring-2 focus:ring-blue-100"
               />
             </label>

@@ -4,6 +4,7 @@ import {
   MapPin,
   RefreshCw,
   Search,
+  Tag,
   UserRound,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -228,7 +229,7 @@ export function ContractorPresenceMatrix({
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Сотрудник, объект или помещение"
+            placeholder="Сотрудник, объект или метка"
           />
         </label>
 
@@ -327,7 +328,7 @@ export function ContractorPresenceMatrix({
               <thead>
                 <tr>
                   <th>Сотрудник</th>
-                  <th>Объект и помещение</th>
+                  <th>Объект и метка</th>
                   <th>Дата и время</th>
                   <th>Длительность</th>
                 </tr>
@@ -355,10 +356,10 @@ export function ContractorPresenceMatrix({
                           </span>
                         </span>
                       </td>
-                      <td data-label="Объект и помещение">
+                      <td data-label="Объект и метка">
                         <span className="cpm__table-place">
                           <strong>{record.object}</strong>
-                          <small><MapPin size={13} aria-hidden="true" />{roomForRecord(record)}</small>
+                          <small><Tag size={13} aria-hidden="true" />{roomForRecord(record)}</small>
                         </span>
                       </td>
                       <td data-label="Дата и время">
@@ -403,7 +404,7 @@ export function ContractorPresenceMatrix({
                 </header>
                 <div className="cpm__object-columns" aria-hidden="true">
                   <span>Сотрудник</span>
-                  <span>Помещение</span>
+                  <span>Метка</span>
                   <span>Дата и время</span>
                   <span>Длительность</span>
                 </div>
@@ -422,7 +423,7 @@ export function ContractorPresenceMatrix({
                         </span>
                       </span>
                       <span className="cpm__object-room">
-                        <MapPin size={14} aria-hidden="true" />
+                        <Tag size={14} aria-hidden="true" />
                         {roomForRecord(record)}
                       </span>
                       <span className="cpm__object-time">
