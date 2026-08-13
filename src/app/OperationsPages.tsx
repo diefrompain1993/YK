@@ -4,13 +4,27 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 import {
+  Braces,
+  Building2,
   CalendarRange,
+  Check,
+  ChevronDown,
   Download,
+  Eye,
+  FileSpreadsheet,
   FileText,
+  Filter,
+  MapPinned,
+  Plus,
+  RefreshCw,
   RotateCcw,
   Search,
+  SlidersHorizontal,
+  Tag,
+  UserRound,
   UsersRound,
   X,
 } from "lucide-react";
@@ -37,6 +51,7 @@ export type ExportEvent = {
   id: string;
   occurredAt: string;
   type: ExportEventType;
+  tag: string;
   employee: string;
   role: string;
   contractor: string;
@@ -182,6 +197,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     id: "report-01",
     occurredAt: "2026-08-12T12:36:00",
     type: "Отчёт",
+    tag: "Работы за смену",
     employee: "Александр Петров",
     role: "Инженер ПТО",
     contractor: "ООО «Альфа Строй»",
@@ -192,6 +208,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     id: "report-02",
     occurredAt: "2026-08-12T11:08:00",
     type: "Отчёт",
+    tag: "Оборудование",
     employee: "Дмитрий Крылов",
     role: "Мастер участка",
     contractor: "ООО «ТехСервис»",
@@ -202,6 +219,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     id: "report-03",
     occurredAt: "2026-08-12T10:36:00",
     type: "Отчёт",
+    tag: "Работы за смену",
     employee: "Максим Волков",
     role: "Начальник участка",
     contractor: "ООО «МонтажПро»",
@@ -212,6 +230,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     id: "report-04",
     occurredAt: "2026-08-11T15:40:00",
     type: "Отчёт",
+    tag: "Охрана труда",
     employee: "Ксения Фролова",
     role: "Специалист по ОТ",
     contractor: "ООО «СтройГрупп»",
@@ -222,6 +241,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     id: "report-05",
     occurredAt: "2026-08-10T16:18:00",
     type: "Отчёт",
+    tag: "Контроль качества",
     employee: "Ольга Лебедева",
     role: "Инженер по качеству",
     contractor: "ООО «ТехСервис»",
@@ -313,6 +333,7 @@ const PRESENCE_EVENTS: ExportEvent[] = PRESENCE_RECORDS.flatMap((record) => {
     id: `${record.id}-entry`,
     occurredAt: record.enteredAt,
     type: "Вход",
+    tag: "Посещение",
     employee: record.employee,
     role: record.role,
     contractor: record.contractor,
@@ -690,6 +711,1070 @@ function eventTone(type: ExportEventType) {
   return "op-event-badge--report";
 }
 
+type ExportFormat = "csv" | "xls" | "json";
+
+type ExportDatePeriod = {
+  id: number;
+  from: string;
+  to: string;
+};
+
+type ExportMultiSelectProps = {
+  label: string;
+  ariaLabel: string;
+  placeholder: string;
+  options: readonly string[];
+  selected: readonly string[];
+  icon: ReactNode;
+  disabled?: boolean;
+  hint?: string;
+  onChange: (values: string[]) => void;
+};
+
+function ExportMultiSelect({
+  label,
+  ariaLabel,
+  placeholder,
+  options,
+  selected,
+  icon,
+  disabled = false,
+  hint,
+  onChange,
+}: ExportMultiSelectProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const normalizedQuery = normalize(query);
+  const visibleOptions = normalizedQuery
+    ? options.filter((option) => normalize(option).includes(normalizedQuery))
+    : options;
+  const selectedSet = new Set(selected);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutside);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutside);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) setQuery("");
+  }, [open]);
+
+  const triggerText = !selected.length
+    ? placeholder
+    : selected.length === 1
+      ? selected[0]
+      : `Выбрано: ${selected.length}`;
+
+  const toggleValue = (value: string) => {
+    onChange(
+      selectedSet.has(value)
+        ? selected.filter((item) => item !== value)
+        : [...selected, value],
+    );
+  };
+
+  return (
+    <div className={`export-multiselect ${open ? "is-open" : ""}`} ref={rootRef}>
+      <span className="export-field-label">{label}</span>
+      <button
+        type="button"
+        className="export-multiselect__trigger"
+        aria-label={ariaLabel}
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="export-multiselect__icon" aria-hidden="true">{icon}</span>
+        <span className={selected.length ? "has-value" : ""}>{triggerText}</span>
+        {selected.length > 0 && <strong>{selected.length}</strong>}
+        <ChevronDown size={15} aria-hidden="true" />
+      </button>
+      {hint && <small className="export-field-hint">{hint}</small>}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="export-multiselect__menu"
+            initial={{ opacity: 0, y: -5, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.99 }}
+            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="export-multiselect__menu-head">
+              <strong>{label}</strong>
+              {selected.length > 0 && (
+                <button type="button" onClick={() => onChange([])}>Очистить</button>
+              )}
+            </div>
+            {options.length > 5 && (
+              <label className="export-multiselect__search">
+                <Search size={15} aria-hidden="true" />
+                <input
+                  autoFocus
+                  value={query}
+                  placeholder="Найти в списке"
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </label>
+            )}
+            <div className="export-multiselect__options" role="group" aria-label={ariaLabel}>
+              {visibleOptions.map((option) => {
+                const checked = selectedSet.has(option);
+                return (
+                  <button
+                    type="button"
+                    className={checked ? "is-selected" : ""}
+                    key={option}
+                    onClick={() => toggleValue(option)}
+                  >
+                    <span className="export-option-check" aria-hidden="true">
+                      {checked && <Check size={13} />}
+                    </span>
+                    <span>{option}</span>
+                  </button>
+                );
+              })}
+              {!visibleOptions.length && (
+                <span className="export-multiselect__empty">Ничего не найдено</span>
+              )}
+            </div>
+            <div className="export-multiselect__menu-footer">
+              <span>{selected.length ? `Выбрано: ${selected.length}` : "Выбраны все"}</span>
+              <button type="button" onClick={() => setOpen(false)}>Готово</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function exportRows(events: readonly ExportEvent[]) {
+  return events.map((event) => {
+    const occurredAt = new Date(event.occurredAt);
+    return [
+      dateFormatter.format(occurredAt),
+      timeFormatter.format(occurredAt),
+      event.employee,
+      event.role,
+      event.contractor,
+      event.object,
+      event.type,
+      event.tag,
+      event.details,
+    ];
+  });
+}
+
+const EXPORT_HEADERS = [
+  "Дата",
+  "Время",
+  "Сотрудник",
+  "Должность",
+  "Подрядчик",
+  "Объект",
+  "Тип события",
+  "Метка",
+  "Помещение / отчёт",
+];
+
+function downloadBlob(content: BlobPart[], type: string, extension: string) {
+  const blob = new Blob(content, { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `export-${new Date().toISOString().slice(0, 10)}.${extension}`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function downloadExport(events: readonly ExportEvent[], format: ExportFormat) {
+  const rows = exportRows(events);
+  if (format === "csv") {
+    const csv = [EXPORT_HEADERS, ...rows]
+      .map((row) => row.map(csvCell).join(";"))
+      .join("\r\n");
+    downloadBlob(["\uFEFF", csv], "text/csv;charset=utf-8", "csv");
+    return;
+  }
+  if (format === "json") {
+    const json = events.map((event) => ({
+      date: event.occurredAt.slice(0, 10),
+      time: event.occurredAt.slice(11, 16),
+      employee: event.employee,
+      role: event.role,
+      contractor: event.contractor,
+      object: event.object,
+      eventType: event.type,
+      tag: event.tag,
+      details: event.details,
+    }));
+    downloadBlob(
+      [JSON.stringify(json, null, 2)],
+      "application/json;charset=utf-8",
+      "json",
+    );
+    return;
+  }
+  const table = `<!doctype html><html><head><meta charset="utf-8"></head><body><table border="1"><thead><tr>${EXPORT_HEADERS.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></body></html>`;
+  downloadBlob(["\uFEFF", table], "application/vnd.ms-excel;charset=utf-8", "xls");
+}
+
+function selectionSummary(values: readonly string[], allLabel: string) {
+  if (!values.length) return allLabel;
+  if (values.length === 1) return values[0];
+  return `${values[0]} и ещё ${values.length - 1}`;
+}
+
+type ExportPreviewDialogProps = {
+  events: readonly ExportEvent[];
+  criteria: readonly { label: string; value: string }[];
+  onClose: () => void;
+};
+
+function ExportPreviewDialog({ events, criteria, onClose }: ExportPreviewDialogProps) {
+  const [format, setFormat] = useState<ExportFormat>("xls");
+  const dialogRef = useRef<HTMLElement>(null);
+  const pagination = usePaginatedItems(
+    [...events],
+    events.map((event) => event.id).join("|"),
+    5,
+  );
+
+  useEffect(() => {
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    const frame = window.requestAnimationFrame(() => {
+      dialogRef.current?.querySelector<HTMLElement>("button")?.focus();
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.requestAnimationFrame(() => previousFocus?.focus());
+    };
+  }, [onClose]);
+
+  const formatOptions: Array<{
+    value: ExportFormat;
+    title: string;
+    description: string;
+    icon: ReactNode;
+  }> = [
+    {
+      value: "xls",
+      title: "Excel",
+      description: "Для анализа и отчётности",
+      icon: <FileSpreadsheet size={18} />,
+    },
+    {
+      value: "csv",
+      title: "CSV",
+      description: "Универсальный табличный формат",
+      icon: <FileText size={18} />,
+    },
+    {
+      value: "json",
+      title: "JSON",
+      description: "Для интеграций и обработки",
+      icon: <Braces size={18} />,
+    },
+  ];
+
+  return (
+    <motion.div
+      className="export-preview-layer"
+      role="presentation"
+      initial="closed"
+      animate="open"
+      exit="closed"
+    >
+      <motion.button
+        type="button"
+        className="export-preview-backdrop"
+        aria-label="Закрыть предпросмотр"
+        onClick={onClose}
+        variants={{ closed: { opacity: 0 }, open: { opacity: 1 } }}
+        transition={{ duration: 0.2 }}
+      />
+      <motion.section
+        ref={dialogRef}
+        className="export-preview-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-preview-title"
+        variants={{
+          closed: { opacity: 0, y: 18, scale: 0.975 },
+          open: { opacity: 1, y: 0, scale: 1 },
+        }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <header className="export-preview-dialog__header">
+          <div>
+            <span className="export-preview-kicker"><Eye size={15} /> Предпросмотр</span>
+            <h2 id="export-preview-title">Проверьте состав выгрузки</h2>
+            <p>{events.length} записей будут добавлены в файл</p>
+          </div>
+          <button type="button" className="export-preview-close" aria-label="Закрыть" onClick={onClose}>
+            <X size={19} />
+          </button>
+        </header>
+
+        <div className="export-preview-dialog__body">
+          <div className="export-preview-main">
+            <div className="export-preview-criteria" aria-label="Условия экспорта">
+              {criteria.map((item) => (
+                <span key={item.label}>
+                  <small>{item.label}</small>
+                  <strong title={item.value}>{item.value}</strong>
+                </span>
+              ))}
+            </div>
+            <div className="export-preview-table-wrap">
+              <table className="export-preview-table">
+                <thead>
+                  <tr>
+                    <th>Дата и время</th>
+                    <th>Сотрудник</th>
+                    <th>Подрядчик</th>
+                    <th>Объект</th>
+                    <th>Метка</th>
+                    <th>Событие</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagination.pageItems.map((event) => (
+                    <tr key={event.id}>
+                      <td><time dateTime={event.occurredAt}>{formatDateTime(event.occurredAt)}</time></td>
+                      <td><strong>{event.employee}</strong><small>{event.role}</small></td>
+                      <td title={event.contractor}>{event.contractor}</td>
+                      <td title={event.object}>{event.object}</td>
+                      <td><span className="export-preview-tag">{event.tag}</span></td>
+                      <td><span className={`op-event-badge ${eventTone(event.type)}`}>{event.type}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <DataPagination
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                pageSize={pagination.pageSize}
+                totalItems={events.length}
+                onPageChange={pagination.setPage}
+              />
+            </div>
+          </div>
+
+          <aside className="export-format-panel">
+            <div>
+              <h3>Формат файла</h3>
+            </div>
+            <div className="export-format-options" role="radiogroup" aria-label="Формат экспорта">
+              {formatOptions.map((option) => (
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={format === option.value}
+                  className={format === option.value ? "is-selected" : ""}
+                  key={option.value}
+                  onClick={() => setFormat(option.value)}
+                >
+                  <span className="export-format-icon" aria-hidden="true">{option.icon}</span>
+                  <span><strong>{option.title}</strong><small>{option.description}</small></span>
+                  <span className="export-format-radio" aria-hidden="true">
+                    {format === option.value && <span />}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="export-format-panel__footer">
+              <span><strong>{events.length}</strong> записей</span>
+              <button
+                type="button"
+                className="op-primary-button export-download-button"
+                onClick={() => downloadExport(events, format)}
+              >
+                <Download size={17} aria-hidden="true" />
+                Скачать файл
+              </button>
+            </div>
+          </aside>
+        </div>
+      </motion.section>
+    </motion.div>
+  );
+}
+
+type ExportWorkspaceProps = {
+  events: readonly ExportEvent[];
+  allowedObjectNames?: readonly string[];
+  onOpenEmployee?: (name: string) => void;
+};
+
+function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportWorkspaceProps) {
+  const [periods, setPeriods] = useState<ExportDatePeriod[]>([
+    { id: 1, from: "", to: "" },
+  ]);
+  const nextPeriodId = useRef(2);
+  const [selectedObjects, setSelectedObjects] = useState<string[]>([]);
+  const [selectedContractors, setSelectedContractors] = useState<string[]>([]);
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<ExportEventType[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [resetIconTurns, setResetIconTurns] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [selectedExportReport, setSelectedExportReport] = useState<ExportEvent | null>(null);
+  const exportReportDrawerRef = useRef<HTMLElement>(null);
+
+  const scopedEvents = useMemo(() => {
+    if (allowedObjectNames === undefined) return [...events];
+    const allowed = new Set(allowedObjectNames);
+    return events.filter((event) => allowed.has(event.object));
+  }, [allowedObjectNames, events]);
+
+  const objectOptions = useMemo(
+    () => unique(scopedEvents.map((event) => event.object)),
+    [scopedEvents],
+  );
+  const contractorOptions = useMemo(
+    () => unique(scopedEvents.map((event) => event.contractor)),
+    [scopedEvents],
+  );
+  const tagOptions = useMemo(
+    () => unique(scopedEvents.map((event) => event.tag)),
+    [scopedEvents],
+  );
+  const employeeOptions = useMemo(
+    () => unique(
+      scopedEvents
+        .filter((event) =>
+          (!selectedContractors.length || selectedContractors.includes(event.contractor)) &&
+          (!selectedObjects.length || selectedObjects.includes(event.object)),
+        )
+        .map((event) => event.employee),
+    ),
+    [scopedEvents, selectedContractors, selectedObjects],
+  );
+  const roleOptions = useMemo(
+    () => unique(
+      scopedEvents
+        .filter((event) =>
+          (!selectedContractors.length || selectedContractors.includes(event.contractor)) &&
+          (!selectedObjects.length || selectedObjects.includes(event.object)),
+        )
+        .map((event) => event.role),
+    ),
+    [scopedEvents, selectedContractors, selectedObjects],
+  );
+  const roomOptions = useMemo(
+    () => unique(
+      scopedEvents
+        .filter((event) =>
+          event.type !== "Отчёт" &&
+          (!selectedContractors.length || selectedContractors.includes(event.contractor)) &&
+          (!selectedObjects.length || selectedObjects.includes(event.object)),
+        )
+        .map((event) => event.details),
+    ),
+    [scopedEvents, selectedContractors, selectedObjects],
+  );
+
+  useEffect(() => {
+    const available = new Set(employeeOptions);
+    setSelectedEmployees((current) => current.filter((employee) => available.has(employee)));
+  }, [employeeOptions]);
+
+  useEffect(() => {
+    const availableRoles = new Set(roleOptions);
+    const availableRooms = new Set(roomOptions);
+    setSelectedRoles((current) => current.filter((role) => availableRoles.has(role)));
+    setSelectedRooms((current) => current.filter((room) => availableRooms.has(room)));
+  }, [roleOptions, roomOptions]);
+
+  const activePeriods = periods.filter((period) => period.from || period.to);
+  const periodsAreValid = periods.every(
+    (period) => !period.from || !period.to || period.from <= period.to,
+  );
+
+  const filteredEvents = useMemo(() => {
+    if (!periodsAreValid) return [];
+    return scopedEvents
+      .filter((event) => {
+        const eventDate = event.occurredAt.slice(0, 10);
+        const matchesPeriod = !activePeriods.length || activePeriods.some((period) =>
+          (!period.from || eventDate >= period.from) && (!period.to || eventDate <= period.to),
+        );
+        return (
+          matchesPeriod &&
+          (!selectedObjects.length || selectedObjects.includes(event.object)) &&
+          (!selectedContractors.length || selectedContractors.includes(event.contractor)) &&
+          (!selectedEmployees.length || selectedEmployees.includes(event.employee)) &&
+          (!selectedTags.length || selectedTags.includes(event.tag)) &&
+          (!selectedTypes.length || selectedTypes.includes(event.type)) &&
+          (!selectedRoles.length || selectedRoles.includes(event.role)) &&
+          (!selectedRooms.length || selectedRooms.includes(event.details))
+        );
+      })
+      .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+  }, [
+    activePeriods,
+    periodsAreValid,
+    scopedEvents,
+    selectedContractors,
+    selectedEmployees,
+    selectedObjects,
+    selectedRoles,
+    selectedRooms,
+    selectedTags,
+    selectedTypes,
+  ]);
+
+  const appliedFilterCount = [
+    activePeriods.length > 0,
+    selectedObjects.length > 0,
+    selectedContractors.length > 0,
+    selectedEmployees.length > 0,
+    selectedTags.length > 0,
+    selectedTypes.length > 0,
+    selectedRoles.length > 0,
+    selectedRooms.length > 0,
+  ].filter(Boolean).length;
+
+  const tablePagination = usePaginatedItems(
+    filteredEvents,
+    [
+      ...periods.flatMap((period) => [period.from, period.to]),
+      ...selectedObjects,
+      ...selectedContractors,
+      ...selectedEmployees,
+      ...selectedTags,
+      ...selectedTypes,
+      ...selectedRoles,
+      ...selectedRooms,
+    ].join("|"),
+  );
+
+  const periodSummary = !activePeriods.length
+    ? "За всё доступное время"
+    : activePeriods
+        .map((period) => {
+          if (period.from && period.to) return `${period.from.split("-").reverse().join(".")} — ${period.to.split("-").reverse().join(".")}`;
+          if (period.from) return `С ${period.from.split("-").reverse().join(".")}`;
+          return `До ${period.to.split("-").reverse().join(".")}`;
+        })
+        .join("; ");
+
+  const criteria = [
+    { label: "Период", value: periodSummary },
+    { label: "Объекты", value: selectionSummary(selectedObjects, "Все объекты") },
+    { label: "Подрядчики", value: selectionSummary(selectedContractors, "Все подрядчики") },
+    { label: "Сотрудники", value: selectionSummary(selectedEmployees, "Все сотрудники") },
+    { label: "Метки", value: selectionSummary(selectedTags, "Все метки") },
+    { label: "События", value: selectionSummary(selectedTypes, "Все типы") },
+    ...(selectedRoles.length
+      ? [{ label: "Должности", value: selectionSummary(selectedRoles, "Все должности") }]
+      : []),
+    ...(selectedRooms.length
+      ? [{ label: "Помещения", value: selectionSummary(selectedRooms, "Все помещения") }]
+      : []),
+  ];
+
+  const updatePeriod = (id: number, value: { from: string; to: string }) => {
+    setPeriods((current) => current.map((period) =>
+      period.id === id ? { ...period, ...value } : period,
+    ));
+  };
+
+  const addPeriod = () => {
+    const id = nextPeriodId.current++;
+    setPeriods((current) => [...current, { id, from: "", to: "" }]);
+  };
+
+  const removePeriod = (id: number) => {
+    setPeriods((current) => current.filter((period) => period.id !== id));
+  };
+
+  const clearAll = () => {
+    setPeriods([{ id: nextPeriodId.current++, from: "", to: "" }]);
+    setSelectedObjects([]);
+    setSelectedContractors([]);
+    setSelectedEmployees([]);
+    setSelectedTags([]);
+    setSelectedTypes([]);
+    setSelectedRoles([]);
+    setSelectedRooms([]);
+  };
+
+  const openTableEvent = (event: ExportEvent) => {
+    if (event.type === "Отчёт") setSelectedExportReport(event);
+    else onOpenEmployee?.(event.employee);
+  };
+
+  useEffect(() => {
+    if (!selectedExportReport) return;
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setSelectedExportReport(null);
+        return;
+      }
+      if (event.key !== "Tab" || !exportReportDrawerRef.current) return;
+      const focusable = Array.from(
+        exportReportDrawerRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    const frame = window.requestAnimationFrame(() => {
+      exportReportDrawerRef.current?.querySelector<HTMLElement>("button")?.focus();
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", closeOnEscape);
+      window.requestAnimationFrame(() => previousFocus?.focus());
+    };
+  }, [selectedExportReport]);
+
+  return (
+    <section className="operations-page export-workspace" aria-labelledby="export-workspace-title">
+      <header className="operations-page__header export-workspace__header">
+        <div>
+          <h1 id="export-workspace-title">Экспорт данных</h1>
+          <p>Отфильтруйте таблицу, проверьте данные и выгрузите их в нужном формате.</p>
+        </div>
+      </header>
+
+      <section className="export-data-table-card">
+        <header className="export-data-table-card__header">
+          <div className="export-data-table-title">
+            <span className="export-section-icon"><FileSpreadsheet size={17} /></span>
+            <div>
+              <h2>Данные для экспорта</h2>
+              <p>Найдено: {filteredEvents.length} из {scopedEvents.length}</p>
+            </div>
+          </div>
+          <div className="export-table-actions">
+            {appliedFilterCount > 0 && (
+              <span className="export-active-filter-count">
+                <Filter size={13} /> {appliedFilterCount}
+              </span>
+            )}
+            <button
+              type="button"
+              className="export-table-reset-button"
+              onClick={() => {
+                clearAll();
+                setResetIconTurns((turns) => turns + 1);
+              }}
+              aria-label="Сбросить все фильтры"
+              title="Сбросить все фильтры"
+            >
+              <motion.span
+                initial={false}
+                animate={{
+                  rotate: resetIconTurns * -360,
+                  scale: resetIconTurns ? [1, 0.88, 1.06, 1] : 1,
+                }}
+                transition={{
+                  rotate: { duration: 1.25, ease: [0.18, 0.72, 0.22, 1] },
+                  scale: {
+                    duration: 1.25,
+                    ease: [0.18, 0.72, 0.22, 1],
+                    times: [0, 0.18, 0.68, 1],
+                  },
+                }}
+                aria-hidden="true"
+              >
+                <RefreshCw size={16} />
+              </motion.span>
+            </button>
+            <button
+              type="button"
+              className="op-primary-button export-table-export-button"
+              disabled={!periodsAreValid || !filteredEvents.length}
+              onClick={() => setPreviewOpen(true)}
+            >
+              <Download size={16} aria-hidden="true" />
+              Экспортировать
+            </button>
+          </div>
+        </header>
+
+        <div className="export-table-filter-panel">
+          <div className="export-primary-filter-grid">
+            <div className="export-primary-period-filter">
+              <span className="export-field-label">Период</span>
+              <div className="export-primary-period-control">
+                <DateRangePicker
+                  from={periods[0]?.from ?? ""}
+                  to={periods[0]?.to ?? ""}
+                  allowEmpty
+                  ariaLabel="Основной период"
+                  onChange={(value) => updatePeriod(periods[0].id, value)}
+                />
+                <button
+                  type="button"
+                  aria-label="Добавить ещё период"
+                  title="Добавить ещё период"
+                  onClick={addPeriod}
+                >
+                  <Plus size={15} />
+                </button>
+              </div>
+            </div>
+            <ExportMultiSelect
+              label="Объекты"
+              ariaLabel="Выбрать объекты"
+              placeholder="Все объекты"
+              options={objectOptions}
+              selected={selectedObjects}
+              icon={<MapPinned size={16} />}
+              onChange={setSelectedObjects}
+            />
+            <ExportMultiSelect
+              label="Подрядчики"
+              ariaLabel="Выбрать подрядчиков"
+              placeholder="Все подрядчики"
+              options={contractorOptions}
+              selected={selectedContractors}
+              icon={<Building2 size={16} />}
+              onChange={setSelectedContractors}
+            />
+            <ExportMultiSelect
+              label="Сотрудники"
+              ariaLabel="Выбрать сотрудников"
+              placeholder="Все сотрудники"
+              options={employeeOptions}
+              selected={selectedEmployees}
+              icon={<UserRound size={16} />}
+              hint={selectedContractors.length || selectedObjects.length ? "Список сужен выбранными условиями" : undefined}
+              onChange={setSelectedEmployees}
+            />
+            <ExportMultiSelect
+              label="Метки"
+              ariaLabel="Выбрать метки"
+              placeholder="Все метки"
+              options={tagOptions}
+              selected={selectedTags}
+              icon={<Tag size={16} />}
+              onChange={setSelectedTags}
+            />
+            <ExportMultiSelect
+              label="Тип события"
+              ariaLabel="Выбрать типы событий"
+              placeholder="Все типы"
+              options={["Вход", "Выход", "Отчёт"]}
+              selected={selectedTypes}
+              icon={<FileText size={16} />}
+              onChange={(values) => setSelectedTypes(values as ExportEventType[])}
+            />
+          </div>
+
+          <div className="export-filter-options-row">
+            <button
+              type="button"
+              className={`export-advanced-toggle export-filter-head-advanced ${showAdvanced ? "is-open" : ""}`}
+              aria-expanded={showAdvanced}
+              onClick={() => setShowAdvanced((value) => !value)}
+            >
+              <SlidersHorizontal size={15} aria-hidden="true" />
+              <span>Расширенные фильтры</span>
+              {(selectedRoles.length > 0 || selectedRooms.length > 0) && (
+                <b>{selectedRoles.length + selectedRooms.length}</b>
+              )}
+              <ChevronDown size={15} aria-hidden="true" />
+            </button>
+          </div>
+
+          <AnimatePresence initial={false}>
+            {periods.length > 1 && (
+              <motion.div
+                className="export-extra-periods-motion"
+                initial={{ opacity: 0, height: 0, overflow: "hidden" }}
+                animate={{
+                  opacity: 1,
+                  height: "auto",
+                  transitionEnd: { overflow: "visible" },
+                }}
+                exit={{ opacity: 0, height: 0, overflow: "hidden" }}
+                transition={{
+                  height: { duration: 0.44, ease: [0.22, 1, 0.36, 1] },
+                  opacity: { duration: 0.24, ease: "easeOut" },
+                }}
+              >
+                <div className="export-extra-periods">
+                  <span className="export-extra-periods__label">Дополнительные периоды</span>
+                  <div className="export-extra-periods__list">
+                    <AnimatePresence initial={false} mode="popLayout">
+                      {periods.slice(1).map((period, index) => (
+                        <motion.div
+                          layout
+                          className="export-extra-period"
+                          key={period.id}
+                          initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, x: 18, scale: 0.98 }}
+                          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                        >
+                          <span>{index + 2}</span>
+                          <DateRangePicker
+                            from={period.from}
+                            to={period.to}
+                            allowEmpty
+                            ariaLabel={`Дополнительный период ${index + 1}`}
+                            onChange={(value) => updatePeriod(period.id, value)}
+                          />
+                          <button
+                            type="button"
+                            aria-label={`Удалить дополнительный период ${index + 1}`}
+                            onClick={() => removePeriod(period.id)}
+                          >
+                            <X size={14} />
+                          </button>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence initial={false}>
+            {showAdvanced && (
+              <motion.div
+                className="export-table-advanced-motion"
+                initial={{ opacity: 0, height: 0, overflow: "hidden" }}
+                animate={{
+                  opacity: 1,
+                  height: "auto",
+                  transitionEnd: { overflow: "visible" },
+                }}
+                exit={{ opacity: 0, height: 0, overflow: "hidden" }}
+                transition={{
+                  height: { duration: 0.44, ease: [0.22, 1, 0.36, 1] },
+                  opacity: { duration: 0.24, ease: "easeOut" },
+                }}
+              >
+                <div className="export-table-advanced-panel">
+                  <div className="export-advanced-fields">
+                  <ExportMultiSelect
+                    label="Должности"
+                    ariaLabel="Выбрать должности"
+                    placeholder="Все должности"
+                    options={roleOptions}
+                    selected={selectedRoles}
+                    icon={<UserRound size={16} />}
+                    onChange={setSelectedRoles}
+                  />
+                  <ExportMultiSelect
+                    label="Помещения"
+                    ariaLabel="Выбрать помещения"
+                    placeholder="Все помещения"
+                    options={roomOptions}
+                    selected={selectedRooms}
+                    icon={<MapPinned size={16} />}
+                    hint="Отчёты без помещения не попадут в выборку"
+                    onChange={setSelectedRooms}
+                  />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {!periodsAreValid && (
+            <p className="export-table-filter-error" role="alert">В одном из периодов дата начала позже даты окончания.</p>
+          )}
+        </div>
+
+        <div className="op-table-scroll export-main-table-wrap">
+          <table className="op-table op-export-table export-main-table">
+            <thead>
+              <tr>
+                <th>Дата и время</th>
+                <th>Сотрудник</th>
+                <th>Подрядчик</th>
+                <th>Объект</th>
+                <th>Метка</th>
+                <th>Тип</th>
+                <th>Помещение / отчёт</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tablePagination.pageItems.map((event) => (
+                <tr
+                  key={event.id}
+                  className={onOpenEmployee || event.type === "Отчёт" ? "op-clickable-row" : undefined}
+                  tabIndex={onOpenEmployee || event.type === "Отчёт" ? 0 : undefined}
+                  onClick={() => openTableEvent(event)}
+                  onKeyDown={(keyboardEvent) => {
+                    if (
+                      (onOpenEmployee || event.type === "Отчёт") &&
+                      (keyboardEvent.key === "Enter" || keyboardEvent.key === " ")
+                    ) {
+                      keyboardEvent.preventDefault();
+                      openTableEvent(event);
+                    }
+                  }}
+                >
+                  <td data-label="Дата и время"><time dateTime={event.occurredAt}>{formatDateTime(event.occurredAt)}</time></td>
+                  <td data-label="Сотрудник">
+                    <div className="op-person op-person--compact"><span><strong>{event.employee}</strong><small>{event.role}</small></span></div>
+                  </td>
+                  <td data-label="Подрядчик"><span className="op-cell-main" title={event.contractor}>{event.contractor}</span></td>
+                  <td data-label="Объект"><span className="op-cell-main" title={event.object}>{event.object}</span></td>
+                  <td data-label="Метка"><span className="export-preview-tag">{event.tag}</span></td>
+                  <td data-label="Тип"><span className={`op-event-badge ${eventTone(event.type)}`}>{event.type}</span></td>
+                  <td data-label="Помещение / отчёт"><span className="op-cell-main op-export-details" title={event.details}>{event.details}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!filteredEvents.length && (
+            <div className="op-empty-state export-table-empty">
+              <Filter aria-hidden="true" size={22} />
+              <strong>По выбранным фильтрам данных нет</strong>
+              <span>Измените условия или сбросьте фильтры.</span>
+            </div>
+          )}
+        </div>
+        <DataPagination
+          page={tablePagination.page}
+          pageCount={tablePagination.pageCount}
+          pageSize={tablePagination.pageSize}
+          totalItems={filteredEvents.length}
+          onPageChange={tablePagination.setPage}
+        />
+      </section>
+
+      <AnimatePresence>
+        {previewOpen && (
+          <ExportPreviewDialog
+            events={filteredEvents}
+            criteria={criteria}
+            onClose={() => setPreviewOpen(false)}
+          />
+        )}
+        {selectedExportReport && (
+          <motion.div
+            className="op-report-layer"
+            role="presentation"
+            initial="closed"
+            animate="open"
+            exit="closed"
+          >
+            <motion.button
+              className="op-report-backdrop"
+              aria-label="Закрыть отчёт"
+              onClick={() => setSelectedExportReport(null)}
+              variants={{ closed: { opacity: 0 }, open: { opacity: 1 } }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+            />
+            <motion.aside
+              ref={exportReportDrawerRef}
+              className="op-report-drawer"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="export-report-title"
+              variants={{ closed: { x: "100%" }, open: { x: 0 } }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+              style={{ willChange: "transform" }}
+            >
+              <header>
+                <div>
+                  <small>Отчёт сотрудника</small>
+                  <h2 id="export-report-title">{selectedExportReport.details}</h2>
+                </div>
+                <button aria-label="Закрыть отчёт" onClick={() => setSelectedExportReport(null)}><X size={17} /></button>
+              </header>
+              <div className="op-report-body">
+                <section className="op-report-details" aria-labelledby="export-report-details-title">
+                  <h3 id="export-report-details-title">Сведения об отчёте</h3>
+                  <dl className="op-report-meta">
+                    <div className="op-report-meta__person">
+                      <dt>Сотрудник</dt>
+                      <dd><strong>{selectedExportReport.employee}</strong><small>{selectedExportReport.role}</small></dd>
+                    </div>
+                    <div className="op-report-meta__contractor"><dt>Подрядчик</dt><dd>{selectedExportReport.contractor}</dd></div>
+                    <div className="op-report-meta__time"><dt>Дата и время</dt><dd><time>{formatDateTime(selectedExportReport.occurredAt)}</time></dd></div>
+                    <div className="op-report-meta__object"><dt>Объект</dt><dd>{selectedExportReport.object}</dd></div>
+                  </dl>
+                </section>
+                <section className="op-report-content">
+                  <div className="op-report-content__head"><small>Содержание отчёта</small><h3>Результат выполненных работ</h3></div>
+                  <p>Работы за смену выполнены по плану. Отклонения и замечания, требующие срочного решения, не зафиксированы.</p>
+                </section>
+              </div>
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
 export type ExportPageProps = {
   events?: readonly ExportEvent[];
   allowedObjectNames?: readonly string[];
@@ -864,6 +1949,16 @@ export function ExportPage({
     }
     else onOpenEmployee?.(event.employee);
   };
+
+  if (exportEnabled) {
+    return (
+      <ExportWorkspace
+        events={events}
+        allowedObjectNames={allowedObjectNames}
+        onOpenEmployee={onOpenEmployee}
+      />
+    );
+  }
 
   return (
     <section className="operations-page" aria-labelledby="export-page-title">
