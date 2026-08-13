@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   MapPin,
+  RefreshCw,
   Search,
   UserRound,
-  UsersRound,
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   formatDuration,
   roomForRecord,
@@ -23,6 +24,7 @@ export type ContractorPresenceMatrixProps = {
   allowedObjectNames: readonly string[];
   records: readonly PresenceRecord[];
   onOpenEmployee: (name: string) => void;
+  groupMode: GroupMode;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
@@ -90,6 +92,7 @@ export function ContractorPresenceMatrix({
   allowedObjectNames,
   records,
   onOpenEmployee,
+  groupMode,
 }: ContractorPresenceMatrixProps) {
   const scopedRecords = useMemo(() => {
     const allowed = new Set(allowedObjectNames);
@@ -100,7 +103,6 @@ export function ContractorPresenceMatrix({
   }, [allowedObjectNames, contractor, records]);
 
   const initialEnd = latestRecordDate(scopedRecords);
-  const [mode, setMode] = useState<GroupMode>("employees");
   const [periodFrom, setPeriodFrom] = useState(() =>
     toDateInput(addDays(initialEnd, -6)),
   );
@@ -109,6 +111,7 @@ export function ContractorPresenceMatrix({
   const [timeTo, setTimeTo] = useState("23:59");
   const [query, setQuery] = useState("");
   const [onlyActive, setOnlyActive] = useState(false);
+  const [resetIconTurns, setResetIconTurns] = useState(0);
 
   useEffect(() => {
     const end = latestRecordDate(scopedRecords);
@@ -167,14 +170,14 @@ export function ContractorPresenceMatrix({
     ],
   );
 
-  const pagination = usePaginatedItems(
+  const employeePagination = usePaginatedItems(
     filteredRecords,
-    [contractor, mode, periodFrom, periodTo, timeFrom, timeTo, query, String(onlyActive)].join("|"),
+    [contractor, periodFrom, periodTo, timeFrom, timeTo, query, String(onlyActive)].join("|"),
   );
 
-  const pageObjects = useMemo(() => {
+  const groupedObjects = useMemo(() => {
     const grouped = new Map<string, PresenceRecord[]>();
-    pagination.pageItems.forEach((record) => {
+    filteredRecords.forEach((record) => {
       grouped.set(record.object, [
         ...(grouped.get(record.object) ?? []),
         record,
@@ -195,39 +198,28 @@ export function ContractorPresenceMatrix({
         (a, b) =>
           b.active - a.active || a.name.localeCompare(b.name, "ru-RU"),
       );
-  }, [pagination.pageItems]);
+  }, [filteredRecords]);
+
+  const objectPagination = usePaginatedItems(
+    groupedObjects,
+    [contractor, periodFrom, periodTo, timeFrom, timeTo, query, String(onlyActive)].join("|"),
+    5,
+  );
+
+  const resetFilters = () => {
+    const end = latestRecordDate(scopedRecords);
+    setPeriodFrom(toDateInput(addDays(end, -6)));
+    setPeriodTo(toDateInput(end));
+    setTimeFrom("00:00");
+    setTimeTo("23:59");
+    setQuery("");
+    setOnlyActive(false);
+    setResetIconTurns((turns) => turns + 1);
+  };
 
   return (
     <section className="cpm" aria-label="История посещений">
-      <div className="cpm__heading cpm__heading--controls">
-        <div
-          className="segmented-switch cpm__mode"
-          role="tablist"
-          aria-label="Группировка присутствия"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "employees"}
-            className={mode === "employees" ? "is-active" : undefined}
-            onClick={() => setMode("employees")}
-          >
-            <UsersRound size={16} aria-hidden="true" />
-            По сотрудникам
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "objects"}
-            className={mode === "objects" ? "is-active" : undefined}
-            onClick={() => setMode("objects")}
-          >
-            <MapPin size={16} aria-hidden="true" />
-            По объектам
-          </button>
-        </div>
-      </div>
-
+      <div className="cpm__data-card">
       <div className="cpm__toolbar">
         <label className="cpm__search">
           <Search size={17} aria-hidden="true" />
@@ -285,6 +277,28 @@ export function ContractorPresenceMatrix({
           <span className="cpm__checkbox" aria-hidden="true" />
           Только сейчас
         </label>
+        <button
+          type="button"
+          className="table-filter-reset cpm__reset"
+          onClick={resetFilters}
+          aria-label="Сбросить все фильтры"
+          title="Сбросить все фильтры"
+        >
+          <motion.span
+            initial={false}
+            animate={{
+              rotate: resetIconTurns * -360,
+              scale: resetIconTurns ? [1, 0.88, 1.06, 1] : 1,
+            }}
+            transition={{
+              rotate: { duration: 1.25, ease: [0.18, 0.72, 0.22, 1] },
+              scale: { duration: 1.25, ease: [0.18, 0.72, 0.22, 1], times: [0, 0.18, 0.68, 1] },
+            }}
+            aria-hidden="true"
+          >
+            <RefreshCw size={16} />
+          </motion.span>
+        </button>
         {(!timeFromIsValid || !timeToIsValid) && (
           <small className="cpm__filter-error" role="alert">
             Укажите время от 00:00 до 23:59.
@@ -297,9 +311,18 @@ export function ContractorPresenceMatrix({
         )}
       </div>
 
-      {mode === "employees" ? (
+      <AnimatePresence initial={false} mode="popLayout">
+        <motion.div
+          key={groupMode}
+          className="cpm__results-transition"
+          initial={{ opacity: 0.35, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -3 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        >
+      {groupMode === "employees" ? (
         <div className="cpm__people-table-wrap" role="tabpanel">
-          {pagination.pageItems.length ? (
+          {employeePagination.pageItems.length ? (
             <table className="cpm__people-table">
               <thead>
                 <tr>
@@ -310,7 +333,7 @@ export function ContractorPresenceMatrix({
                 </tr>
               </thead>
               <tbody>
-                {pagination.pageItems.map((record) => (
+                {employeePagination.pageItems.map((record) => (
                     <tr
                       key={record.id}
                       tabIndex={0}
@@ -359,8 +382,8 @@ export function ContractorPresenceMatrix({
         </div>
       ) : (
         <div className="cpm__object-list" role="tabpanel">
-          {pageObjects.length ? (
-            pageObjects.map((object) => (
+          {objectPagination.pageItems.length ? (
+            objectPagination.pageItems.map((object) => (
               <article className="cpm__object" key={object.name}>
                 <header className="cpm__object-head">
                   <span className="cpm__object-icon" aria-hidden="true">
@@ -428,13 +451,26 @@ export function ContractorPresenceMatrix({
           )}
         </div>
       )}
-      <DataPagination
-        page={pagination.page}
-        pageCount={pagination.pageCount}
-        pageSize={pagination.pageSize}
-        totalItems={filteredRecords.length}
-        onPageChange={pagination.setPage}
-      />
+        </motion.div>
+      </AnimatePresence>
+      {groupMode === "employees" ? (
+        <DataPagination
+          page={employeePagination.page}
+          pageCount={employeePagination.pageCount}
+          pageSize={employeePagination.pageSize}
+          totalItems={filteredRecords.length}
+          onPageChange={employeePagination.setPage}
+        />
+      ) : (
+        <DataPagination
+          page={objectPagination.page}
+          pageCount={objectPagination.pageCount}
+          pageSize={objectPagination.pageSize}
+          totalItems={groupedObjects.length}
+          onPageChange={objectPagination.setPage}
+        />
+      )}
+      </div>
     </section>
   );
 }

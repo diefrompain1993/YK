@@ -1081,30 +1081,48 @@ export function ExportPage({
             style={{ willChange: "transform" }}
           >
             <header>
-              <span><FileText size={18} /></span>
               <div>
                 <small>Отчёт сотрудника</small>
                 <h2 id="op-report-title">{selectedReport.details}</h2>
               </div>
-              <button aria-label="Закрыть отчёт" onClick={() => setSelectedReport(null)}><X size={18} /></button>
+              <button aria-label="Закрыть отчёт" onClick={() => setSelectedReport(null)}><X size={17} /></button>
             </header>
-            <dl>
-              <div><dt>Сотрудник</dt><dd>{selectedReport.employee}</dd></div>
-              <div><dt>Должность</dt><dd>{selectedReport.role}</dd></div>
-              <div><dt>Подрядчик</dt><dd>{selectedReport.contractor}</dd></div>
-              <div><dt>Объект</dt><dd>{selectedReport.object}</dd></div>
-              <div><dt>Дата и время</dt><dd>{formatDateTime(selectedReport.occurredAt)}</dd></div>
-            </dl>
-            <section className="op-report-content">
-              <div className="op-report-content__head">
-                <span aria-hidden="true"><FileText size={15} /></span>
-                <h3>Содержание отчёта</h3>
-              </div>
-              <p>
-                Работы за смену выполнены по плану. Отклонения и замечания,
-                требующие срочного решения, не зафиксированы.
-              </p>
-            </section>
+            <div className="op-report-body">
+              <section className="op-report-details" aria-labelledby="op-report-details-title">
+                <h3 id="op-report-details-title">Сведения об отчёте</h3>
+                <dl className="op-report-meta">
+                  <div className="op-report-meta__person">
+                    <dt>Сотрудник</dt>
+                    <dd>
+                      <strong>{selectedReport.employee}</strong>
+                      <small>{selectedReport.role}</small>
+                    </dd>
+                  </div>
+                  <div className="op-report-meta__contractor">
+                    <dt>Подрядчик</dt>
+                    <dd>{selectedReport.contractor}</dd>
+                  </div>
+                  <div className="op-report-meta__time">
+                    <dt>Дата и время</dt>
+                    <dd><time>{formatDateTime(selectedReport.occurredAt)}</time></dd>
+                  </div>
+                  <div className="op-report-meta__object">
+                    <dt>Объект</dt>
+                    <dd>{selectedReport.object}</dd>
+                  </div>
+                </dl>
+              </section>
+              <section className="op-report-content">
+                <div className="op-report-content__head">
+                  <small>Содержание отчёта</small>
+                  <h3>Результат выполненных работ</h3>
+                </div>
+                <p>
+                  Работы за смену выполнены по плану. Отклонения и замечания,
+                  требующие срочного решения, не зафиксированы.
+                </p>
+              </section>
+            </div>
           </motion.aside>
         </motion.div>
         )}

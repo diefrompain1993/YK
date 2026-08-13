@@ -48,7 +48,6 @@ import {
   Radio,
   ShieldCheck,
   UserCheck,
-  UserRound,
   BarChart3,
   FileCheck2,
   TrendingUp,
@@ -1451,7 +1450,7 @@ export default function App() {
         (e) =>
           e.contractor === selectedContractor &&
           (status === "Все статусы" || e.status === status) &&
-          `${e.name} ${e.role} ${e.email}`
+          e.name
             .toLowerCase()
             .includes(query.toLowerCase()),
       ),
@@ -1520,7 +1519,7 @@ export default function App() {
           ? "Настройки"
           : "Подрядчики";
   return (
-    <div className="app-shell min-h-screen bg-[#f5f7fb] font-[Inter,Arial,sans-serif] text-[#101b31]">
+    <div className="app-shell min-h-screen bg-[#f5f7fb] text-[#101b31]">
       <aside
         className={`app-sidebar fixed bottom-0 left-0 top-0 z-30 border-r border-[#e1e8f1] bg-white px-4 py-4 transition-all duration-300 ${sidebar ? "is-open w-[268px]" : "w-[82px]"}`}
       >
@@ -1603,11 +1602,12 @@ export default function App() {
             <div
               className={`profile-summary flex items-center gap-2.5 rounded-xl bg-white p-2.5 ${!sidebar ? "justify-center" : ""}`}
             >
-              {!sidebar && (
-                <div className="profile-avatar grid size-9 place-items-center rounded-xl text-white">
-                  <UserRound size={18} aria-hidden="true" />
-                </div>
-              )}
+              <div
+                className="profile-avatar grid size-9 place-items-center rounded-xl text-white"
+                aria-hidden="true"
+              >
+                {userRole === "ukp" ? "АМ" : "МВ"}
+              </div>
               {sidebar && (
                 <div>
                   <p className="text-[13.5px] font-semibold">
@@ -2038,10 +2038,24 @@ function EmployeesPage({
   const all = page === "employees";
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [mode, setMode] = useState<"employees" | "history">("employees");
-  const [draftQuery, setDraftQuery] = useState(query);
-  const [draftStatus, setDraftStatus] = useState(status);
-  const [draftDepartment, setDraftDepartment] = useState("Все подразделения");
-  const [department, setDepartment] = useState("Все подразделения");
+  const [department, setDepartment] = useState("");
+  const [roleQuery, setRoleQuery] = useState("");
+  const [contactQuery, setContactQuery] = useState("");
+  const [employeeResetIconTurns, setEmployeeResetIconTurns] = useState(0);
+  const [contractorContactsOpen, setContractorContactsOpen] = useState(false);
+  const [historyView, setHistoryView] = useState<"employees" | "objects">("employees");
+  const departmentOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          staff
+            .filter((employee) => employee.contractor === selected)
+            .map((employee) => employee.dept),
+        ),
+      ).sort((first, second) => first.localeCompare(second, "ru-RU")),
+    [selected],
+  );
+  useEffect(() => setContractorContactsOpen(false), [all, selected]);
   useEffect(() => {
     if (all) {
       onStickyTitleChange("");
@@ -2069,27 +2083,22 @@ function EmployeesPage({
         );
         return (
           worksInScope &&
-          (department === "Все подразделения" || employee.dept === department)
+          employee.dept.toLocaleLowerCase("ru-RU").includes(department.trim().toLocaleLowerCase("ru-RU")) &&
+          employee.role.toLocaleLowerCase("ru-RU").includes(roleQuery.trim().toLocaleLowerCase("ru-RU")) &&
+          `${employee.phone} ${employee.email}`
+            .toLocaleLowerCase("ru-RU")
+            .includes(contactQuery.trim().toLocaleLowerCase("ru-RU"))
         );
       }),
-    [allowedObjectNames, rows, department],
+    [allowedObjectNames, contactQuery, department, roleQuery, rows],
   );
-  const applyFilters = () => {
-    if (mode === "employees") {
-      setQuery(draftQuery.trim());
-      setStatus(draftStatus);
-      setDepartment(draftDepartment);
-    }
-  };
   const resetFilters = () => {
-    setDraftQuery("");
-    if (mode === "employees") {
-      setDraftStatus("Все статусы");
-      setDraftDepartment("Все подразделения");
-      setQuery("");
-      setStatus("Все статусы");
-      setDepartment("Все подразделения");
-    }
+    setQuery("");
+    setRoleQuery("");
+    setDepartment("");
+    setContactQuery("");
+    setStatus("Все статусы");
+    setEmployeeResetIconTurns((turns) => turns + 1);
   };
   return (
     <section className={all ? "px-10 py-8" : "contractor-detail-page px-10 py-8"}>
@@ -2120,85 +2129,80 @@ function EmployeesPage({
             <ContractorContacts
               contractor={selected}
               allowedObjectNames={allowedObjectNames}
+              onOpen={() => setContractorContactsOpen(true)}
             />
+            <ContractorDispatcher contractor={selected} />
           </div>
         </>
       )}
       {!all && (
-        <div
-          className="segmented-switch contractor-section-switch"
-          role="tablist"
-          aria-label="Раздел подрядчика"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "employees"}
-            className={mode === "employees" ? "is-active" : ""}
-            onClick={() => setMode("employees")}
+        <div className="contractor-view-bar">
+          <div
+            className="segmented-switch contractor-section-switch"
+            role="tablist"
+            aria-label="Раздел подрядчика"
           >
-            Сотрудники
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "history"}
-            className={mode === "history" ? "is-active" : ""}
-            onClick={() => setMode("history")}
-          >
-            История
-          </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "employees"}
+              className={mode === "employees" ? "is-active" : ""}
+              onClick={() => setMode("employees")}
+            >
+              Сотрудники
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "history"}
+              className={mode === "history" ? "is-active" : ""}
+              onClick={() => setMode("history")}
+            >
+              История
+            </button>
+          </div>
+          <AnimatePresence initial={false}>
+            {mode === "history" && (
+              <motion.div
+                className="contractor-history-view-control"
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -6 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <span>Показывать</span>
+                <div
+                  className="segmented-switch contractor-history-switch"
+                  role="tablist"
+                  aria-label="Представление истории"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={historyView === "employees"}
+                    className={historyView === "employees" ? "is-active" : ""}
+                    onClick={() => setHistoryView("employees")}
+                  >
+                    <Users size={14} aria-hidden="true" />
+                    По сотрудникам
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={historyView === "objects"}
+                    className={historyView === "objects" ? "is-active" : ""}
+                    onClick={() => setHistoryView("objects")}
+                  >
+                    <MapPin size={14} aria-hidden="true" />
+                    По объектам
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
       {mode === "employees" ? (
-      <>
-      <div className="contractor-filters rounded-xl border border-[#dfe6ef] bg-white p-5">
-        <div className="grid grid-cols-[minmax(260px,2fr)_1fr_1fr_auto_auto] gap-3">
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8293ad]"
-              size={17}
-            />
-            <input
-              value={draftQuery}
-              onChange={(event) => setDraftQuery(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && applyFilters()}
-              placeholder={
-                "ФИО, должность или email"
-              }
-              className="h-10 w-full rounded-lg border border-[#dce5f0] pl-10 pr-3 text-[13.5px] outline-none focus:border-[#3b82f6]"
-            />
-          </div>
-          <Select
-            value={draftStatus}
-            onChange={setDraftStatus}
-            options={["Все статусы", "Активен", "Неактивен"]}
-          />
-          <Select
-            value={draftDepartment}
-            onChange={setDraftDepartment}
-            options={[
-              "Все подразделения",
-              "Администрация",
-              "Производственный отдел",
-              "Монтажный отдел",
-              "Технический отдел",
-            ]}
-          />
-          <button
-            onClick={applyFilters}
-            className="h-10 rounded-lg bg-[#2563eb] px-4 text-[13.5px] font-semibold text-white"
-          >
-            Применить
-          </button>
-          <button
-            onClick={resetFilters}
-            className="h-10 rounded-lg border border-[#dbe4ef] px-4 text-[13.5px] font-medium text-[#50637f]"
-          >
-            Сбросить
-          </button>
-        </div>
-      </div>
       <div className="contractor-employee-card mt-5 overflow-hidden rounded-xl border border-[#dfe6ef] bg-white">
         <div className="contractor-employee-heading flex items-center justify-between px-6 py-5">
           <div>
@@ -2210,20 +2214,109 @@ function EmployeesPage({
             </p>
           </div>
         </div>
+        <div className="contractor-filters">
+          <div>
+            <label className="contractor-filter-field">
+              <span>Сотрудник</span>
+              <span className="contractor-filter-input">
+                <Search size={15} aria-hidden="true" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Введите ФИО"
+                />
+              </span>
+            </label>
+            <label className="contractor-filter-field">
+              <span>Должность</span>
+              <span className="contractor-filter-input">
+                <Search size={15} aria-hidden="true" />
+                <input
+                  type="search"
+                  value={roleQuery}
+                  onChange={(event) => setRoleQuery(event.target.value)}
+                  placeholder="Введите должность"
+                />
+              </span>
+            </label>
+            <div className="contractor-filter-field contractor-department-filter">
+              <span>Подразделение</span>
+              <ObjectPresenceCombobox
+                value={department}
+                onChange={setDepartment}
+                options={departmentOptions}
+                placeholder="Введите подразделение"
+                ariaLabel="Фильтр по подразделению"
+              />
+            </div>
+            <label className="contractor-filter-field">
+              <span>Контакты</span>
+              <span className="contractor-filter-input">
+                <Search size={15} aria-hidden="true" />
+                <input
+                  type="search"
+                  value={contactQuery}
+                  onChange={(event) => setContactQuery(event.target.value)}
+                  placeholder="Телефон или email"
+                />
+              </span>
+            </label>
+            <div className="contractor-filter-field">
+              <span>Статус</span>
+              <Select
+                value={status}
+                onChange={setStatus}
+                options={["Все статусы", "Активен", "Неактивен"]}
+              />
+            </div>
+            <button
+              type="button"
+              className="table-filter-reset"
+              onClick={resetFilters}
+              aria-label="Сбросить все фильтры"
+              title="Сбросить все фильтры"
+            >
+              <motion.span
+                initial={false}
+                animate={{
+                  rotate: employeeResetIconTurns * -360,
+                  scale: employeeResetIconTurns ? [1, 0.88, 1.06, 1] : 1,
+                }}
+                transition={{
+                  rotate: { duration: 1.25, ease: [0.18, 0.72, 0.22, 1] },
+                  scale: { duration: 1.25, ease: [0.18, 0.72, 0.22, 1], times: [0, 0.18, 0.68, 1] },
+                }}
+                aria-hidden="true"
+              >
+                <RefreshCw size={16} />
+              </motion.span>
+            </button>
+          </div>
+        </div>
         <EmployeeTable rows={filteredRows} all={all} open={open} />
       </div>
-      </>
       ) : (
         <ContractorPresenceMatrix
           contractor={selected}
           allowedObjectNames={allowedObjectNames}
           records={PRESENCE_RECORDS}
+          groupMode={historyView}
           onOpenEmployee={(name) => {
             const employee = staff.find((item) => item.name === name);
             if (employee) open(employee);
           }}
         />
       )}
+      <AnimatePresence>
+        {!all && contractorContactsOpen && (
+          <ContractorContactsModal
+            contractor={selected}
+            allowedObjectNames={allowedObjectNames}
+            close={() => setContractorContactsOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 }
@@ -2244,45 +2337,174 @@ function getObjectContractors(
 function ContractorContacts({
   contractor,
   allowedObjectNames,
+  onOpen,
 }: {
   contractor: string;
   allowedObjectNames: string[];
+  onOpen: () => void;
 }) {
+  const contacts = getVisibleContractorContacts(contractor, allowedObjectNames);
+  return (
+    <section className="contractor-people-card" aria-label="Контактные лица подрядчика">
+      <header className="contractor-people-heading">
+        <h2>
+          Контактные лица
+          <span>{contacts.length}</span>
+        </h2>
+      </header>
+      <button
+        type="button"
+        className="contractor-contacts-open"
+        onClick={onOpen}
+        disabled={!contacts.length}
+        aria-haspopup="dialog"
+      >
+        <Contact size={17} aria-hidden="true" />
+        <div>
+          <strong>{contacts.length ? "Показать контакты" : "Контакты не указаны"}</strong>
+          <small>
+            {contacts.length
+              ? `${contacts.length} ${pluralizeRu(contacts.length, "контакт", "контакта", "контактов")}`
+              : "Нет доступных контактов"}
+          </small>
+        </div>
+        <ArrowUpRight size={16} aria-hidden="true" />
+      </button>
+    </section>
+  );
+}
+
+function ContractorDispatcher({ contractor }: { contractor: string }) {
   const details = contractorDetails[contractor];
   return (
-    <section className="contractor-contact-card">
-      <div className="contractor-contact-main">
-        <span><Building2 size={18} /></span>
-        <div>
-          <strong>Диспетчер подрядчика</strong>
-          <small>{details.email}</small>
-        </div>
-        <a href={`mailto:${details.email}`} aria-label="Написать подрядчику">
-          <Mail size={15} />
+    <section className="contractor-dispatcher-card" aria-label="Диспетчер подрядчика">
+      <header>
+        <Building2 size={16} aria-hidden="true" />
+        <h2>Диспетчер подрядчика</h2>
+      </header>
+      <div className="contractor-dispatcher-actions">
+        <a href={`mailto:${details.email}`}>
+          <Mail size={16} aria-hidden="true" />
+          <span>
+            <small>Email</small>
+            <strong>{details.email}</strong>
+          </span>
         </a>
-        <a className="call-link" href={`tel:${details.phone.replace(/[^+\d]/g, "")}`}>
-          <Phone size={15} />
-          {details.phone}
+        <a href={`tel:${details.phone.replace(/[^+\d]/g, "")}`}>
+          <Phone size={16} aria-hidden="true" />
+          <span>
+            <small>Телефон</small>
+            <strong>{details.phone}</strong>
+          </span>
         </a>
-      </div>
-      <div className="contractor-object-contacts">
-        {Object.entries(details.contactsByObject).map(([code, contact]) => {
-          const object = objectsInitial.find((item) => item.code === code);
-          if (!object || !allowedObjectNames.includes(object.name)) return null;
-          return (
-            <article key={code}>
-              <span>{object.name}</span>
-              <strong>{contact.name}</strong>
-              <small>{contact.role}</small>
-              <a href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`}>
-                <Phone size={14} />
-                {contact.phone}
-              </a>
-            </article>
-          );
-        })}
       </div>
     </section>
+  );
+}
+
+function getVisibleContractorContacts(
+  contractor: string,
+  allowedObjectNames: readonly string[],
+) {
+  return Object.entries(contractorDetails[contractor].contactsByObject).flatMap(
+    ([code, contact]) => {
+      const object = objectsInitial.find((item) => item.code === code);
+      if (!object || !allowedObjectNames.includes(object.name)) return [];
+      return [{ code, objectName: object.name, contact }];
+    },
+  );
+}
+
+function ContractorContactsModal({
+  contractor,
+  allowedObjectNames,
+  close,
+}: {
+  contractor: string;
+  allowedObjectNames: string[];
+  close: () => void;
+}) {
+  const titleId = useId();
+  const contacts = getVisibleContractorContacts(contractor, allowedObjectNames);
+  useOverlayLock(close);
+
+  return createPortal(
+    <motion.div
+      className="overlay-layer object-contacts-modal-layer fixed inset-0 z-[80] isolate"
+      initial="closed"
+      animate="open"
+      exit="closed"
+    >
+      <motion.button
+        type="button"
+        aria-label="Закрыть список контактов"
+        className="object-contacts-modal-backdrop absolute inset-0 z-0"
+        onClick={close}
+        variants={{ closed: { opacity: 0 }, open: { opacity: 1 } }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+      />
+      <motion.section
+        className="overlay-drawer-panel object-contacts-modal contractor-contacts-modal fixed z-10"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        variants={{
+          closed: { opacity: 0, y: 18, scale: 0.965 },
+          open: { opacity: 1, y: 0, scale: 1 },
+        }}
+        transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <header className="object-contacts-modal-head">
+          <div>
+            <span>Контакты подрядчика</span>
+            <h2 id={titleId}>Контактные лица</h2>
+            <p>{contractor}</p>
+          </div>
+          <span className="object-contacts-modal-count">
+            {contacts.length} {pluralizeRu(contacts.length, "контакт", "контакта", "контактов")}
+          </span>
+          <button
+            type="button"
+            className="object-contacts-modal-close"
+            onClick={close}
+            aria-label="Закрыть"
+            autoFocus
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        </header>
+        <div className="overlay-scroll-region object-contacts-modal-list">
+          {contacts.map(({ code, objectName, contact }) => (
+            <article key={`${code}-${contact.phone}`}>
+              <div className="object-contact-modal-person">
+                <span className="contractor-contact-modal-object">{objectName}</span>
+                <strong>{contact.name}</strong>
+                <small>{contact.role}</small>
+              </div>
+              <div className="object-contact-modal-actions">
+                <a href={`tel:${contact.phone.replace(/[^+\d]/g, "")}`}>
+                  <Phone size={15} aria-hidden="true" />
+                  <span>
+                    <small>Телефон</small>
+                    <strong>{contact.phone}</strong>
+                  </span>
+                </a>
+                {contact.email && (
+                  <a href={`mailto:${contact.email}`}>
+                    <Mail size={15} aria-hidden="true" />
+                    <span>
+                      <small>Email</small>
+                      <strong>{contact.email}</strong>
+                    </span>
+                  </a>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      </motion.section>
+    </motion.div>,
+    document.body,
   );
 }
 
@@ -6275,7 +6497,6 @@ function EmployeePanel({
   employee: Employee;
   close: () => void;
 }) {
-  const [tab, setTab] = useState<"contacts" | "history">("contacts");
   const [object, setObject] = useState("Все объекты");
   const [period, setPeriod] = useState("За всё время");
   useOverlayLock(close);
@@ -6331,93 +6552,105 @@ function EmployeePanel({
         aria-label={`Сотрудник ${employee.name}`}
         aria-modal="true"
         role="dialog"
-        className="overlay-drawer-panel fixed bottom-0 right-0 top-0 z-10 w-[540px] border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.14)]"
+        className="overlay-drawer-panel employee-panel fixed bottom-0 right-0 top-0 z-10 w-[540px] border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.14)]"
         variants={{ closed: { x: "100%" }, open: { x: 0 } }}
         transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         style={{ willChange: "transform" }}
       >
-        <div className="flex h-[76px] items-center justify-between border-b border-[#e4eaf2] px-6">
-          <div>
-            <p className="text-[17px] font-semibold">{employee.name}</p>
-            <p className="mt-0.5 text-[12.5px] text-[#7a8ca5]">{employee.role}</p>
+        <header className="employee-panel-head">
+          <div className="employee-panel-chrome-title">
+            <strong>Сотрудник</strong>
+            <small>Профиль и история посещений</small>
           </div>
           <button
             aria-label="Закрыть карточку сотрудника"
             onClick={close}
-            className="grid size-9 place-items-center rounded-xl border border-[#e0e7f0] text-[#61748f]"
+            className="employee-panel-close"
           >
-            <X size={18} />
+            <X size={17} aria-hidden="true" />
           </button>
-        </div>
-        <div className="flex gap-5 border-b border-[#e5ebf3] px-6">
-          <button
-            onClick={() => setTab("contacts")}
-            className={`border-b-2 py-3 text-[13.5px] font-semibold ${tab === "contacts" ? "border-[#2563eb] text-[#2563eb]" : "border-transparent text-[#71839e]"}`}
-          >
-            Контакты
-          </button>
-          <button
-            onClick={() => setTab("history")}
-            className={`border-b-2 py-3 text-[13.5px] font-semibold ${tab === "history" ? "border-[#2563eb] text-[#2563eb]" : "border-transparent text-[#71839e]"}`}
-          >
-            Посещения
-          </button>
-        </div>
-        {tab === "contacts" ? (
-          <div className="overlay-scroll-region h-[calc(100%-132px)] overflow-y-auto px-6 py-6">
+        </header>
+        <section className="employee-panel-profile" aria-label="Основные данные сотрудника">
+          <div className="employee-panel-profile-main">
             <div>
-                <h2 className="text-[21.5px] font-bold">{employee.name}</h2>
-                <p className="mt-1 text-[15px] text-[#687a95]">
-                  {employee.role}
-                </p>
-                <span
-                  className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-[12.5px] font-semibold ${statusStyle[employee.status]}`}
-                >
-                  {employee.status}
-                </span>
+              <h2>{employee.name}</h2>
+              <p>{employee.role}</p>
             </div>
-            <section className="mt-7 overflow-hidden rounded-xl border border-[#e2e8f1]">
-              <div className="flex justify-between gap-4 px-4 py-3 text-[13.5px]">
-                <span className="text-[#7889a2]">Подрядчик</span>
-                <strong className="text-right text-[#2d3d57]">{employee.contractor}</strong>
-              </div>
-              <div className="flex justify-between gap-4 border-t border-[#e8edf4] px-4 py-3 text-[13.5px]">
-                <span className="text-[#7889a2]">Подразделение</span>
-                <strong className="text-right text-[#2d3d57]">{employee.dept}</strong>
-              </div>
-            </section>
-            <section className="mt-5 grid gap-3">
-              <a
-                href={`tel:${employee.phone.replace(/[^+\d]/g, "")}`}
-                className="flex items-center gap-3 rounded-xl border border-[#dce5ef] bg-[#f8fbff] px-4 py-3 text-[14px] font-semibold text-[#245ccb] hover:bg-[#eef5ff]"
-              >
-                <Phone size={17} />
-                {employee.phone}
-              </a>
-              <a
-                href={`mailto:${employee.email}`}
-                className="flex items-center gap-3 rounded-xl border border-[#dce5ef] bg-[#f8fbff] px-4 py-3 text-[14px] font-semibold text-[#245ccb] hover:bg-[#eef5ff]"
-              >
-                <Mail size={17} />
-                {employee.email}
-              </a>
-            </section>
+            <span className={`employee-panel-status ${statusStyle[employee.status]}`}>
+              {employee.status}
+            </span>
           </div>
-        ) : (
-          <div className="overlay-scroll-region h-[calc(100%-132px)] overflow-y-auto px-6 py-5">
-            <div className="grid grid-cols-2 gap-3">
-              <Select
-                value={object}
-                onChange={setObject}
-                options={["Все объекты", ...employeeObjects]}
-              />
-              <Select
-                value={period}
-                onChange={setPeriod}
-                options={["За всё время", "Последние 7 дней", "Последние 30 дней"]}
-              />
+          <div className="employee-panel-profile-context">
+            <div>
+              <Building2 size={15} aria-hidden="true" />
+              <span>
+                <small>Подрядчик</small>
+                <strong>{employee.contractor}</strong>
+              </span>
             </div>
-            <div className="mt-5">
+            <div>
+              <Users size={15} aria-hidden="true" />
+              <span>
+                <small>Подразделение</small>
+                <strong>{employee.dept}</strong>
+              </span>
+            </div>
+          </div>
+        </section>
+        <div className="overlay-scroll-region employee-panel-content employee-panel-unified-content">
+            <section className="employee-panel-quick-contacts" aria-labelledby="employee-contacts-title">
+              <header>
+                <div>
+                  <h3 id="employee-contacts-title">Контакты</h3>
+                </div>
+              </header>
+              <div className="employee-panel-quick-contact-list">
+                <a
+                  href={`tel:${employee.phone.replace(/[^+\d]/g, "")}`}
+                >
+                  <span className="employee-panel-contact-icon" aria-hidden="true">
+                    <Phone size={16} />
+                  </span>
+                  <small>Телефон</small>
+                  <strong>{employee.phone}</strong>
+                  <ArrowUpRight size={14} aria-hidden="true" />
+                </a>
+                <a
+                  href={`mailto:${employee.email}`}
+                >
+                  <span className="employee-panel-contact-icon" aria-hidden="true">
+                    <Mail size={16} />
+                  </span>
+                  <small>Email</small>
+                  <strong>{employee.email}</strong>
+                  <ArrowUpRight size={14} aria-hidden="true" />
+                </a>
+              </div>
+            </section>
+            <section className="employee-panel-visits" aria-labelledby="employee-visits-title">
+              <header className="employee-panel-visits-head">
+                <h3 id="employee-visits-title">Посещения</h3>
+                <span>{visibleHistory.length}</span>
+              </header>
+            <div className="employee-panel-history-filters">
+              <div>
+                <span>Объект</span>
+                <Select
+                  value={object}
+                  onChange={setObject}
+                  options={["Все объекты", ...employeeObjects]}
+                />
+              </div>
+              <div>
+                <span>Период</span>
+                <Select
+                  value={period}
+                  onChange={setPeriod}
+                  options={["За всё время", "Последние 7 дней", "Последние 30 дней"]}
+                />
+              </div>
+            </div>
+            <div className="employee-panel-history-list">
               {groupedHistory.length ? (
                 groupedHistory.map(([objectName, records]) => (
                   <EmployeeHistoryGroup
@@ -6443,8 +6676,8 @@ function EmployeePanel({
                 </div>
               )}
             </div>
-          </div>
-        )}
+            </section>
+        </div>
       </motion.aside>
     </motion.div>
   );
@@ -6478,17 +6711,17 @@ function EmployeeHistoryGroup({
     ])
     .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
   return (
-    <div className="relative pb-6 pl-7 before:absolute before:bottom-0 before:left-[7px] before:top-3 before:w-px before:bg-[#dbe5f2]">
-      <div className="absolute left-0 top-1 size-[15px] rounded-full border-4 border-[#dcebff] bg-[#2563eb]" />
-      <div className="overflow-hidden rounded-xl border border-[#e0e8f2] bg-white">
-        <div className="border-b border-[#e8edf4] px-4 py-3">
+    <div className="employee-history-group relative pb-6 pl-7 before:absolute before:bottom-0 before:left-[7px] before:top-3 before:w-px before:bg-[#dbe5f2]">
+      <div className="employee-history-marker absolute left-0 top-1 size-[15px] rounded-full border-4 border-[#dcebff] bg-[#2563eb]" />
+      <div className="employee-history-card overflow-hidden rounded-xl border border-[#e0e8f2] bg-white">
+        <div className="employee-history-head border-b border-[#e8edf4] px-4 py-3">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[15px] font-semibold">{object}</p>
-              {address && <p className="mt-1 text-[12.5px] text-[#7a8ba3]">{address}</p>}
+              <p>{object}</p>
+              {address && <small>{address}</small>}
             </div>
             {records.some((record) => !record.leftAt) && (
-              <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700">
+              <span className="employee-history-active">
                 На месте
               </span>
             )}
@@ -6499,22 +6732,22 @@ function EmployeeHistoryGroup({
           return (
             <div
               key={event.key}
-              className={`flex items-center gap-3 px-4 py-3 ${index ? "border-t border-[#eef2f6]" : ""}`}
+              className={`employee-history-event flex items-center gap-3 px-4 py-3 ${index ? "border-t border-[#eef2f6]" : ""}`}
             >
-              <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-[#edf5ff] text-[#2563eb]">
+              <span className="employee-history-event-icon">
                 {event.type === "Вход" ? <DoorOpen size={14} /> : <DoorClosed size={14} />}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[13.5px] font-medium">{event.type}</p>
-                <p className="truncate text-[12.5px] text-[#8493a8]">
+                <p>{event.type}</p>
+                <small>
                   {date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
                   <span className="px-1">·</span>
                   {roomForRecord(event.record)}
-                </p>
+                </small>
               </div>
-              <span className="font-mono text-[13.5px] font-semibold text-[#435775]">
+              <time>
                 {date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
-              </span>
+              </time>
             </div>
           );
         })}
