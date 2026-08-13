@@ -743,12 +743,7 @@ function ExportMultiSelect({
   onChange,
 }: ExportMultiSelectProps) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
-  const normalizedQuery = normalize(query);
-  const visibleOptions = normalizedQuery
-    ? options.filter((option) => normalize(option).includes(normalizedQuery))
-    : options;
   const selectedSet = new Set(selected);
 
   useEffect(() => {
@@ -765,10 +760,6 @@ function ExportMultiSelect({
       document.removeEventListener("pointerdown", closeOnOutside);
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) setQuery("");
   }, [open]);
 
   const triggerText = !selected.length
@@ -817,19 +808,8 @@ function ExportMultiSelect({
                 <button type="button" onClick={() => onChange([])}>Очистить</button>
               )}
             </div>
-            {options.length > 5 && (
-              <label className="export-multiselect__search">
-                <Search size={15} aria-hidden="true" />
-                <input
-                  autoFocus
-                  value={query}
-                  placeholder="Найти в списке"
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-              </label>
-            )}
             <div className="export-multiselect__options" role="group" aria-label={ariaLabel}>
-              {visibleOptions.map((option) => {
+              {options.map((option) => {
                 const checked = selectedSet.has(option);
                 return (
                   <button
@@ -845,9 +825,6 @@ function ExportMultiSelect({
                   </button>
                 );
               })}
-              {!visibleOptions.length && (
-                <span className="export-multiselect__empty">Ничего не найдено</span>
-              )}
             </div>
             <div className="export-multiselect__menu-footer">
               <span>{selected.length ? `Выбрано: ${selected.length}` : "Выбраны все"}</span>
@@ -1411,7 +1388,6 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
             <span className="export-section-icon"><FileSpreadsheet size={17} /></span>
             <div>
               <h2>Данные для экспорта</h2>
-              <p>Найдено: {filteredEvents.length} из {scopedEvents.length}</p>
             </div>
           </div>
           <div className="export-table-actions">
@@ -1555,7 +1531,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
                 animate={{
                   opacity: 1,
                   height: "auto",
-                  transitionEnd: { overflow: "visible" },
+                  overflow: "visible",
                 }}
                 exit={{ opacity: 0, height: 0, overflow: "hidden" }}
                 transition={{
@@ -1609,7 +1585,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
                 animate={{
                   opacity: 1,
                   height: "auto",
-                  transitionEnd: { overflow: "visible" },
+                  overflow: "visible",
                 }}
                 exit={{ opacity: 0, height: 0, overflow: "hidden" }}
                 transition={{
