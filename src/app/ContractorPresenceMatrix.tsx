@@ -68,15 +68,6 @@ function normalize(value: string) {
   return value.trim().toLocaleLowerCase("ru-RU");
 }
 
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("");
-}
-
 function visitTime(record: PresenceRecord) {
   const entered = timeFormatter.format(new Date(record.enteredAt));
   const left = record.leftAt
@@ -335,9 +326,6 @@ export function ContractorPresenceMatrix({
                     >
                       <td data-label="Сотрудник">
                         <span className="cpm__table-person">
-                          <span className="cpm__avatar" aria-hidden="true">
-                            {initials(record.employee)}
-                          </span>
                           <span className="cpm__person-copy">
                             <strong>{record.employee}</strong>
                             <small>{record.role}</small>
@@ -405,9 +393,6 @@ export function ContractorPresenceMatrix({
                       onClick={() => onOpenEmployee(record.employee)}
                     >
                       <span className="cpm__object-employee">
-                        <span className="cpm__avatar" aria-hidden="true">
-                          {initials(record.employee)}
-                        </span>
                         <span className="cpm__object-person">
                           <strong>{record.employee}</strong>
                           <small>{record.role}</small>

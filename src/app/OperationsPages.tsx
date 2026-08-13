@@ -234,16 +234,70 @@ const OBJECT_ROOMS: Record<string, string[]> = {
   "Логистический центр «Запад»": [
     "Главный вход",
     "Склад А",
+    "Склад Б",
     "Зона погрузки",
+    "Зона разгрузки",
     "Техническая",
+    "Диспетчерская",
+    "Комната охраны",
+    "Серверная",
+    "Электрощитовая",
+    "Ремонтная зона",
+    "Архив",
+    "Бытовая комната",
+    "Парковка",
+    "Резервный выход",
   ],
-  "БЦ «Орион»": ["Холл", "Паркинг", "Щитовая", "Кровля"],
-  "Склад № 3": ["КПП", "Склад 1", "Рампа"],
+  "БЦ «Орион»": [
+    "Холл",
+    "Ресепшен",
+    "Паркинг",
+    "Щитовая",
+    "Кровля",
+    "Серверная",
+    "Переговорная 1",
+    "Переговорная 2",
+    "Офис 201",
+    "Офис 305",
+    "Конференц-зал",
+    "Архив",
+    "Склад инвентаря",
+    "Комната охраны",
+    "Технический этаж",
+  ],
+  "Склад № 3": [
+    "КПП",
+    "Склад 1",
+    "Склад 2",
+    "Склад 3",
+    "Рампа",
+    "Зона приёмки",
+    "Зона отгрузки",
+    "Холодильная камера",
+    "Комплектовочная",
+    "Упаковочная",
+    "Комната персонала",
+    "Техническая",
+    "Электрощитовая",
+    "Архив",
+    "Парковка",
+  ],
   "Производственная площадка «Север»": [
     "Проходная № 2",
     "Цех 1",
+    "Цех 2",
     "Цех 3",
     "Компрессорная",
+    "Котельная",
+    "Лаборатория",
+    "Ремонтный участок",
+    "Склад сырья",
+    "Склад продукции",
+    "Диспетчерская",
+    "Комната мастеров",
+    "Электрощитовая",
+    "Погрузочная площадка",
+    "Административный корпус",
   ],
 };
 
@@ -328,14 +382,6 @@ export function formatDuration(record: PresenceRecord) {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
   return hours ? `${hours} ч ${rest} мин` : `${rest} мин`;
-}
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("");
 }
 
 type PresenceMode = "now" | "period";
@@ -576,9 +622,6 @@ export function PresencePage({
                 >
                   <td data-label="Сотрудник">
                     <div className="op-person">
-                      <span className="op-person__avatar" aria-hidden="true">
-                        {getInitials(record.employee)}
-                      </span>
                       <span>
                         <strong>{record.employee}</strong>
                         <small>{record.role}</small>
@@ -969,9 +1012,6 @@ export function ExportPage({
                   </td>
                   <td data-label="Сотрудник">
                     <div className="op-person op-person--compact">
-                      <span className="op-person__avatar" aria-hidden="true">
-                        {getInitials(event.employee)}
-                      </span>
                       <span>
                         <strong>{event.employee}</strong>
                         <small>{event.role}</small>

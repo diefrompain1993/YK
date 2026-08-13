@@ -108,16 +108,6 @@ function emptyDraft(): UserDraft {
   };
 }
 
-function getInitials(name: string) {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toLocaleUpperCase("ru-RU");
-}
-
 function objectSummary(assigned: string[], allObjects: string[]) {
   if (!assigned.length) return "Не назначены";
   if (allObjects.length > 0 && assigned.length === allObjects.length) {
@@ -342,9 +332,6 @@ export function AdminUsersSettings({
                   >
                     <td data-label="Пользователь">
                       <div className="aus-person">
-                        <span className="aus-avatar" aria-hidden="true">
-                          {getInitials(user.fullName)}
-                        </span>
                         <strong>{user.fullName}</strong>
                       </div>
                     </td>

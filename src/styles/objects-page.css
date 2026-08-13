@@ -1,0 +1,309 @@
+.objects-page {
+  font-family: "Manrope Variable", Manrope, "Segoe UI Variable", sans-serif;
+}
+
+.objects-page .objects-table-card {
+  overflow: hidden;
+  border: 1px solid #d9e3ef;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(28, 48, 77, 0.055);
+}
+
+.objects-page .entity-list-header {
+  min-height: 84px;
+  padding: 14px 20px !important;
+  background: #fff;
+}
+
+.objects-page .entity-list-header h2 {
+  color: #182a43;
+  font-size: 17px !important;
+  font-weight: 720;
+  letter-spacing: -0.018em;
+}
+
+.objects-page .entity-list-header p {
+  margin-top: 2px !important;
+  color: #7c8ca2;
+  font-size: 12px !important;
+}
+
+.objects-page .objects-table-search {
+  width: 310px !important;
+  height: 40px;
+  padding: 0 14px 0 38px;
+  border: 1px solid #d6e0ec;
+  border-radius: 10px;
+  background: #fbfcfe;
+  color: #2c405d;
+  font-size: 13px !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.objects-page .objects-table-search:hover {
+  border-color: #bccce0;
+  background: #fff;
+}
+
+.objects-page .objects-table-search:focus,
+.objects-page .objects-table-search:focus-visible {
+  border-color: #6590e8;
+  outline: 0 !important;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(50, 105, 214, 0.1) !important;
+}
+
+.objects-page .objects-table-search-icon {
+  z-index: 1;
+  pointer-events: none;
+}
+
+.objects-page .objects-table-scroll {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.objects-page .objects-table-columns,
+.objects-page .objects-table-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.15fr) minmax(340px, 1.55fr) minmax(150px, 0.6fr) minmax(170px, 0.65fr);
+  align-items: center;
+}
+
+.objects-page .objects-table-columns {
+  min-width: 980px;
+  min-height: 42px;
+  border-bottom: 1px solid #dce4ee;
+  background: #f5f7fa;
+  color: #75859b;
+  font-size: 10.5px;
+  font-weight: 760;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+
+.objects-page .objects-table-columns > span {
+  padding: 0 20px;
+}
+
+.objects-page .objects-table-columns > span:nth-child(n + 3) {
+  text-align: center;
+}
+
+.objects-page .objects-table-row {
+  position: relative;
+  width: 100%;
+  min-width: 980px;
+  min-height: 68px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #e5ebf2;
+  background: #fff;
+  color: #263a55;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.objects-page .objects-table-row:last-child {
+  border-bottom: 0;
+}
+
+.objects-page .objects-table-row:hover {
+  background: #f6f9fe;
+  box-shadow: inset 3px 0 0 #3973e6;
+}
+
+.objects-page .objects-table-row:active {
+  transform: none !important;
+  background: #edf4ff;
+}
+
+.objects-page .objects-table-row:focus-visible {
+  z-index: 1;
+  outline: 2px solid #3973e6 !important;
+  outline-offset: -3px;
+}
+
+.objects-page .objects-table-row > span {
+  min-width: 0;
+  padding: 11px 20px;
+}
+
+.objects-page .objects-table-name,
+.objects-page .objects-table-address {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.objects-page .objects-table-name strong {
+  overflow: hidden;
+  color: #1d304a;
+  font-size: 13.5px;
+  font-weight: 710;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.objects-page .objects-table-address {
+  color: #60748f;
+  font-size: 12.5px;
+  font-weight: 520;
+}
+
+.objects-page .objects-table-address svg {
+  flex: 0 0 auto;
+  color: #7894ba;
+}
+
+.objects-page .objects-table-address span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.objects-page .objects-table-count {
+  position: relative;
+  display: flex;
+  min-height: 68px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  text-align: center;
+}
+
+.objects-page .objects-table-count > strong {
+  display: inline-grid;
+  min-width: 34px;
+  height: 30px;
+  place-items: center;
+  padding: 0 8px;
+  border: 1px solid #d1dff0;
+  border-radius: 8px;
+  background: #f0f5fc;
+  color: #2c63c7;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 780;
+}
+
+.objects-page .objects-table-count--contractors > strong {
+  border-color: #f0cea1;
+  background: #fff4e5;
+  color: #b65d12;
+}
+
+.objects-page .objects-table-count > small {
+  display: none;
+  color: #7b8ca2;
+  font-size: 11px;
+}
+
+.objects-page .objects-table-open {
+  position: absolute;
+  right: 14px;
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 7px;
+  color: #8091a7;
+  transform: rotate(-90deg);
+  transition: color 150ms ease, background-color 150ms ease, translate 150ms ease;
+}
+
+.objects-page .objects-table-row:hover .objects-table-open {
+  background: #e5efff;
+  color: #2d67d8;
+  translate: 2px 0;
+}
+
+.objects-page .empty-filter-state {
+  min-height: 210px;
+}
+
+.contractors-page .contractors-table-columns,
+.contractors-page .contractors-table-row {
+  grid-template-columns: minmax(280px, 1.05fr) minmax(360px, 1.45fr) minmax(300px, 1.15fr) minmax(160px, 0.55fr);
+}
+
+.contractors-page .contractors-table-columns,
+.contractors-page .contractors-table-row {
+  min-width: 1100px;
+}
+
+.contractors-page .contractors-table-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border: 1px solid #cfe0f7;
+  border-radius: 10px;
+  background: #edf4ff;
+  color: #2e6ee7;
+}
+
+.contractors-page .contractors-table-specialization,
+.contractors-page .contractors-table-contacts {
+  min-width: 0;
+  color: #60748f;
+  font-size: 12.5px;
+  font-weight: 520;
+  line-height: 1.4;
+}
+
+.contractors-page .contractors-table-specialization {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.contractors-page .contractors-table-contacts {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-self: stretch;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+
+.contractors-page .contractors-table-contacts > span {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contractors-page .contractors-table-contacts svg {
+  flex: 0 0 auto;
+  color: #7894ba;
+}
+
+.contractors-page .contractors-table-count > strong {
+  border-color: #cfe3db;
+  background: #edf8f4;
+  color: #19735e;
+}
+
+@media (max-width: 900px) {
+  .objects-page .entity-list-header {
+    align-items: stretch !important;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .objects-page .entity-list-header > div:last-child,
+  .objects-page .objects-table-search {
+    width: 100% !important;
+  }
+}

@@ -432,25 +432,10 @@
   display: flex;
   min-width: 190px;
   align-items: center;
-  gap: 10px;
 }
 
 .op-person--compact {
   min-width: 170px;
-}
-
-.op-person__avatar {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  place-items: center;
-  border: 1px solid #d6e4fa;
-  border-radius: 10px;
-  background: #edf5ff;
-  color: #2458c2;
-  font-size: 11px;
-  font-weight: 750;
 }
 
 .op-person > span:last-child {
@@ -700,11 +685,6 @@
     gap: 9px;
   }
 
-  .op-person__avatar {
-    width: 31px;
-    height: 31px;
-    flex-basis: 31px;
-  }
 }
 
 .op-report-layer {

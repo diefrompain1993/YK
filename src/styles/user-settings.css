@@ -241,7 +241,6 @@
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 11px;
 }
 
 .aus-person strong {
@@ -252,20 +251,6 @@
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.aus-avatar {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  place-items: center;
-  border: 1px solid #d8e7ff;
-  border-radius: 11px;
-  background: #edf4ff;
-  color: #2864dc;
-  font-size: 12px;
-  font-weight: 750;
 }
 
 .aus-long-value {

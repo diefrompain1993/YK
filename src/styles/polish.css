@@ -102,7 +102,7 @@
 
 .activity-list > button {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   width: 100%;
   gap: 9px;
@@ -2937,18 +2937,6 @@ aside select:focus {
   text-align: left;
 }
 
-.log-employee > span {
-  display: grid;
-  place-items: center;
-  width: 31px;
-  height: 31px;
-  border-radius: 10px;
-  background: #edf4ff;
-  color: #2864eb;
-  font-size: 13px;
-  font-weight: 750;
-}
-
 .log-employee > strong {
   color: #324762;
   font-size: 14px;
@@ -3285,18 +3273,6 @@ aside select:focus {
 
 .activity-list > div:hover {
   background: #f7faff;
-}
-
-.activity-avatar {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: #edf4ff;
-  color: #2864eb;
-  font-size: 12.5px;
-  font-weight: 800;
 }
 
 .activity-copy {
