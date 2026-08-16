@@ -1666,7 +1666,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
                 <th>Сотрудник</th>
                 <th>Подрядчик</th>
                 <th>Объект</th>
-                <th>Тип</th>
+                <th className="op-type-column">Тип</th>
                 <th>Метка / отчёт</th>
               </tr>
             </thead>
@@ -1693,7 +1693,11 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
                   </td>
                   <td data-label="Подрядчик"><span className="op-cell-main" title={event.contractor}>{event.contractor}</span></td>
                   <td data-label="Объект"><span className="op-cell-main" title={event.object}>{event.object}</span></td>
-                  <td data-label="Тип"><span className={`op-event-badge ${eventTone(event.type)}`}>{event.type}</span></td>
+                  <td className="op-type-column" data-label="Тип">
+                    <span className="op-type-column__content">
+                      <span className={`op-event-badge ${eventTone(event.type)}`}>{event.type}</span>
+                    </span>
+                  </td>
                   <td data-label="Метка / отчёт"><span className="op-cell-main op-export-details" title={event.details}>{event.details}</span></td>
                 </tr>
               ))}
@@ -2075,7 +2079,7 @@ export function ExportPage({
                 <th>Сотрудник</th>
                 <th>Подрядчик</th>
                 <th>Объект</th>
-                <th>Тип</th>
+                <th className="op-type-column">Тип</th>
                 <th>Метка / отчёт</th>
               </tr>
             </thead>
@@ -2126,9 +2130,11 @@ export function ExportPage({
                   <td data-label="Объект">
                     <span className="op-cell-main">{event.object}</span>
                   </td>
-                  <td data-label="Тип">
-                    <span className={`op-event-badge ${eventTone(event.type)}`}>
-                      {event.type}
+                  <td className="op-type-column" data-label="Тип">
+                    <span className="op-type-column__content">
+                      <span className={`op-event-badge ${eventTone(event.type)}`}>
+                        {event.type}
+                      </span>
                     </span>
                   </td>
                   <td data-label="Метка / отчёт">
