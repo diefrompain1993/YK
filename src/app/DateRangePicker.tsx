@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CalendarDays, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -29,6 +29,7 @@ const shortDayFormatter = new Intl.DateTimeFormat("ru-RU", {
   month: "short",
 });
 const weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+const validClockTime = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 function datePart(value: string) {
   return value ? value.slice(0, 10) : "";
@@ -82,13 +83,19 @@ export function DateRangePicker({
     const rect = rootRef.current?.getBoundingClientRect();
     if (!rect) return;
     const popoverWidth = 276;
-    const estimatedHeight = withTime ? 390 : 320;
-    const fitsBelow = window.innerHeight - rect.bottom >= estimatedHeight + 10;
+    const popoverHeight = popoverRef.current?.offsetHeight ?? (withTime ? 390 : 320);
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const fitsBelow = spaceBelow >= popoverHeight + 8;
+    const fitsAbove = spaceAbove >= popoverHeight + 8;
+    const placeBelow = fitsBelow || (!fitsAbove && spaceBelow >= spaceAbove);
+    const belowTop = Math.min(
+      rect.bottom + 6,
+      Math.max(8, window.innerHeight - popoverHeight - 8),
+    );
     setPopoverPosition({
       left: Math.max(8, Math.min(rect.left, window.innerWidth - popoverWidth - 8)),
-      top: fitsBelow
-        ? rect.bottom + 6
-        : Math.max(8, rect.top - estimatedHeight - 6),
+      top: placeBelow ? belowTop : Math.max(8, rect.top - popoverHeight - 6),
     });
   };
 
@@ -116,7 +123,7 @@ export function DateRangePicker({
     };
   }, [open]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
     updatePopoverPosition();
     window.addEventListener("resize", updatePopoverPosition);
@@ -138,6 +145,7 @@ export function DateRangePicker({
   const toDate = datePart(to);
   const startTime = timePart(from, "00:00");
   const endTime = timePart(to, "23:59");
+  const isSingleDay = Boolean(fromDate && (!toDate || fromDate === toDate));
 
   const label = (() => {
     if (!fromDate && !toDate) return "Выбрать дату";
@@ -254,11 +262,19 @@ export function DateRangePicker({
                 <TimePicker
                   value={startTime}
                   ariaLabel="Время с"
-                  invalid={!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)}
-                  onChange={(value) => onChange({
-                    from: withLocalTime(fromDate, value, true),
-                    to: withLocalTime(toDate || fromDate, endTime, true),
-                  })}
+                  invalid={!validClockTime.test(startTime)}
+                  onChange={(value) => {
+                    const nextEndTime = isSingleDay &&
+                      validClockTime.test(value) &&
+                      validClockTime.test(endTime) &&
+                      value > endTime
+                      ? value
+                      : endTime;
+                    onChange({
+                      from: withLocalTime(fromDate, value, true),
+                      to: withLocalTime(toDate || fromDate, nextEndTime, true),
+                    });
+                  }}
                 />
               </label>
               <label>
@@ -266,11 +282,19 @@ export function DateRangePicker({
                 <TimePicker
                   value={endTime}
                   ariaLabel="Время по"
-                  invalid={!/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime)}
-                  onChange={(value) => onChange({
-                    from: withLocalTime(fromDate, startTime, true),
-                    to: withLocalTime(toDate || fromDate, value, true),
-                  })}
+                  invalid={!validClockTime.test(endTime)}
+                  onChange={(value) => {
+                    const nextEndTime = isSingleDay &&
+                      validClockTime.test(value) &&
+                      validClockTime.test(startTime) &&
+                      value < startTime
+                      ? startTime
+                      : value;
+                    onChange({
+                      from: withLocalTime(fromDate, startTime, true),
+                      to: withLocalTime(toDate || fromDate, nextEndTime, true),
+                    });
+                  }}
                 />
               </label>
             </div>

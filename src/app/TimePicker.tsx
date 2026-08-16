@@ -16,6 +16,49 @@ const hours = Array.from({ length: 24 }, (_, index) => String(index).padStart(2,
 const minutes = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, "0"));
 const validTime = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+function maskTimeInput(rawValue: string) {
+  const digits = rawValue.replace(/\D/g, "").slice(0, 4);
+  if (!digits) return "";
+
+  const firstHourDigit = Number(digits[0]);
+  let hour = "";
+  let remaining = "";
+
+  if (firstHourDigit > 2) {
+    hour = `0${digits[0]}`;
+    remaining = digits.slice(1);
+  } else if (digits.length === 1) {
+    return digits;
+  } else {
+    const hourCandidate = digits.slice(0, 2);
+    if (Number(hourCandidate) > 23) {
+      hour = `0${digits[0]}`;
+      remaining = digits.slice(1);
+    } else {
+      hour = hourCandidate;
+      remaining = digits.slice(2);
+    }
+  }
+
+  if (!remaining) return hour;
+  const minute = Number(remaining[0]) > 5
+    ? `0${remaining[0]}`
+    : remaining.slice(0, 2);
+  return `${hour}:${minute}`;
+}
+
+function completeTimeInput(value: string) {
+  const masked = maskTimeInput(value);
+  if (!masked || validTime.test(masked)) return masked;
+  if (/^\d$/.test(masked)) return `0${masked}:00`;
+  if (/^\d{2}$/.test(masked)) return `${masked}:00`;
+  if (/^\d{2}:\d$/.test(masked)) {
+    const [hour, minute] = masked.split(":");
+    return `${hour}:0${minute}`;
+  }
+  return masked;
+}
+
 export function TimePicker({
   value,
   onChange,
@@ -86,7 +129,11 @@ export function TimePicker({
         aria-invalid={invalid}
         onFocus={openPicker}
         onClick={openPicker}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => onChange(maskTimeInput(event.target.value))}
+        onBlur={(event) => {
+          const completed = completeTimeInput(event.target.value);
+          if (completed !== event.target.value) onChange(completed);
+        }}
       />
       {typeof document !== "undefined" && createPortal(
         <AnimatePresence>

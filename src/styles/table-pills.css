@@ -1,0 +1,27 @@
+/* One shared geometry for compact data pills inside desktop tables. */
+@media (min-width: 701px) {
+  .page-stage table :is(
+    span.op-status,
+    span.op-event-badge,
+    span.object-room-tag--table,
+    span.on-site-badge,
+    span.cpm__visit-status,
+    span.aus-role-badge,
+    span.aus-status,
+    span[class~="rounded-full"]
+  ) {
+    display: inline-flex !important;
+    width: 96px;
+    min-width: 96px;
+    height: 28px;
+    min-height: 28px;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 0 6px !important;
+    border-radius: 999px;
+    line-height: 1 !important;
+    text-align: center;
+    white-space: nowrap;
+  }
+}

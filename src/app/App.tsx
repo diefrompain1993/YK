@@ -1965,10 +1965,6 @@ function HomePage({
         >
           <div className="card-heading">
             <div>
-              <span className="section-kicker">
-                <ScrollText size={14} />
-                Сегодня
-              </span>
               <h2>Последние входы и выходы</h2>
             </div>
             <button onClick={() => navigate("journal")}>Журнал</button>
@@ -2338,10 +2334,7 @@ function ContractorContacts({
   return (
     <section className="contractor-people-card" aria-label="Контактные лица подрядчика">
       <header className="contractor-people-heading">
-        <h2>
-          Контактные лица
-          <span>{contacts.length}</span>
-        </h2>
+        <h2>Контактные лица</h2>
       </header>
       <button
         type="button"

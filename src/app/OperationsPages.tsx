@@ -717,6 +717,27 @@ type ExportDatePeriod = {
   to: string;
 };
 
+const exportPeriodValuePattern = /^\d{4}-\d{2}-\d{2}(?:T(?:[01]\d|2[0-3]):[0-5]\d)?$/;
+
+function exportPeriodDate(value: string) {
+  return value.slice(0, 10);
+}
+
+function exportPeriodHasSingleDay(period: ExportDatePeriod) {
+  const from = exportPeriodDate(period.from);
+  const to = exportPeriodDate(period.to);
+  return Boolean(from && to && from === to);
+}
+
+function exportPeriodBoundary(value: string, endOfMinute: boolean) {
+  if (!value) return "";
+  const date = exportPeriodDate(value);
+  const time = value.includes("T")
+    ? value.slice(11, 16)
+    : endOfMinute ? "23:59" : "00:00";
+  return `${date}T${time}:${endOfMinute ? "59" : "00"}`;
+}
+
 type ExportMultiSelectProps = {
   label: string;
   ariaLabel: string;
@@ -725,6 +746,9 @@ type ExportMultiSelectProps = {
   selected: readonly string[];
   icon: ReactNode;
   disabled?: boolean;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  compactOptions?: boolean;
   hint?: string;
   onChange: (values: string[]) => void;
 };
@@ -737,20 +761,31 @@ function ExportMultiSelect({
   selected,
   icon,
   disabled = false,
+  searchable = false,
+  searchPlaceholder = "Введите для поиска",
+  compactOptions = false,
   hint,
   onChange,
 }: ExportMultiSelectProps) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const selectedSet = new Set(selected);
 
   useEffect(() => {
     if (!open) return;
     const closeOnOutside = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        if (searchable) setQuery("");
+      }
     };
     const closeOnEscape = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        if (searchable) setQuery("");
+      }
     };
     document.addEventListener("pointerdown", closeOnOutside);
     window.addEventListener("keydown", closeOnEscape);
@@ -758,7 +793,19 @@ function ExportMultiSelect({
       document.removeEventListener("pointerdown", closeOnOutside);
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [open]);
+  }, [open, searchable]);
+
+  useEffect(() => {
+    if (!disabled) return;
+    setOpen(false);
+    setQuery("");
+  }, [disabled]);
+
+  useEffect(() => {
+    if (!open || !searchable) return;
+    const frame = window.requestAnimationFrame(() => inputRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, searchable]);
 
   const triggerText = !selected.length
     ? placeholder
@@ -766,16 +813,25 @@ function ExportMultiSelect({
       ? selected[0]
       : `Выбрано: ${selected.length}`;
 
+  const normalizedQuery = query.trim().toLocaleLowerCase("ru-RU");
+  const visibleOptions = searchable && normalizedQuery
+    ? options.filter((option) => option.toLocaleLowerCase("ru-RU").includes(normalizedQuery))
+    : options;
+
   const toggleValue = (value: string) => {
     onChange(
       selectedSet.has(value)
         ? selected.filter((item) => item !== value)
         : [...selected, value],
     );
+    if (searchable) setQuery("");
   };
 
   return (
-    <div className={`export-multiselect ${open ? "is-open" : ""}`} ref={rootRef}>
+    <div
+      className={`export-multiselect ${compactOptions ? "export-multiselect--compact" : ""} ${open ? "is-open" : ""}`.trim()}
+      ref={rootRef}
+    >
       <span className="export-field-label">{label}</span>
       <button
         type="button"
@@ -806,8 +862,30 @@ function ExportMultiSelect({
                 <button type="button" onClick={() => onChange([])}>Очистить</button>
               )}
             </div>
+            {searchable && (
+              <label className="export-multiselect__search">
+                <Search size={15} aria-hidden="true" />
+                <input
+                  ref={inputRef}
+                  type="text"
+                  role="combobox"
+                  aria-label={`Поиск: ${ariaLabel}`}
+                  aria-expanded="true"
+                  aria-autocomplete="list"
+                  value={query}
+                  placeholder={searchPlaceholder}
+                  onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && query.trim() && visibleOptions.length) {
+                      event.preventDefault();
+                      toggleValue(visibleOptions[0]);
+                    }
+                  }}
+                />
+              </label>
+            )}
             <div className="export-multiselect__options" role="group" aria-label={ariaLabel}>
-              {options.map((option) => {
+              {visibleOptions.map((option) => {
                 const checked = selectedSet.has(option);
                 return (
                   <button
@@ -823,10 +901,21 @@ function ExportMultiSelect({
                   </button>
                 );
               })}
+              {!visibleOptions.length && (
+                <span className="export-multiselect__empty">Ничего не найдено</span>
+              )}
             </div>
             <div className="export-multiselect__menu-footer">
               <span>{selected.length ? `Выбрано: ${selected.length}` : "Выбраны все"}</span>
-              <button type="button" onClick={() => setOpen(false)}>Готово</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  if (searchable) setQuery("");
+                }}
+              >
+                Готово
+              </button>
             </div>
           </motion.div>
         )}
@@ -1203,16 +1292,19 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
 
   const activePeriods = periods.filter((period) => period.from || period.to);
   const periodsAreValid = periods.every(
-    (period) => !period.from || !period.to || period.from <= period.to,
+    (period) =>
+      (!period.from || exportPeriodValuePattern.test(period.from)) &&
+      (!period.to || exportPeriodValuePattern.test(period.to)) &&
+      (!period.from || !period.to || period.from <= period.to),
   );
 
   const filteredEvents = useMemo(() => {
     if (!periodsAreValid) return [];
     return scopedEvents
       .filter((event) => {
-        const eventDate = event.occurredAt.slice(0, 10);
         const matchesPeriod = !activePeriods.length || activePeriods.some((period) =>
-          (!period.from || eventDate >= period.from) && (!period.to || eventDate <= period.to),
+          (!period.from || event.occurredAt >= exportPeriodBoundary(period.from, false)) &&
+          (!period.to || event.occurredAt <= exportPeriodBoundary(period.to, true)),
         );
         return (
           matchesPeriod &&
@@ -1260,9 +1352,16 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
     ? "За всё доступное время"
     : activePeriods
         .map((period) => {
-          if (period.from && period.to) return `${period.from.split("-").reverse().join(".")} — ${period.to.split("-").reverse().join(".")}`;
-          if (period.from) return `С ${period.from.split("-").reverse().join(".")}`;
-          return `До ${period.to.split("-").reverse().join(".")}`;
+          const fromDate = exportPeriodDate(period.from);
+          const toDate = exportPeriodDate(period.to);
+          const formattedFrom = fromDate ? fromDate.split("-").reverse().join(".") : "";
+          const formattedTo = toDate ? toDate.split("-").reverse().join(".") : "";
+          if (fromDate && toDate && fromDate === toDate && period.from.includes("T")) {
+            return `${formattedFrom}, ${period.from.slice(11, 16)} — ${period.to.slice(11, 16)}`;
+          }
+          if (fromDate && toDate) return `${formattedFrom} — ${formattedTo}`;
+          if (fromDate) return `С ${formattedFrom}`;
+          return `До ${formattedTo}`;
         })
         .join("; ");
 
@@ -1278,8 +1377,13 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
   ];
 
   const updatePeriod = (id: number, value: { from: string; to: string }) => {
+    const fromDate = exportPeriodDate(value.from);
+    const toDate = exportPeriodDate(value.to);
+    const nextValue = fromDate && toDate && fromDate !== toDate
+      ? { from: fromDate, to: toDate }
+      : value;
     setPeriods((current) => current.map((period) =>
-      period.id === id ? { ...period, ...value } : period,
+      period.id === id ? { ...period, ...nextValue } : period,
     ));
   };
 
@@ -1416,6 +1520,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
                 <DateRangePicker
                   from={periods[0]?.from ?? ""}
                   to={periods[0]?.to ?? ""}
+                  withTime={Boolean(periods[0] && exportPeriodHasSingleDay(periods[0]))}
                   allowEmpty
                   ariaLabel="Основной период"
                   onChange={(value) => updatePeriod(periods[0].id, value)}
@@ -1437,50 +1542,34 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
               options={objectOptions}
               selected={selectedObjects}
               icon={<MapPinned size={16} />}
+              searchable
+              searchPlaceholder="Введите название объекта"
               onChange={setSelectedObjects}
             />
-            <AnimatePresence initial={false}>
-              {selectedObjects.length > 0 && (
-                <motion.div
-                  className="export-progressive-filter"
-                  initial={{ opacity: 0, y: -6, scale: 0.985 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -4, scale: 0.985 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <ExportMultiSelect
-                    label="Подрядчики"
-                    ariaLabel="Выбрать подрядчиков"
-                    placeholder="Все подрядчики"
-                    options={contractorOptions}
-                    selected={selectedContractors}
-                    icon={<Building2 size={16} />}
-                    onChange={setSelectedContractors}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <AnimatePresence initial={false}>
-              {selectedObjects.length > 0 && (
-                <motion.div
-                  className="export-progressive-filter"
-                  initial={{ opacity: 0, y: -6, scale: 0.985 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -4, scale: 0.985 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <ExportMultiSelect
-                    label="Сотрудники"
-                    ariaLabel="Выбрать сотрудников"
-                    placeholder="Все сотрудники"
-                    options={employeeOptions}
-                    selected={selectedEmployees}
-                    icon={<UserRound size={16} />}
-                    onChange={setSelectedEmployees}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <ExportMultiSelect
+              label="Подрядчики"
+              ariaLabel="Выбрать подрядчиков"
+              placeholder="Все подрядчики"
+              options={contractorOptions}
+              selected={selectedContractors}
+              icon={<Building2 size={16} />}
+              disabled={!selectedObjects.length}
+              searchable
+              searchPlaceholder="Введите подрядчика"
+              onChange={setSelectedContractors}
+            />
+            <ExportMultiSelect
+              label="Сотрудники"
+              ariaLabel="Выбрать сотрудников"
+              placeholder="Все сотрудники"
+              options={employeeOptions}
+              selected={selectedEmployees}
+              icon={<UserRound size={16} />}
+              disabled={!selectedObjects.length}
+              searchable
+              searchPlaceholder="Введите сотрудника"
+              onChange={setSelectedEmployees}
+            />
             <ExportMultiSelect
               label="Тип события"
               ariaLabel="Выбрать типы событий"
@@ -1492,34 +1581,25 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
             />
           </div>
 
-          <AnimatePresence initial={false}>
-            {selectedObjects.length > 0 && (
-              <motion.div
-                className="export-table-advanced-motion"
-                initial={{ opacity: 0, height: 0, overflow: "hidden" }}
-                animate={{ opacity: 1, height: "auto", overflow: "visible" }}
-                exit={{ opacity: 0, height: 0, overflow: "hidden" }}
-                transition={{
-                  height: { duration: 0.36, ease: [0.22, 1, 0.36, 1] },
-                  opacity: { duration: 0.22, ease: "easeOut" },
-                }}
-              >
-                <div className="export-table-advanced-panel">
-                  <div className="export-advanced-fields">
-                    <ExportMultiSelect
-                      label="Метка"
-                      ariaLabel="Выбрать метки"
-                      placeholder="Все метки"
-                      options={roomOptions}
-                      selected={selectedRooms}
-                      icon={<MapPinned size={16} />}
-                      onChange={setSelectedRooms}
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div className="export-table-advanced-motion">
+            <div className="export-table-advanced-panel">
+              <div className="export-advanced-fields">
+                <ExportMultiSelect
+                  label="Метка"
+                  ariaLabel="Выбрать метки"
+                  placeholder="Все метки"
+                  options={roomOptions}
+                  selected={selectedRooms}
+                  icon={<MapPinned size={16} />}
+                  disabled={!selectedObjects.length}
+                  searchable
+                  searchPlaceholder="Введите метку"
+                  compactOptions
+                  onChange={setSelectedRooms}
+                />
+              </div>
+            </div>
+          </div>
 
           <AnimatePresence initial={false}>
             {periods.length > 1 && (
@@ -1555,6 +1635,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
                           <DateRangePicker
                             from={period.from}
                             to={period.to}
+                            withTime={exportPeriodHasSingleDay(period)}
                             allowEmpty
                             ariaLabel={`Дополнительный период ${index + 1}`}
                             onChange={(value) => updatePeriod(period.id, value)}
@@ -1575,9 +1656,6 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
             )}
           </AnimatePresence>
 
-          {!periodsAreValid && (
-            <p className="export-table-filter-error" role="alert">В одном из периодов дата начала позже даты окончания.</p>
-          )}
         </div>
 
         <div className="op-table-scroll export-main-table-wrap">
