@@ -34,7 +34,6 @@ import {
   Search,
   Settings,
   SlidersHorizontal,
-  Tag,
   Trash2,
   Users,
   X,
@@ -75,6 +74,7 @@ import { ContractorPresenceMatrix } from "./ContractorPresenceMatrix";
 import { DataPagination, usePaginatedItems } from "./DataPagination";
 import { DateRangePicker } from "./DateRangePicker";
 import { TimePicker } from "./TimePicker";
+import { NfcTagIcon } from "./NfcTagIcon";
 import { OBJECT_CATALOG } from "./objectCatalog";
 import {
   Area,
@@ -1402,7 +1402,6 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("Все статусы");
   const [detail, setDetail] = useState<Employee | null>(null);
-  const [stickyDetailTitle, setStickyDetailTitle] = useState("");
   const [notice, setNotice] = useState("");
   const updateManagedObjects = (nextObjects: ObjectItem[]) => {
     const previousByName = new Map(
@@ -1436,7 +1435,6 @@ export default function App() {
   const navigate = (p: typeof page) => {
     setPage(p);
     setDetail(null);
-    setStickyDetailTitle("");
   };
   const toast = (m: string) => {
     setNotice(m);
@@ -1578,7 +1576,7 @@ export default function App() {
             {userRole === "ukp" && (
               <>
                 <Nav
-                  icon={<Tag size={19} />}
+                  icon={<NfcTagIcon size={22} />}
                   label="Метки"
                   active={page === "tags"}
                   compact={!sidebar}
@@ -1661,7 +1659,7 @@ export default function App() {
       <main
         className={`app-main min-h-screen transition-all duration-300 ${sidebar ? "ml-[268px]" : "ml-[82px]"}`}
       >
-        <header className={`app-header sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-[#e1e8f1] bg-white/90 px-10 backdrop-blur-xl ${page === "object" && selectedObjectInScope ? "has-object-breadcrumb" : stickyDetailTitle ? "has-detail-title" : ""}`}>
+        <header className={`app-header sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-[#e1e8f1] bg-white/90 px-10 backdrop-blur-xl ${(page === "object" && selectedObjectInScope) || (page === "contractor" && selectedContractorInScope) ? "has-object-breadcrumb" : ""}`}>
           <div className="app-header-title">
             {page === "object" && selectedObjectInScope ? (
               <nav className="app-header-object-breadcrumb" aria-label="Хлебные крошки">
@@ -1671,10 +1669,22 @@ export default function App() {
                 <span aria-hidden="true">/</span>
                 <span aria-current="page">{selectedObject.name}</span>
               </nav>
+            ) : page === "contractor" && selectedContractorInScope ? (
+              <nav className="app-header-object-breadcrumb is-contractor" aria-label="Хлебные крошки">
+                <button type="button" onClick={() => navigate("contractors")}>
+                  Подрядчики
+                </button>
+                <span aria-hidden="true">/</span>
+                <span aria-current="page">{selectedContractor}</span>
+              </nav>
+            ) : page === "objects" ? (
+              <strong>Объекты</strong>
+            ) : page === "contractors" ? (
+              <strong>Подрядчики</strong>
             ) : (
               <>
                 <small>{userRole === "ukp" ? "Все объекты" : "Объекты НСР"}</small>
-                <strong>{stickyDetailTitle || currentTitle}</strong>
+                <strong>{currentTitle}</strong>
               </>
             )}
           </div>
@@ -1765,8 +1775,6 @@ export default function App() {
                 status={status}
                 setStatus={setStatus}
                 open={setDetail}
-                goContractors={() => navigate("contractors")}
-                onStickyTitleChange={setStickyDetailTitle}
               />
             ) : page === "object" ? (
               <ObjectsPage
@@ -2022,8 +2030,6 @@ function EmployeesPage({
   status,
   setStatus,
   open,
-  goContractors,
-  onStickyTitleChange,
 }: {
   page: string;
   selected: string;
@@ -2034,11 +2040,8 @@ function EmployeesPage({
   status: string;
   setStatus: (x: string) => void;
   open: (x: Employee) => void;
-  goContractors: () => void;
-  onStickyTitleChange: (title: string) => void;
 }) {
   const all = page === "employees";
-  const titleRef = useRef<HTMLHeadingElement>(null);
   const [mode, setMode] = useState<"employees" | "history">("employees");
   const [department, setDepartment] = useState("");
   const [roleQuery, setRoleQuery] = useState("");
@@ -2046,6 +2049,10 @@ function EmployeesPage({
   const [employeeResetIconTurns, setEmployeeResetIconTurns] = useState(0);
   const [contractorContactsOpen, setContractorContactsOpen] = useState(false);
   const [historyView, setHistoryView] = useState<"employees" | "objects">("employees");
+  const contractorContactCount = useMemo(
+    () => getVisibleContractorContacts(selected, allowedObjectNames).length,
+    [allowedObjectNames, selected],
+  );
   const departmentOptions = useMemo(
     () =>
       Array.from(
@@ -2057,24 +2064,9 @@ function EmployeesPage({
       ).sort((first, second) => first.localeCompare(second, "ru-RU")),
     [selected],
   );
-  useEffect(() => setContractorContactsOpen(false), [all, selected]);
   useEffect(() => {
-    if (all) {
-      onStickyTitleChange("");
-      return;
-    }
-    const title = titleRef.current;
-    if (!title) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => onStickyTitleChange(entry.isIntersecting ? "" : selected),
-      { rootMargin: "-76px 0px 0px 0px", threshold: 0 },
-    );
-    observer.observe(title);
-    return () => {
-      observer.disconnect();
-      onStickyTitleChange("");
-    };
-  }, [all, onStickyTitleChange, selected]);
+    setContractorContactsOpen(false);
+  }, [all, selected]);
   const scopedPresenceRecords = useMemo(
     () =>
       objectsInitial
@@ -2123,26 +2115,55 @@ function EmployeesPage({
           </div>
         </div>
       ) : (
-        <>
-          <nav className="contractor-breadcrumb" aria-label="Хлебные крошки">
-            <button type="button" onClick={goContractors}>Подрядчики</button>
-            <span aria-hidden="true">/</span>
-            <span aria-current="page">{selected}</span>
-          </nav>
-          <div className="contractor-overview-panel">
-            <header className="contractor-detail-intro">
-              <span className="contractor-detail-kicker">Подрядная организация</span>
-              <h1 ref={titleRef}>{selected}</h1>
-              <p>{contractorDetails[selected].description}</p>
+        <section className="contractor-cover" aria-labelledby="contractor-cover-title">
+          <div className="contractor-cover__hero">
+            <header className="contractor-cover__identity">
+              <span className="contractor-cover__logo" aria-hidden="true">
+                {contractorLogos[selected] ? (
+                  <img src={contractorLogos[selected]} alt="" />
+                ) : (
+                  <Building2 size={30} />
+                )}
+              </span>
+              <div>
+                <h1 id="contractor-cover-title">{selected}</h1>
+                <p>{contractorDetails[selected].description}</p>
+              </div>
             </header>
-            <ContractorContacts
-              contractor={selected}
-              allowedObjectNames={allowedObjectNames}
-              onOpen={() => setContractorContactsOpen(true)}
-            />
-            <ContractorCompany contractor={selected} />
+
+            <div className="contractor-cover__quick-actions" aria-label="Данные подрядчика">
+              <section className="contractor-cover__company-facts" aria-label="Компания">
+                <header className="contractor-cover__company-title">
+                  <span>Компания</span>
+                </header>
+                <div className="contractor-cover__company-links">
+                  <a href={`mailto:${contractorDetails[selected].email}`} title={contractorDetails[selected].email}>
+                    <Mail size={13} aria-hidden="true" />
+                    <span>{contractorDetails[selected].email}</span>
+                  </a>
+                  <a href={`tel:${contractorDetails[selected].phone.replace(/[^+\d]/g, "")}`}>
+                    <Phone size={13} aria-hidden="true" />
+                    <span>{contractorDetails[selected].phone}</span>
+                  </a>
+                </div>
+              </section>
+              <button
+                type="button"
+                onClick={() => setContractorContactsOpen(true)}
+                disabled={!contractorContactCount}
+              >
+                <span className="contractor-cover__quick-icon" aria-hidden="true">
+                  <Contact size={15} />
+                </span>
+                <span>
+                  <small>Контактные лица</small>
+                  <strong>{contractorContactCount}</strong>
+                </span>
+                <ArrowUpRight size={14} aria-hidden="true" />
+              </button>
+            </div>
           </div>
-        </>
+        </section>
       )}
       {!all && (
         <div className="contractor-view-bar">
@@ -3061,15 +3082,8 @@ function ContractorsPage({
   );
   return (
     <section className="objects-page contractors-page px-10 py-8">
-      <h1 className="text-[34px] font-bold tracking-[-.025em]">Подрядчики</h1>
-      <div className="objects-table-card mt-7">
-        <div className="entity-list-header flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
-          <div>
-            <h2 className="text-[18px] font-semibold">Подрядные организации</h2>
-            <p className="mt-1 text-[13.5px] text-[#7788a1]">
-              Найдено: {filtered.length}
-            </p>
-          </div>
+      <div className="objects-table-card">
+        <div className="entity-list-header object-list-toolbar flex items-center border-b border-[#e6ebf2] px-6 py-5">
           <div className="relative">
             <Search
               className="objects-table-search-icon absolute left-3 top-1/2 -translate-y-1/2 text-[#8293ad]"
@@ -3085,6 +3099,9 @@ function ContractorsPage({
               className="objects-table-search h-9 rounded-lg border border-[#dce5ef] pl-9 pr-3 text-[13.5px] outline-none"
             />
           </div>
+          <p className="object-list-count text-[13.5px] text-[#7788a1]">
+            Найдено: {filtered.length}
+          </p>
         </div>
         <div className="objects-table-scroll">
           <div className="objects-table-columns contractors-table-columns" aria-hidden="true">
@@ -3173,15 +3190,8 @@ function ObjectsPage({
   }, [query, objects]);
   return (
     <section className="objects-page px-10 py-8">
-      <h1 className="text-[34px] font-bold tracking-[-.025em]">Объекты</h1>
-      <div className="objects-table-card mt-7">
-        <div className="entity-list-header flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
-          <div>
-            <h2 className="text-[18px] font-semibold">Все объекты</h2>
-            <p className="mt-1 text-[13.5px] text-[#7788a1]">
-              Найдено: {filtered.length}
-            </p>
-          </div>
+      <div className="objects-table-card">
+        <div className="entity-list-header object-list-toolbar flex items-center border-b border-[#e6ebf2] px-6 py-5">
           <div className="relative">
             <Search
               className="objects-table-search-icon absolute left-3 top-1/2 -translate-y-1/2 text-[#8293ad]"
@@ -3197,6 +3207,9 @@ function ObjectsPage({
               className="objects-table-search h-9 w-[270px] rounded-lg border border-[#dce5ef] pl-9 pr-3 text-[13.5px] outline-none"
             />
           </div>
+          <p className="object-list-count text-[13.5px] text-[#7788a1]">
+            Найдено: {filtered.length}
+          </p>
         </div>
         <div className="objects-table-scroll">
           <div className="objects-table-columns" aria-hidden="true">
@@ -3294,7 +3307,7 @@ function ObjectDetailPage({
             <div className="object-cover__quick-actions" aria-label="Данные объекта">
               <button type="button" onClick={() => setTagsOpen(true)}>
                 <span className="object-cover__quick-icon" aria-hidden="true">
-                  <Tag size={15} />
+                  <NfcTagIcon size={15} />
                 </span>
                 <span>
                   <small>Метки</small>
@@ -3414,7 +3427,7 @@ function ObjectTags({ object }: { object: ObjectItem }) {
   return (
     <section className="object-rooms-card" aria-label="Метки объекта">
       <div className="object-rooms-heading">
-        <Tag size={15} aria-hidden="true" />
+        <NfcTagIcon size={15} aria-hidden="true" />
         <h2>Метки</h2>
         <strong>{tags.length}</strong>
       </div>
@@ -3509,14 +3522,9 @@ function ObjectTagsModal({
         transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
       >
         <header className="object-tags-modal-head">
-          <div>
-            <span>Метки объекта</span>
-            <h2 id={titleId}>Все метки</h2>
-            <p>{object.name}</p>
-          </div>
-          <span className="object-tags-modal-count">
+          <h2 id={titleId}>
             {tags.length} {pluralizeRu(tags.length, "метка", "метки", "меток")}
-          </span>
+          </h2>
           <button
             type="button"
             className="object-tags-modal-close"
@@ -3546,7 +3554,7 @@ function ObjectTagsModal({
             filteredTags.map((tag, index) => (
               <article key={`${object.code}-all-tags-${tag}-${index}`}>
                 <span className="object-tags-modal-icon" aria-hidden="true">
-                  <Tag size={16} />
+                  <NfcTagIcon size={16} />
                 </span>
                 <span className="object-tags-modal-copy">
                   <strong>{tag}</strong>
@@ -5414,7 +5422,7 @@ function TagsPage({
                 aria-pressed={view === "tags"}
                 onClick={() => setView("tags")}
               >
-                <Tag size={14} />
+                <NfcTagIcon size={14} />
                 Все метки
               </button>
               <button
@@ -5850,7 +5858,7 @@ function BusinessTagsManager({
               ))
             ) : (
               <div className="business-tag-manager-empty">
-                <Tag size={20} />
+                <NfcTagIcon size={20} />
                 <strong>
                   {tags.length ? "Метки не найдены" : "Здесь пока нет меток"}
                 </strong>

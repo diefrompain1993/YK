@@ -4,7 +4,6 @@ import {
   MapPin,
   RefreshCw,
   Search,
-  Tag,
   UserRound,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -16,6 +15,7 @@ import {
 import { DataPagination, usePaginatedItems } from "./DataPagination";
 import { DateRangePicker } from "./DateRangePicker";
 import { TimePicker } from "./TimePicker";
+import { NfcTagIcon } from "./NfcTagIcon";
 import "../styles/contractor-presence-matrix.css";
 
 type GroupMode = "employees" | "objects";
@@ -359,7 +359,7 @@ export function ContractorPresenceMatrix({
                       <td data-label="Объект и метка">
                         <span className="cpm__table-place">
                           <strong>{record.object}</strong>
-                          <small><Tag size={13} aria-hidden="true" />{roomForRecord(record)}</small>
+                          <small><NfcTagIcon size={13} aria-hidden="true" />{roomForRecord(record)}</small>
                         </span>
                       </td>
                       <td data-label="Дата и время">
@@ -423,7 +423,7 @@ export function ContractorPresenceMatrix({
                         </span>
                       </span>
                       <span className="cpm__object-room">
-                        <Tag size={14} aria-hidden="true" />
+                        <NfcTagIcon size={14} aria-hidden="true" />
                         {roomForRecord(record)}
                       </span>
                       <span className="cpm__object-time">

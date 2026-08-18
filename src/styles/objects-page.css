@@ -29,6 +29,18 @@
   font-size: 12px !important;
 }
 
+.objects-page .object-list-toolbar {
+  justify-content: flex-start;
+  gap: 14px;
+}
+
+.objects-page .object-list-toolbar .object-list-count {
+  margin: 0 !important;
+  color: #687b96;
+  font-weight: 620;
+  white-space: nowrap;
+}
+
 .objects-page .objects-table-search {
   width: 310px !important;
   height: 40px;
