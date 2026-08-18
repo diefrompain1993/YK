@@ -1661,10 +1661,22 @@ export default function App() {
       <main
         className={`app-main min-h-screen transition-all duration-300 ${sidebar ? "ml-[268px]" : "ml-[82px]"}`}
       >
-        <header className={`app-header sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-[#e1e8f1] bg-white/90 px-10 backdrop-blur-xl ${stickyDetailTitle ? "has-detail-title" : ""}`}>
+        <header className={`app-header sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-[#e1e8f1] bg-white/90 px-10 backdrop-blur-xl ${page === "object" && selectedObjectInScope ? "has-object-breadcrumb" : stickyDetailTitle ? "has-detail-title" : ""}`}>
           <div className="app-header-title">
-            <small>{userRole === "ukp" ? "Все объекты" : "Объекты НСР"}</small>
-            <strong>{stickyDetailTitle || currentTitle}</strong>
+            {page === "object" && selectedObjectInScope ? (
+              <nav className="app-header-object-breadcrumb" aria-label="Хлебные крошки">
+                <button type="button" onClick={() => navigate("objects")}>
+                  Объекты
+                </button>
+                <span aria-hidden="true">/</span>
+                <span aria-current="page">{selectedObject.name}</span>
+              </nav>
+            ) : (
+              <>
+                <small>{userRole === "ukp" ? "Все объекты" : "Объекты НСР"}</small>
+                <strong>{stickyDetailTitle || currentTitle}</strong>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -1728,8 +1740,6 @@ export default function App() {
                 object={selectedObject}
                 availableContractors={scopedContractors}
                 openEmployee={setDetail}
-                goObjects={() => navigate("objects")}
-                onStickyTitleChange={setStickyDetailTitle}
                 openContractor={(contractor) => {
                   setSelectedContractor(contractor);
                   navigate("contractor");
@@ -3245,25 +3255,15 @@ function ObjectDetailPage({
   object,
   availableContractors,
   openEmployee,
-  goObjects,
   openContractor,
-  onStickyTitleChange,
 }: {
   object: ObjectItem;
   availableContractors: string[];
   openEmployee: (employee: Employee) => void;
-  goObjects: () => void;
   openContractor: (contractor: string) => void;
-  onStickyTitleChange: (title: string) => void;
 }) {
-  const titleRef = useRef<HTMLHeadingElement>(null);
   const [contactsOpen, setContactsOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
-  const onSiteCount = useMemo(
-    () =>
-      getObjectPresenceRecords(object).filter((record) => !record.leftAt).length,
-    [object],
-  );
   const profile = useMemo(() => {
     const base = getObjectProfile(object);
     return {
@@ -3271,37 +3271,17 @@ function ObjectDetailPage({
       contractors: getObjectContractors(object, availableContractors),
     };
   }, [availableContractors, object]);
-  useEffect(() => {
-    const title = titleRef.current;
-    if (!title) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => onStickyTitleChange(entry.isIntersecting ? "" : object.name),
-      { rootMargin: "-76px 0px 0px 0px", threshold: 0 },
-    );
-    observer.observe(title);
-    return () => {
-      observer.disconnect();
-      onStickyTitleChange("");
-    };
-  }, [object.name, onStickyTitleChange]);
+  const contactCount = useMemo(() => getObjectContacts(object).length, [object]);
   useEffect(() => {
     setContactsOpen(false);
     setTagsOpen(false);
   }, [object.code]);
   return (
     <section className="object-detail-page">
-      <nav className="object-breadcrumb" aria-label="Хлебные крошки">
-        <button type="button" onClick={goObjects}>
-          Объекты
-        </button>
-        <span aria-hidden="true">/</span>
-        <span aria-current="page">{object.name}</span>
-      </nav>
-
       <section className="object-cover" aria-labelledby="object-cover-title">
         <div className="object-cover__hero">
           <header className="object-cover__identity object-detail-intro">
-            <h1 id="object-cover-title" ref={titleRef}>{object.name}</h1>
+            <h1 id="object-cover-title">{object.name}</h1>
             <div className="object-detail-meta">
               <span className="object-address">
                 <MapPin size={16} aria-hidden="true" />
@@ -3310,32 +3290,31 @@ function ObjectDetailPage({
             </div>
           </header>
 
-          <aside className="object-cover__presence" aria-label="Сейчас на объекте">
-            <span className="object-cover__presence-label">Сейчас на объекте</span>
-            <div className="object-cover__presence-row">
-              <strong>{onSiteCount}</strong>
-              <span>
-                {pluralizeRu(onSiteCount, "работник", "работника", "работников")}
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  document
-                    .querySelector(".object-presence-card")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                }
-              >
-                Список
+          <div className="object-cover__utility-stack">
+            <div className="object-cover__quick-actions" aria-label="Данные объекта">
+              <button type="button" onClick={() => setTagsOpen(true)}>
+                <span className="object-cover__quick-icon" aria-hidden="true">
+                  <Tag size={15} />
+                </span>
+                <span>
+                  <small>Метки</small>
+                  <strong>{profile.activeTags}</strong>
+                </span>
+                <ArrowUpRight size={14} aria-hidden="true" />
+              </button>
+              <button type="button" onClick={() => setContactsOpen(true)}>
+                <span className="object-cover__quick-icon" aria-hidden="true">
+                  <Contact size={15} />
+                </span>
+                <span>
+                  <small>Контакты</small>
+                  <strong>{contactCount}</strong>
+                </span>
+                <ArrowUpRight size={14} aria-hidden="true" />
               </button>
             </div>
-          </aside>
+          </div>
         </div>
-
-        <ObjectSectionTabs
-          objectCode={object.code}
-          onOpenTags={() => setTagsOpen(true)}
-          onOpenContacts={() => setContactsOpen(true)}
-        />
       </section>
 
       <div className="object-detail-primary">
@@ -3361,77 +3340,6 @@ function ObjectDetailPage({
         )}
       </AnimatePresence>
     </section>
-  );
-}
-
-function ObjectSectionTabs({
-  objectCode,
-  onOpenTags,
-  onOpenContacts,
-}: {
-  objectCode: string;
-  onOpenTags: () => void;
-  onOpenContacts: () => void;
-}) {
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "contractors" | "tags" | "contacts"
-  >("overview");
-
-  useEffect(() => setActiveTab("overview"), [objectCode]);
-
-  const selectTab = (
-    tab: "overview" | "contractors" | "tags" | "contacts",
-  ) => {
-    setActiveTab(tab);
-    if (tab === "contacts") {
-      onOpenContacts();
-      return;
-    }
-    if (tab === "tags") {
-      onOpenTags();
-      return;
-    }
-
-    const selector =
-      tab === "overview"
-        ? ".object-cover__hero"
-        : tab === "contractors"
-          ? ".object-contractors-card"
-          : null;
-    if (selector) {
-      document.querySelector(selector)?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }
-  };
-
-  return (
-    <nav
-      className="object-section-tabs"
-      role="tablist"
-      aria-label="Разделы объекта"
-    >
-      {[
-        ["overview", "Обзор"],
-        ["contractors", "Подрядчики"],
-        ["tags", "Метки"],
-        ["contacts", "Контакты"],
-      ].map(([tab, label]) => (
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === tab}
-          className={activeTab === tab ? "is-active" : ""}
-          key={tab}
-          onClick={() =>
-            selectTab(tab as "overview" | "contractors" | "tags" | "contacts")
-          }
-        >
-          {label}
-        </button>
-      ))}
-    </nav>
   );
 }
 
