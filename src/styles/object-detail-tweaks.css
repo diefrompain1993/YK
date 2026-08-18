@@ -1,0 +1,16 @@
+/* Small finishing adjustments for the restored object-detail cards. */
+.object-detail-page .object-traffic-section,
+.object-detail-page .object-traffic-section .contractor-chart-card {
+  border-radius: 16px !important;
+}
+
+.object-detail-page .object-traffic-section .analytics-heading {
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 15px 15px 0 0;
+  text-align: left;
+}
+
+.object-detail-page .object-traffic-section .analytics-heading > div:first-child {
+  width: auto;
+}

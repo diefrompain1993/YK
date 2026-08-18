@@ -30,7 +30,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { CustomSelect } from "./CustomSelect";
 import { DataPagination, usePaginatedItems } from "./DataPagination";
 import { DateRangePicker } from "./DateRangePicker";
+import { OBJECT_CATALOG } from "./objectCatalog";
 import "../styles/operations.css";
+
+const [PRIMARY_OBJECT, SECONDARY_OBJECT, THIRD_OBJECT, FOURTH_OBJECT] =
+  OBJECT_CATALOG.map((object) => object.name);
 
 export type PresenceRecord = {
   id: string;
@@ -63,7 +67,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Александр Петров",
     role: "Инженер ПТО",
     contractor: "ООО «Альфа Строй»",
-    object: "Логистический центр «Запад»",
+    object: PRIMARY_OBJECT,
     room: "Главный вход",
     enteredAt: "2026-08-12T07:48:00",
     leftAt: null,
@@ -73,7 +77,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Дмитрий Крылов",
     role: "Мастер участка",
     contractor: "ООО «ТехСервис»",
-    object: "Логистический центр «Запад»",
+    object: PRIMARY_OBJECT,
     room: "Склад А",
     enteredAt: "2026-08-12T08:12:00",
     leftAt: null,
@@ -83,7 +87,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Виктор Смирнов",
     role: "Руководитель проекта",
     contractor: "ООО «СтройГрупп»",
-    object: "Логистический центр «Запад»",
+    object: PRIMARY_OBJECT,
     room: "Зона погрузки",
     enteredAt: "2026-08-12T09:04:00",
     leftAt: null,
@@ -93,7 +97,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Илья Воронов",
     role: "Сервисный инженер",
     contractor: "ООО «ТехСервис»",
-    object: "БЦ «Орион»",
+    object: SECONDARY_OBJECT,
     room: "Кровля",
     enteredAt: "2026-08-12T08:31:00",
     leftAt: null,
@@ -103,7 +107,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Максим Волков",
     role: "Начальник участка",
     contractor: "ООО «МонтажПро»",
-    object: "Производственная площадка «Север»",
+    object: FOURTH_OBJECT,
     room: "Проходная № 2",
     enteredAt: "2026-08-12T07:55:00",
     leftAt: null,
@@ -113,7 +117,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Наталья Белова",
     role: "Инженер-сметчик",
     contractor: "ООО «МонтажПро»",
-    object: "Производственная площадка «Север»",
+    object: FOURTH_OBJECT,
     room: "Цех 1",
     enteredAt: "2026-08-12T08:18:00",
     leftAt: null,
@@ -123,7 +127,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Антон Зуев",
     role: "Прораб",
     contractor: "ООО «СтройГрупп»",
-    object: "Производственная площадка «Север»",
+    object: FOURTH_OBJECT,
     room: "Цех 3",
     enteredAt: "2026-08-12T08:26:00",
     leftAt: null,
@@ -133,7 +137,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Сергей Иванов",
     role: "Прораб",
     contractor: "ООО «Альфа Строй»",
-    object: "Логистический центр «Запад»",
+    object: PRIMARY_OBJECT,
     room: "Техническая",
     enteredAt: "2026-08-11T08:04:00",
     leftAt: "2026-08-11T18:21:00",
@@ -143,7 +147,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Елена Соколова",
     role: "Специалист по ОТ",
     contractor: "ООО «Альфа Строй»",
-    object: "Склад № 3",
+    object: THIRD_OBJECT,
     room: "Рампа",
     enteredAt: "2026-08-11T08:19:00",
     leftAt: "2026-08-11T17:49:00",
@@ -153,7 +157,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Ольга Лебедева",
     role: "Инженер по качеству",
     contractor: "ООО «ТехСервис»",
-    object: "БЦ «Орион»",
+    object: SECONDARY_OBJECT,
     room: "Паркинг",
     enteredAt: "2026-08-10T09:11:00",
     leftAt: "2026-08-10T16:14:00",
@@ -163,7 +167,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Роман Тихонов",
     role: "Монтажник",
     contractor: "ООО «МонтажПро»",
-    object: "Производственная площадка «Север»",
+    object: FOURTH_OBJECT,
     room: "Цех 3",
     enteredAt: "2026-08-10T07:58:00",
     leftAt: "2026-08-10T18:08:00",
@@ -173,7 +177,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Марина Орлова",
     role: "Электромонтажник",
     contractor: "ООО «Альфа Строй»",
-    object: "Склад № 3",
+    object: THIRD_OBJECT,
     room: "Рампа",
     enteredAt: "2026-08-09T08:22:00",
     leftAt: "2026-08-09T17:36:00",
@@ -183,7 +187,7 @@ export const PRESENCE_RECORDS: PresenceRecord[] = [
     employee: "Ксения Фролова",
     role: "Специалист по ОТ",
     contractor: "ООО «СтройГрупп»",
-    object: "Логистический центр «Запад»",
+    object: PRIMARY_OBJECT,
     room: "Главный вход",
     enteredAt: "2026-08-08T07:58:00",
     leftAt: "2026-08-08T17:38:00",
@@ -199,7 +203,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     employee: "Александр Петров",
     role: "Инженер ПТО",
     contractor: "ООО «Альфа Строй»",
-    object: "Логистический центр «Запад»",
+    object: PRIMARY_OBJECT,
     details: "Отчёт за смену",
   },
   {
@@ -210,7 +214,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     employee: "Дмитрий Крылов",
     role: "Мастер участка",
     contractor: "ООО «ТехСервис»",
-    object: "Логистический центр «Запад»",
+    object: PRIMARY_OBJECT,
     details: "Проверка оборудования",
   },
   {
@@ -221,7 +225,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     employee: "Максим Волков",
     role: "Начальник участка",
     contractor: "ООО «МонтажПро»",
-    object: "Производственная площадка «Север»",
+    object: FOURTH_OBJECT,
     details: "Отчёт о выполненных работах",
   },
   {
@@ -232,7 +236,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     employee: "Ксения Фролова",
     role: "Специалист по ОТ",
     contractor: "ООО «СтройГрупп»",
-    object: "Логистический центр «Запад»",
+    object: PRIMARY_OBJECT,
     details: "Проверка техники безопасности",
   },
   {
@@ -243,13 +247,13 @@ const REPORT_EVENTS: ExportEvent[] = [
     employee: "Ольга Лебедева",
     role: "Инженер по качеству",
     contractor: "ООО «ТехСервис»",
-    object: "БЦ «Орион»",
+    object: SECONDARY_OBJECT,
     details: "Проверка качества работ",
   },
 ];
 
 const OBJECT_ROOMS: Record<string, string[]> = {
-  "Логистический центр «Запад»": [
+  [PRIMARY_OBJECT]: [
     "Главный вход",
     "Склад А",
     "Склад Б",
@@ -266,7 +270,7 @@ const OBJECT_ROOMS: Record<string, string[]> = {
     "Парковка",
     "Резервный выход",
   ],
-  "БЦ «Орион»": [
+  [SECONDARY_OBJECT]: [
     "Холл",
     "Ресепшен",
     "Паркинг",
@@ -283,7 +287,7 @@ const OBJECT_ROOMS: Record<string, string[]> = {
     "Комната охраны",
     "Технический этаж",
   ],
-  "Склад № 3": [
+  [THIRD_OBJECT]: [
     "КПП",
     "Склад 1",
     "Склад 2",
@@ -300,7 +304,7 @@ const OBJECT_ROOMS: Record<string, string[]> = {
     "Архив",
     "Парковка",
   ],
-  "Производственная площадка «Север»": [
+  [FOURTH_OBJECT]: [
     "Проходная № 2",
     "Цех 1",
     "Цех 2",

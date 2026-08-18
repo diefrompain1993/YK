@@ -1,0 +1,9 @@
+/* Dashboard metric cards stay intentionally clean and decoration-free. */
+.metric-card::after {
+  display: none;
+}
+
+/* Assigned objects read cleanly without a repeated building glyph. */
+.tags-table .tag-business-cell:not(.is-unassigned) {
+  gap: 0;
+}

@@ -24,4 +24,10 @@
     text-align: center;
     white-space: nowrap;
   }
+
+  .page-stage table span.object-room-tag--table {
+    width: max-content !important;
+    min-width: 122px;
+    padding-inline: 14px !important;
+  }
 }

@@ -3,5 +3,10 @@
   import App from "./app/App.tsx";
   import "@fontsource-variable/manrope/wght.css";
   import "./styles/index.css";
+  import "./styles/object-cover.css";
+  import "./styles/sidebar-minimal.css";
+  import "./styles/object-detail-tweaks.css";
+  import "./styles/dashboard-tags-tweaks.css";
+  import "./styles/contractor-logos.css";
 
   createRoot(document.getElementById("root")!).render(<App />);

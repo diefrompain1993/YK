@@ -1,0 +1,92 @@
+/* A quieter desktop navigation treatment with one clear active marker. */
+@media (min-width: 701px) {
+  .app-sidebar .brand-lockup {
+    gap: 7px;
+    padding-inline: 6px;
+  }
+
+  .app-sidebar .brand-mark {
+    width: 32px !important;
+    height: 32px !important;
+    flex: 0 0 32px !important;
+    border-radius: 0 !important;
+  }
+
+  .app-sidebar .brand-mark img {
+    display: block;
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+  }
+
+  .app-sidebar nav button.app-nav-item {
+    position: relative;
+    height: 44px !important;
+    gap: 10px !important;
+    padding-inline: 12px !important;
+    overflow: visible;
+    border: 0 !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    color: #526580 !important;
+    box-shadow: none !important;
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+
+  .app-sidebar nav button.app-nav-item::after {
+    display: none !important;
+  }
+
+  .app-sidebar nav button.app-nav-item::before {
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: 0;
+    width: 3px;
+    border-radius: 0 4px 4px 0;
+    background: #3474eb;
+    content: "";
+    opacity: 0;
+    transform: scaleY(0.45);
+    transition: opacity 150ms ease, transform 150ms ease;
+  }
+
+  .app-sidebar nav button.app-nav-item:hover {
+    background: #f7f9fc !important;
+    color: #395373 !important;
+  }
+
+  .app-sidebar nav button.app-nav-item.is-active {
+    background: #edf3fd !important;
+    color: #245fc9 !important;
+  }
+
+  .app-sidebar nav button.app-nav-item.is-active::before {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+
+  .app-sidebar nav button.app-nav-item > .app-nav-icon {
+    width: 24px !important;
+    height: 24px !important;
+    flex: 0 0 24px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: #6c819f !important;
+    box-shadow: none !important;
+  }
+
+  .app-sidebar nav button.app-nav-item:hover > .app-nav-icon {
+    color: #5273a1 !important;
+  }
+
+  .app-sidebar nav button.app-nav-item.is-active > .app-nav-icon {
+    color: #3474eb !important;
+  }
+
+  .app-sidebar nav button.app-nav-item.is-compact {
+    justify-content: center;
+    padding-inline: 0 !important;
+  }
+}
