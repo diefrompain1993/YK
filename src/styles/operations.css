@@ -2933,7 +2933,8 @@
 }
 
 .export-table-advanced-panel .export-advanced-fields {
-  width: min(600px, 100%);
+  width: min(250px, 100%) !important;
+  grid-template-columns: minmax(0, 1fr) !important;
   gap: 14px;
   padding-top: 12px;
 }

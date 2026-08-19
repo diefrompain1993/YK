@@ -847,7 +847,6 @@ function ExportMultiSelect({
       >
         <span className="export-multiselect__icon" aria-hidden="true">{icon}</span>
         <span className={selected.length ? "has-value" : ""}>{triggerText}</span>
-        {selected.length > 0 && <strong>{selected.length}</strong>}
         <ChevronDown size={15} aria-hidden="true" />
       </button>
       {hint && <small className="export-field-hint">{hint}</small>}
@@ -1265,12 +1264,14 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
   const employeeOptions = useMemo(
     () => unique(
       scopedEvents
-        .filter((event) =>
-          !selectedObjects.length || selectedObjects.includes(event.object),
+        .filter(
+          (event) =>
+            selectedContractors.includes(event.contractor) &&
+            (!selectedObjects.length || selectedObjects.includes(event.object)),
         )
         .map((event) => event.employee),
     ),
-    [scopedEvents, selectedObjects],
+    [scopedEvents, selectedObjects, selectedContractors],
   );
   const roomOptions = useMemo(
     () => unique(
@@ -1303,8 +1304,6 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
 
   useEffect(() => {
     if (!selectedObjects.length) {
-      setSelectedContractors([]);
-      setSelectedEmployees([]);
       setSelectedRooms([]);
     }
   }, [selectedObjects]);
@@ -1565,7 +1564,6 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
               options={contractorOptions}
               selected={selectedContractors}
               icon={<Building2 size={16} />}
-              disabled={!selectedObjects.length}
               searchable
               searchPlaceholder="Введите подрядчика"
               onChange={setSelectedContractors}
@@ -1577,7 +1575,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
               options={employeeOptions}
               selected={selectedEmployees}
               icon={<UserRound size={16} />}
-              disabled={!selectedObjects.length}
+              disabled={!selectedContractors.length}
               searchable
               searchPlaceholder="Введите сотрудника"
               onChange={setSelectedEmployees}
