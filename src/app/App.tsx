@@ -13,7 +13,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import {
-  Bell,
   BriefcaseBusiness,
   Building2,
   ChevronDown,
@@ -1500,20 +1499,6 @@ export default function App() {
     (item) => item.code === selectedObject.code,
   );
   const selectedContractorInScope = scopedContractors.includes(selectedContractor);
-  const currentTitle =
-    page === "home"
-      ? "Главная"
-      : page === "journal"
-        ? "Журнал"
-      : page === "export"
-        ? "Экспорт"
-      : page === "objects" || page === "object"
-        ? "Объекты"
-      : page === "tags"
-        ? "Метки"
-        : page === "settings"
-          ? "Настройки"
-          : "Подрядчики";
   return (
     <div className="app-shell min-h-screen bg-[#f5f7fb] text-[#101b31]">
       <aside
@@ -1659,45 +1644,6 @@ export default function App() {
       <main
         className={`app-main min-h-screen transition-all duration-300 ${sidebar ? "ml-[268px]" : "ml-[82px]"}`}
       >
-        <header className={`app-header sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-[#e1e8f1] bg-white/90 px-10 backdrop-blur-xl ${(page === "object" && selectedObjectInScope) || (page === "contractor" && selectedContractorInScope) ? "has-object-breadcrumb" : ""}`}>
-          <div className="app-header-title">
-            {page === "object" && selectedObjectInScope ? (
-              <nav className="app-header-object-breadcrumb" aria-label="Хлебные крошки">
-                <button type="button" onClick={() => navigate("objects")}>
-                  Объекты
-                </button>
-                <span aria-hidden="true">/</span>
-                <span aria-current="page">{selectedObject.name}</span>
-              </nav>
-            ) : page === "contractor" && selectedContractorInScope ? (
-              <nav className="app-header-object-breadcrumb is-contractor" aria-label="Хлебные крошки">
-                <button type="button" onClick={() => navigate("contractors")}>
-                  Подрядчики
-                </button>
-                <span aria-hidden="true">/</span>
-                <span aria-current="page">{selectedContractor}</span>
-              </nav>
-            ) : page === "objects" ? (
-              <strong>Объекты</strong>
-            ) : page === "contractors" ? (
-              <strong>Подрядчики</strong>
-            ) : (
-              <>
-                <small>{userRole === "ukp" ? "Все объекты" : "Объекты НСР"}</small>
-                <strong>{currentTitle}</strong>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              aria-label="Уведомления"
-              className="notification-button relative grid size-10 place-items-center rounded-xl border border-[#e1e8f1] text-[#5e718e]"
-            >
-              <Bell size={18} />
-              <span className="absolute right-2 top-2 size-1.5 rounded-full bg-[#2563eb]" />
-            </button>
-          </div>
-        </header>
         <div className="page-stage">
             {page === "home" ? (
               <HomePage
@@ -1825,6 +1771,13 @@ function HomePage({
   objects: ObjectItem[];
   openObject: (object: ObjectItem) => void;
 }) {
+  const [currentDateTime, setCurrentDateTime] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentDateTime(new Date()), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const scopedObjectItems = objects;
   const objectNames = objects.map((item) => item.name);
   const scopedProfiles = scopedObjectItems.map(getObjectProfile);
@@ -1887,13 +1840,21 @@ function HomePage({
         </div>
         <div className="date-chip">
           <Clock3 size={16} />
-          <span>
+          <span className="date-chip__date">
             {new Intl.DateTimeFormat("ru-RU", {
               day: "numeric",
               month: "long",
               year: "numeric",
-            }).format(new Date())}
+              timeZone: "Europe/Moscow",
+            }).format(currentDateTime)}
           </span>
+          <time className="date-chip__time" dateTime={currentDateTime.toISOString()}>
+            {new Intl.DateTimeFormat("ru-RU", {
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: "Europe/Moscow",
+            }).format(currentDateTime)}
+          </time>
         </div>
       </div>
       <div className="metric-grid">
@@ -3523,7 +3484,13 @@ function ObjectTagsModal({
       >
         <header className="object-tags-modal-head">
           <h2 id={titleId}>
-            {tags.length} {pluralizeRu(tags.length, "метка", "метки", "меток")}
+            <span className="object-tags-modal-title-count">
+              {tags.length} {pluralizeRu(tags.length, "метка", "метки", "меток")}
+            </span>
+            <span className="object-tags-modal-title-separator" aria-hidden="true">•</span>
+            <span className="object-tags-modal-title-object" title={object.name}>
+              {object.name}
+            </span>
           </h2>
           <button
             type="button"
@@ -3553,12 +3520,9 @@ function ObjectTagsModal({
           {filteredTags.length ? (
             filteredTags.map((tag, index) => (
               <article key={`${object.code}-all-tags-${tag}-${index}`}>
-                <span className="object-tags-modal-icon" aria-hidden="true">
-                  <NfcTagIcon size={16} />
-                </span>
                 <span className="object-tags-modal-copy">
                   <strong>{tag}</strong>
-                  <small>{tag.startsWith("NFC-") ? "NFC-метка" : "Зона объекта"}</small>
+                  <small>{`ID: ${104 + index}`}</small>
                 </span>
                 <span className="object-tags-modal-status">
                   <i aria-hidden="true" />
@@ -5349,16 +5313,8 @@ function TagsPage({
     toast("Метка отвязана от объекта");
   };
   return (
-    <section className="px-10 py-8">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[34px] font-bold tracking-[-.025em]">Метки</h1>
-          <p className="mt-2 text-[16px] text-[#71819b]">
-            NFC-метки и их привязка к объектам
-          </p>
-        </div>
-      </div>
-      <div className="business-tags-toolbar mt-6 flex items-center gap-3 rounded-xl border border-[#dfe6ef] bg-white p-4">
+    <section className="tags-page px-10 py-8" aria-label="Метки">
+      <div className="business-tags-toolbar flex items-center gap-3 rounded-xl border border-[#dfe6ef] bg-white p-4">
         <div className="w-72">
           <Select
             value={business}

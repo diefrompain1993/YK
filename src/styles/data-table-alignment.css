@@ -1,0 +1,146 @@
+/*
+ * A shared desktop grid for operational data tables.
+ * The object and contractor catalogue screens intentionally use their own
+ * card-like grids and are not part of this alignment layer.
+ */
+@media (min-width: 901px) {
+  :is(
+      .employee-log-table,
+      .employee-table,
+      .object-presence-table-viewport > table,
+      .cpm__people-table,
+      .op-table,
+      .export-preview-table,
+      .aus-table
+    ) {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  :is(
+      .employee-log-table,
+      .employee-table,
+      .object-presence-table-viewport > table,
+      .cpm__people-table,
+      .op-table,
+      .export-preview-table,
+      .aus-table
+    ) :is(th, td) {
+    box-sizing: border-box;
+    vertical-align: middle;
+    text-align: center !important;
+  }
+
+  /* Long columns get room for readable text; compact values stay compact. */
+  .employee-log-table th:nth-child(1) { width: 14%; }
+  .employee-log-table th:nth-child(2) { width: 18%; }
+  .employee-log-table th:nth-child(3) { width: 12%; }
+  .employee-log-table th:nth-child(4) { width: 22%; }
+  .employee-log-table th:nth-child(5) { width: 22%; }
+  .employee-log-table th:nth-child(6) { width: 12%; }
+
+  .employee-table:not(:has(th:nth-child(6))) th:nth-child(1) { width: 20%; }
+  .employee-table:not(:has(th:nth-child(6))) th:nth-child(2) { width: 19%; }
+  .employee-table:not(:has(th:nth-child(6))) th:nth-child(3) { width: 22%; }
+  .employee-table:not(:has(th:nth-child(6))) th:nth-child(4) { width: 27%; }
+  .employee-table:not(:has(th:nth-child(6))) th:nth-child(5) { width: 12%; }
+
+  .employee-table:has(th:nth-child(6)) th:nth-child(1) { width: 18%; }
+  .employee-table:has(th:nth-child(6)) th:nth-child(2) { width: 15%; }
+  .employee-table:has(th:nth-child(6)) th:nth-child(3) { width: 15%; }
+  .employee-table:has(th:nth-child(6)) th:nth-child(4) { width: 18%; }
+  .employee-table:has(th:nth-child(6)) th:nth-child(5) { width: 24%; }
+  .employee-table:has(th:nth-child(6)) th:nth-child(6) { width: 10%; }
+
+  .object-presence-table-viewport > table th:nth-child(1) { width: 27%; }
+  .object-presence-table-viewport > table th:nth-child(2) { width: 25%; }
+  .object-presence-table-viewport > table th:nth-child(3) { width: 18%; }
+  .object-presence-table-viewport > table th:nth-child(4) { width: 15%; }
+  .object-presence-table-viewport > table th:nth-child(5) { width: 15%; }
+
+  .op-presence-table th:nth-child(1) { width: 18%; }
+  .op-presence-table th:nth-child(2) { width: 20%; }
+  .op-presence-table th:nth-child(3) { width: 12%; }
+  .op-presence-table th:nth-child(4) { width: 17%; }
+  .op-presence-table th:nth-child(5) { width: 11%; }
+  .op-presence-table th:nth-child(6) { width: 11%; }
+  .op-presence-table th:nth-child(7) { width: 11%; }
+
+  /* Centre compound cell content on the same axis as its column heading. */
+  :is(
+      .employee-log-table,
+      .employee-table,
+      .object-presence-table-viewport > table,
+      .cpm__people-table,
+      .op-table,
+      .export-preview-table,
+      .aus-table
+    ) td > :is(
+      .log-employee,
+      .log-object,
+      .log-details,
+      .log-event,
+      .log-status,
+      .object-room-tag,
+      .object-presence-datetime,
+      .on-site-badge,
+      .business-center-name,
+      .tag-business-cell,
+      .tag-name-cell,
+      .cpm__table-person,
+      .cpm__table-place,
+      .cpm__table-time,
+      .cpm__visit-status,
+      .op-person,
+      .op-cell-main,
+      .op-status,
+      .op-event-badge,
+      .aus-person,
+      .aus-long-value,
+      .aus-contact-line,
+      .aus-role-badge,
+      .aus-status
+    ) {
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  :is(
+      .employee-log-table,
+      .employee-table,
+      .object-presence-table-viewport > table,
+      .cpm__people-table,
+      .op-table,
+      .aus-table
+    ) td > :is(
+      .log-object,
+      .business-center-name,
+      .tag-business-cell,
+      .tag-name-cell,
+      .cpm__table-person,
+      .op-person,
+      .aus-person,
+      .aus-contact-line
+    ) {
+    justify-content: center;
+  }
+
+  .cpm__table-place,
+  .cpm__table-time,
+  .cpm__person-copy,
+  .op-person > span {
+    align-items: center;
+    text-align: center;
+  }
+
+  .aus-table .aus-edit-button {
+    margin-inline: auto;
+  }
+
+  .aus-table th:first-child,
+  .aus-table td:first-child,
+  .aus-table th:last-child,
+  .aus-table td:last-child {
+    padding-inline: 12px;
+  }
+}

@@ -8,5 +8,6 @@
   import "./styles/object-detail-tweaks.css";
   import "./styles/dashboard-tags-tweaks.css";
   import "./styles/contractor-logos.css";
+  import "./styles/data-table-alignment.css";
 
   createRoot(document.getElementById("root")!).render(<App />);

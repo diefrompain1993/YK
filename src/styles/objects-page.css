@@ -76,6 +76,40 @@
   overflow-x: auto;
 }
 
+@media (min-width: 701px) {
+  .objects-page {
+    display: flex;
+    height: calc(100dvh - 70px);
+    min-height: 520px;
+    flex-direction: column;
+  }
+
+  .objects-page .objects-table-card {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .objects-page .entity-list-header {
+    flex: 0 0 auto;
+  }
+
+  .objects-page .objects-table-scroll {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .objects-page .objects-table-columns {
+    position: sticky;
+    z-index: 3;
+    top: 0;
+  }
+}
+
 .objects-page .objects-table-columns,
 .objects-page .objects-table-row {
   display: grid;

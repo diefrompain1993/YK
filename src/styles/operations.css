@@ -120,6 +120,35 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.journal-filter-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) 42px;
+}
+
+.journal-reset-button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  align-self: end;
+  place-items: center;
+  border: 1px solid #cfd8e4;
+  border-radius: 10px;
+  background: #fff;
+  color: #26384f;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.journal-reset-button:hover {
+  border-color: #99a9bc;
+  background: #f3f5f8;
+  color: #101820;
+}
+
+.journal-reset-button:focus-visible {
+  outline: 2px solid #57697f;
+  outline-offset: 2px;
+}
+
 .op-field {
   display: flex;
   min-width: 0;
@@ -1719,6 +1748,7 @@
   display: grid;
   place-items: center;
   padding: 22px;
+  overscroll-behavior: contain;
 }
 
 .export-preview-backdrop {
@@ -3068,4 +3098,48 @@
 .export-primary-filter-grid .export-multiselect__trigger:disabled > svg,
 .export-table-advanced-panel .export-multiselect__trigger:disabled > svg {
   color: #a5afbc;
+}
+
+/* With the page title removed, the export workspace starts directly with its data card. */
+.export-workspace > .export-data-table-card {
+  margin-top: 0;
+}
+
+/* Journal table occupies the remaining viewport and scrolls independently on desktop. */
+@media (min-width: 721px) {
+  .page-stage > .journal-page {
+    display: flex;
+    height: 100dvh;
+    min-height: 620px;
+    flex-direction: column;
+  }
+
+  .journal-page .op-filter-card {
+    flex: 0 0 auto;
+  }
+
+  .journal-page .op-table-card {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .journal-page .op-table-scroll {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .journal-page .op-table thead {
+    position: sticky;
+    z-index: 3;
+    top: 0;
+  }
+
+  .journal-page .op-table-card > .data-pagination {
+    flex: 0 0 auto;
+  }
 }

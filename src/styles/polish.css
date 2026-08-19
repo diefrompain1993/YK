@@ -2546,6 +2546,14 @@ aside select:focus {
   box-shadow: var(--shadow-sm);
 }
 
+.date-chip__time {
+  padding-left: 9px;
+  border-left: 1px solid #dbe4ef;
+  color: #263b57;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
 .contractor-analytics {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(310px, 0.75fr);

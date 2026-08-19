@@ -90,3 +90,158 @@
     padding-inline: 0 !important;
   }
 }
+
+/* Headerless shell: user controls float above the workspace without occupying a full row. */
+.page-stage {
+  min-height: 100dvh;
+}
+
+.app-top-actions {
+  position: absolute;
+  z-index: 29;
+  top: 11px;
+  right: clamp(18px, 2.3vw, 38px);
+  display: flex;
+  height: 50px;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(216, 226, 238, 0.96);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 9px 26px rgba(28, 49, 82, 0.09);
+  backdrop-filter: blur(14px);
+}
+
+.app-top-action-button {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  outline: 0;
+  background: transparent;
+  color: #5f7390;
+  cursor: pointer;
+}
+
+.app-top-action-button:hover {
+  background: #f1f6fd;
+  color: #2864eb;
+  box-shadow: none;
+  transform: none;
+}
+
+.app-top-action-button:focus-visible {
+  outline: 3px solid rgba(40, 100, 235, 0.2);
+  outline-offset: 1px;
+}
+
+.app-top-profile {
+  display: grid;
+  min-width: 176px;
+  height: 40px;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 0 11px 0 6px;
+  border-right: 1px solid #e6ebf2;
+  border-left: 1px solid #e6ebf2;
+}
+
+.app-top-profile .profile-avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 10.5px;
+  box-shadow: 0 4px 12px rgba(22, 35, 59, 0.15);
+}
+
+.app-top-profile > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.app-top-profile strong,
+.app-top-profile small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-top-profile strong {
+  color: #20314a;
+  font-size: 12px;
+  font-weight: 690;
+  line-height: 1.25;
+}
+
+.app-top-profile small {
+  color: #7a8ba2;
+  font-size: 10.5px;
+  font-weight: 540;
+  line-height: 1.25;
+}
+
+.app-top-logout:hover {
+  background: #f5f7fa;
+  color: #26384f;
+}
+
+.app-sidebar-role-card {
+  padding: 11px;
+  border: 1px solid #e1e8f1;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #f8fbff, #f3f6fb);
+}
+
+.app-sidebar-role-card .role-preview > small {
+  margin: 0 2px -3px;
+}
+
+@media (min-width: 701px) {
+  .page-stage > .objects-page {
+    height: 100dvh;
+  }
+}
+
+@media (max-width: 700px) {
+  .app-top-actions {
+    top: 9px;
+    right: 12px;
+    height: 46px;
+    border-radius: 15px;
+  }
+
+  .app-top-action-button {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 10px;
+  }
+
+  .app-top-profile {
+    min-width: 0;
+    width: 42px;
+    height: 36px;
+    grid-template-columns: 30px;
+    padding: 0 6px;
+  }
+
+  .app-top-profile .profile-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+  }
+
+  .app-top-profile > span {
+    display: none;
+  }
+}

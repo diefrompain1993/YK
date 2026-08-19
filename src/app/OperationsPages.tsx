@@ -1028,6 +1028,17 @@ function ExportPreviewDialog({ events, criteria, onClose }: ExportPreviewDialogP
   useEffect(() => {
     const previousFocus =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const root = document.documentElement;
+    const body = document.body;
+    const previousRootOverflow = root.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyPaddingRight = body.style.paddingRight;
+    const previousBodyOverscroll = body.style.overscrollBehavior;
+    const scrollbarGap = Math.max(0, window.innerWidth - root.clientWidth);
+    root.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    if (scrollbarGap) body.style.paddingRight = `${scrollbarGap}px`;
     const handleKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -1058,6 +1069,10 @@ function ExportPreviewDialog({ events, criteria, onClose }: ExportPreviewDialogP
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("keydown", handleKeyDown);
+      root.style.overflow = previousRootOverflow;
+      body.style.overflow = previousBodyOverflow;
+      body.style.paddingRight = previousBodyPaddingRight;
+      body.style.overscrollBehavior = previousBodyOverscroll;
       window.requestAnimationFrame(() => previousFocus?.focus());
     };
   }, [onClose]);
@@ -1453,14 +1468,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
   }, [selectedExportReport]);
 
   return (
-    <section className="operations-page export-workspace" aria-labelledby="export-workspace-title">
-      <header className="operations-page__header export-workspace__header">
-        <div>
-          <h1 id="export-workspace-title">Экспорт данных</h1>
-          <p>Отфильтруйте таблицу, проверьте данные и выгрузите их в нужном формате.</p>
-        </div>
-      </header>
-
+    <section className="operations-page export-workspace" aria-label="Экспорт данных">
       <section className="export-data-table-card">
         <header className="export-data-table-card__header">
           <div className="export-data-table-title">
@@ -1870,22 +1878,37 @@ export function ExportPage({
   const selectedContractor = contractorOptions.includes(contractorFilter)
     ? contractorFilter
     : "";
-  const dateRangeIsValid = !dateFrom || !dateTo || dateFrom <= dateTo;
+  const dateFromDay = dateFrom.slice(0, 10);
+  const dateToDay = dateTo.slice(0, 10);
+  const journalHasSingleDay = Boolean(
+    dateFromDay && dateToDay && dateFromDay === dateToDay,
+  );
+  const dateFromBoundary = dateFrom
+    ? dateFrom.includes("T")
+      ? `${dateFrom}:00`
+      : `${dateFrom}T00:00:00`
+    : "";
+  const dateToBoundary = dateTo
+    ? dateTo.includes("T")
+      ? `${dateTo}:59`
+      : `${dateTo}T23:59:59`
+    : "";
+  const dateRangeIsValid =
+    !dateFromBoundary || !dateToBoundary || dateFromBoundary <= dateToBoundary;
 
   const visibleEvents = useMemo(() => {
     const search = normalize(query);
     if (!dateRangeIsValid) return [];
     return scopedEvents
       .filter((event) => {
-        const eventDate = event.occurredAt.slice(0, 10);
         const matchesSearch =
           !search ||
           normalize(
             `${event.employee} ${event.role} ${event.contractor} ${event.object} ${event.details}`,
           ).includes(search);
         return (
-          (!dateFrom || eventDate >= dateFrom) &&
-          (!dateTo || eventDate <= dateTo) &&
+          (!dateFromBoundary || event.occurredAt >= dateFromBoundary) &&
+          (!dateToBoundary || event.occurredAt <= dateToBoundary) &&
           (!selectedObject || event.object === selectedObject) &&
           (!selectedContractor || event.contractor === selectedContractor) &&
           (!typeFilter || event.type === typeFilter) &&
@@ -1895,8 +1918,8 @@ export function ExportPage({
       .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
   }, [
     dateRangeIsValid,
-    dateFrom,
-    dateTo,
+    dateFromBoundary,
+    dateToBoundary,
     scopedEvents,
     selectedContractor,
     selectedObject,
@@ -1907,11 +1930,6 @@ export function ExportPage({
   const filtersAreSet = Boolean(
     dateFrom || dateTo || selectedObject || selectedContractor || typeFilter || query,
   );
-  const exportPagination = usePaginatedItems(
-    visibleEvents,
-    [dateFrom, dateTo, selectedObject, selectedContractor, typeFilter, query].join("|"),
-  );
-
   const clearFilters = () => {
     setDateFrom("");
     setDateTo("");
@@ -1976,41 +1994,25 @@ export function ExportPage({
   }
 
   return (
-    <section className="operations-page" aria-labelledby="export-page-title">
-      <header className="operations-page__header">
-        <div>
-          <h1 id="export-page-title">{title}</h1>
-          <p>
-            {exportEnabled
-              ? "Выберите нужные события и скачайте таблицу в CSV."
-              : "Входы, выходы и отчёты сотрудников."}
-          </p>
-        </div>
-        {exportEnabled && (
-          <button
-            type="button"
-            className="op-primary-button op-primary-button--compact"
-            disabled={!visibleEvents.length}
-            onClick={downloadCsv}
-          >
-            <Download aria-hidden="true" size={17} />
-            Скачать CSV
-          </button>
-        )}
-      </header>
-
+    <section className="operations-page journal-page" aria-label={title}>
       <div className="op-filter-card">
-        <div className="op-filter-grid op-filter-grid--export">
+        <div className="op-filter-grid op-filter-grid--export journal-filter-grid">
           <div className="op-field op-field--date-range">
             <span>Дата или период</span>
             <DateRangePicker
               from={dateFrom}
               to={dateTo}
+              withTime={journalHasSingleDay}
               allowEmpty
               ariaLabel="Дата или период событий"
               onChange={(value) => {
-                setDateFrom(value.from);
-                setDateTo(value.to);
+                const nextFromDay = value.from.slice(0, 10);
+                const nextToDay = value.to.slice(0, 10);
+                const nextIsSingleDay = Boolean(
+                  nextFromDay && nextToDay && nextFromDay === nextToDay,
+                );
+                setDateFrom(nextIsSingleDay ? value.from : nextFromDay);
+                setDateTo(nextIsSingleDay ? value.to : nextToDay);
               }}
             />
           </div>
@@ -2053,28 +2055,26 @@ export function ExportPage({
               />
             </span>
           </label>
+          {filtersAreSet && (
+            <button
+              type="button"
+              className="journal-reset-button"
+              onClick={clearFilters}
+              aria-label="Сбросить все фильтры"
+              title="Сбросить все фильтры"
+            >
+              <RotateCcw aria-hidden="true" size={17} />
+            </button>
+          )}
         </div>
-        {filtersAreSet && (
-          <button type="button" className="op-reset-button" onClick={clearFilters}>
-            <RotateCcw aria-hidden="true" size={14} />
-            Сбросить фильтры
-          </button>
-        )}
         {!dateRangeIsValid && (
           <p className="op-filter-error" role="alert">
-            Дата «от» должна быть раньше даты «до».
+            Начало периода должно быть раньше окончания.
           </p>
         )}
       </div>
 
       <div className="op-table-card">
-        <div className="op-table-card__header">
-          <div>
-            <h2>События</h2>
-            <p>Найдено: {visibleEvents.length}</p>
-          </div>
-          <CalendarRange aria-hidden="true" size={20} />
-        </div>
         <div className="op-table-scroll">
           <table className="op-table op-export-table">
             <thead>
@@ -2088,7 +2088,7 @@ export function ExportPage({
               </tr>
             </thead>
             <tbody>
-              {exportPagination.pageItems.map((event) => (
+              {visibleEvents.map((event) => (
                 <tr
                   key={event.id}
                   className={
@@ -2158,13 +2158,6 @@ export function ExportPage({
             </div>
           )}
         </div>
-        <DataPagination
-          page={exportPagination.page}
-          pageCount={exportPagination.pageCount}
-          pageSize={exportPagination.pageSize}
-          totalItems={visibleEvents.length}
-          onPageChange={exportPagination.setPage}
-        />
       </div>
       <AnimatePresence>
         {selectedReport && (
