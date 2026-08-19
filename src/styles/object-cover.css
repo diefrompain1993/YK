@@ -506,7 +506,7 @@
   grid-template-columns: minmax(0, 1fr) 36px;
   align-items: center;
   gap: 14px;
-  padding: 20px 22px;
+  padding: 17px 20px;
   border-bottom: 1px solid #e3e9f1;
   background: #fff;
 }
@@ -529,10 +529,10 @@
   display: flex;
   min-width: 0;
   align-items: baseline;
-  gap: 9px;
+  gap: 8px;
   margin: 0;
   color: #101828;
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 720;
   line-height: 1.2;
   letter-spacing: -0.025em;
@@ -545,7 +545,7 @@
 
 .object-tags-modal-title-separator {
   color: #9aa9bd;
-  font-size: 17px;
+  font-size: 13px;
   font-weight: 650;
 }
 
@@ -553,6 +553,7 @@
   min-width: 0;
   overflow: hidden;
   color: #405570;
+  font-size: 16px;
   font-weight: 620;
   text-overflow: ellipsis;
   white-space: nowrap;

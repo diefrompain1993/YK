@@ -1819,6 +1819,7 @@ export function ExportPage({
   const [contractorFilter, setContractorFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState<"" | ExportEventType>("");
   const [query, setQuery] = useState("");
+  const [journalResetTurns, setJournalResetTurns] = useState(0);
   const [selectedReport, setSelectedReport] = useState<ExportEvent | null>(null);
   const reportDrawerRef = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -2055,11 +2056,21 @@ export function ExportPage({
           <button
             type="button"
             className="journal-reset-button"
-            onClick={clearFilters}
+            onClick={() => {
+              clearFilters();
+              setJournalResetTurns((turns) => turns + 1);
+            }}
             aria-label="Сбросить все фильтры"
             title="Сбросить все фильтры"
           >
-            <RotateCcw aria-hidden="true" size={17} />
+            <motion.span
+              initial={false}
+              animate={{ rotate: journalResetTurns * -360 }}
+              transition={{ duration: 0.7, ease: [0.18, 0.72, 0.22, 1] }}
+              aria-hidden="true"
+            >
+              <RefreshCw size={16} />
+            </motion.span>
           </button>
         </div>
         {!dateRangeIsValid && (

@@ -6184,3 +6184,33 @@ html.overlay-open::-webkit-scrollbar {
     width: 100%;
   }
 }
+
+/* Keep the Tags header readable: title, legend and controls may not squeeze each other. */
+@media (min-width: 921px) {
+  .tags-page .business-tags-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .tags-page .business-tags-heading {
+    display: flex;
+    width: auto;
+    min-width: 0;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .tags-page .business-tags-heading h2,
+  .tags-page .business-tags-legend,
+  .tags-page .tag-view-switcher > button {
+    white-space: nowrap;
+  }
+
+  .tags-page .business-tags-heading h2,
+  .tags-page .business-tags-legend,
+  .tags-page .tag-view-controls {
+    flex: 0 0 auto;
+  }
+}

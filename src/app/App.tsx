@@ -2609,13 +2609,9 @@ function ContractorContactsModal({
       >
         <header className="object-contacts-modal-head">
           <div>
-            <span>Контакты подрядчика</span>
-            <h2 id={titleId}>Контактные лица</h2>
+            <h2 id={titleId}>Контакты</h2>
             <p>{contractor}</p>
           </div>
-          <span className="object-contacts-modal-count">
-            {contacts.length} {pluralizeRu(contacts.length, "контакт", "контакта", "контактов")}
-          </span>
           <button
             type="button"
             className="object-contacts-modal-close"
@@ -2627,10 +2623,9 @@ function ContractorContactsModal({
           </button>
         </header>
         <div className="overlay-scroll-region object-contacts-modal-list">
-          {contacts.map(({ code, objectName, contact }) => (
+          {contacts.map(({ code, contact }) => (
             <article key={`${code}-${contact.phone}`}>
               <div className="object-contact-modal-person">
-                <span className="contractor-contact-modal-object">{objectName}</span>
                 <strong>{contact.name}</strong>
                 <small>{contact.role}</small>
               </div>
@@ -3688,13 +3683,9 @@ function ObjectContactsModal({
       >
         <header className="object-contacts-modal-head">
           <div>
-            <span>Контакты объекта</span>
-            <h2 id={titleId}>Контактные лица</h2>
+            <h2 id={titleId}>Контакты</h2>
             <p>{object.name}</p>
           </div>
-          <span className="object-contacts-modal-count">
-            {contacts.length} {pluralizeRu(contacts.length, "контакт", "контакта", "контактов")}
-          </span>
           <button
             type="button"
             className="object-contacts-modal-close"
@@ -5814,9 +5805,7 @@ function BusinessTagsManager({
                   <i className={`tag-color-dot ${toneFor(tag.type)}`} />
                   <div className="business-tag-manager-identity">
                     <strong>{tag.title || "Без названия"}</strong>
-                    <span>
-                      {tag.id} · <code>{tag.uid}</code>
-                    </span>
+                    <span>{tagNumericId(tag.id)}</span>
                   </div>
                   <span className={`tag-type-pill ${toneFor(tag.type)}`}>
                     {tag.type}
@@ -5998,6 +5987,11 @@ function contractorCountLabel(count: number) {
   return `${count} подрядчиков`;
 }
 
+function tagNumericId(tagId: string) {
+  const serial = Number(tagId.replace(/\D/g, ""));
+  return `ID: ${Number.isFinite(serial) ? serial + 102 : tagId}`;
+}
+
 function TagsListTable({
   tags,
   edit,
@@ -6062,9 +6056,7 @@ function TagsListTable({
                   />
                   <span>
                     <strong>{tag.title || "Без названия"}</strong>
-                    <small>
-                      {tag.id} · <code>{tag.uid}</code>
-                    </small>
+                    <small>{tagNumericId(tag.id)}</small>
                   </span>
                 </div>
               </td>

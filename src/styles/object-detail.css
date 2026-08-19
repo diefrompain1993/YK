@@ -3542,7 +3542,7 @@
 
 .object-contacts-modal-head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 38px;
+  grid-template-columns: minmax(0, 1fr) 38px;
   align-items: center;
   gap: 12px;
   padding: 18px 20px;

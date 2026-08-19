@@ -1031,15 +1031,8 @@
   }
 }
 
-.contractor-contacts-modal .contractor-contact-modal-object {
-  overflow: hidden;
-  margin-bottom: 5px;
-  color: #5576a8;
-  font-size: 9.5px;
-  font-weight: 760;
-  letter-spacing: 0.025em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.contractor-contacts-modal .object-contacts-modal-head {
+  grid-template-columns: minmax(0, 1fr) 38px;
 }
 
 .contractor-contacts-modal .object-contact-modal-person strong {

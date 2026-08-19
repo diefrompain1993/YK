@@ -138,6 +138,11 @@
   transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
 }
 
+.journal-reset-button > span {
+  display: grid;
+  place-items: center;
+}
+
 .journal-reset-button:hover {
   border-color: #99a9bc;
   background: #f3f5f8;
@@ -1848,17 +1853,18 @@
 .export-preview-criteria {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  overflow: hidden;
-  gap: 1px;
+  overflow: visible;
+  gap: 6px;
   margin-bottom: 10px;
-  border: 1px solid #dce5ef;
-  border-radius: 11px;
-  background: #e6ebf2;
+  border: 0;
+  background: transparent;
 }
 
 .export-preview-criteria > span {
   min-width: 0;
   padding: 8px 10px;
+  border: 1px solid #dce5ef;
+  border-radius: 9px;
   background: #fff;
 }
 
@@ -2754,7 +2760,7 @@
 
 .export-primary-filter-grid .export-multiselect__trigger:has(> strong),
 .export-table-advanced-panel .export-multiselect__trigger:has(> strong) {
-  grid-template-columns: minmax(0, 1fr) auto 16px;
+  grid-template-columns: minmax(0, max-content) auto minmax(0, 1fr) 16px;
   column-gap: 4px;
   padding-right: 9px;
 }
@@ -2779,6 +2785,11 @@
 .export-table-advanced-panel .export-multiselect__trigger > svg {
   grid-column: -1;
   justify-self: end;
+}
+
+.export-primary-filter-grid .export-multiselect__trigger:has(> strong) > svg,
+.export-table-advanced-panel .export-multiselect__trigger:has(> strong) > svg {
+  grid-column: 4;
 }
 
 .export-primary-filter-grid .export-multiselect__icon,
