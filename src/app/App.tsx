@@ -664,6 +664,71 @@ const initialTags: TagItem[] = [
   },
 ];
 
+const managedTagNames = [
+  "Главный вход",
+  "Служебный вход",
+  "Ресепшен",
+  "Паркинг",
+  "Зона погрузки",
+  "Техническая зона",
+  "Склад",
+  "Щитовая",
+  "Комната охраны",
+  "Серверная",
+  "Архив",
+  "Переговорная",
+];
+
+function createInitialManagedTags(): ManagedTag[] {
+  let serial = 0;
+  return objectsInitial.flatMap((object, objectIndex) =>
+    Array.from({ length: objectIndex % 2 === 0 ? 2 : 1 }, (_, localIndex) => {
+      serial += 1;
+      const type: TagType = serial % 7 === 0
+        ? "Не выбран"
+        : serial % 4 === 0
+          ? "Журнал"
+          : "Посещение";
+      const linkedContractors = Array.from(new Set([
+        ...getObjectContractors(object),
+        ...contractors.map(
+          (_, contractorIndex) =>
+            contractors[(objectIndex + contractorIndex) % contractors.length],
+        ),
+      ]));
+      const linkedContractorCount = serial % 17 === 0
+        ? 6
+        : serial % 5 === 0
+          ? 3
+          : serial % 3 === 0
+            ? 2
+            : 1;
+      const uidParts = [
+        4,
+        (47 + serial * 17) % 256,
+        (91 + serial * 29) % 256,
+        (133 + serial * 37) % 256,
+      ].map((value) => value.toString(16).padStart(2, "0").toUpperCase());
+
+      return {
+        id: `NFC-${String(serial).padStart(3, "0")}`,
+        uid: uidParts.join(":"),
+        color:
+          type === "Посещение"
+            ? "bg-blue-500"
+            : type === "Журнал"
+              ? "bg-orange-500"
+              : "bg-slate-400",
+        business: object.name,
+        title: managedTagNames[(objectIndex * 2 + localIndex) % managedTagNames.length],
+        type,
+        contractors: linkedContractors.slice(0, linkedContractorCount),
+        active: serial % 11 !== 0,
+      };
+    }),
+  );
+}
+
 type LogRecord = {
   id: string;
   date: string;
@@ -4389,7 +4454,7 @@ function SettingsPage({
   const [chosen, setChosen] = useState<ObjectItem | null>(null);
   const [contractorModal, setContractorModal] = useState<string | null>(null);
   return (
-    <section className="px-10 py-8">
+    <section className="settings-page px-10 py-8">
       <h1 className="text-[34px] font-bold tracking-[-.025em]">Настройки</h1>
       <div className="settings-tabs mt-7 flex w-fit rounded-xl border border-[#dce5ef] bg-white p-1">
         <button
@@ -4419,7 +4484,7 @@ function SettingsPage({
           onUsersChange={onUsersChange}
         />
       ) : tab === "objects" ? (
-        <div className="mt-5 overflow-hidden rounded-xl border border-[#dfe6ef] bg-white">
+        <div className="settings-entity-panel mt-5 overflow-hidden rounded-xl border border-[#dfe6ef] bg-white">
           <div className="flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
             <div>
               <h2 className="text-[18px] font-semibold">Объекты</h2>
@@ -4438,7 +4503,7 @@ function SettingsPage({
               Добавить объект
             </button>
           </div>
-          <div className="divide-y divide-[#e8edf4]">
+          <div className="settings-entity-list divide-y divide-[#e8edf4]">
             {objects.map((item) => (
               <div
                 key={item.code}
@@ -4455,7 +4520,7 @@ function SettingsPage({
                     setModal("edit");
                   }
                 }}
-                className="entity-click-row flex cursor-pointer items-center gap-4 px-6 py-4"
+                className="settings-entity-row entity-click-row flex cursor-pointer items-center gap-4 px-6 py-4"
               >
                 <div className="flex-1">
                   <p className="text-[15px] font-semibold">{item.name}</p>
@@ -4495,7 +4560,7 @@ function SettingsPage({
           </div>
         </div>
       ) : (
-        <div className="mt-5 overflow-hidden rounded-xl border border-[#dfe6ef] bg-white">
+        <div className="settings-entity-panel mt-5 overflow-hidden rounded-xl border border-[#dfe6ef] bg-white">
           <div className="flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
             <div>
               <h2 className="text-[18px] font-semibold">
@@ -4506,7 +4571,7 @@ function SettingsPage({
               </p>
             </div>
           </div>
-          <div className="divide-y divide-[#e8edf4]">
+          <div className="settings-entity-list divide-y divide-[#e8edf4]">
             {contractors.map((item, i) => {
               const logo = contractorLogos[item];
               return (
@@ -4521,7 +4586,7 @@ function SettingsPage({
                       setContractorModal(item);
                     }
                   }}
-                  className="entity-click-row flex cursor-pointer items-center gap-4 px-6 py-4"
+                  className="settings-entity-row entity-click-row flex cursor-pointer items-center gap-4 px-6 py-4"
                 >
                   <div className="grid size-10 place-items-center overflow-hidden rounded-xl border border-[#dbe4ef] bg-white p-1.5">
                     {logo ? (
@@ -5173,28 +5238,7 @@ function TagsPage({
 }: {
   toast: (m: string) => void;
 }) {
-  const [tags, setTags] = useState<ManagedTag[]>(() =>
-    initialTags.map((tag, index) => ({
-      ...tag,
-      business: objectsInitial[index % 2].name,
-      title: ["Архив", "Метка 1", "Метка 2", "Переговорная", "Склад"][
-        index
-      ],
-      type:
-        index === 1
-          ? "Журнал"
-          : index === 2
-            ? "Не выбран"
-            : "Посещение",
-      contractors:
-        index === 0
-          ? [contractors[0], contractors[1]]
-          : index === 1
-            ? [contractors[2]]
-            : [],
-      active: index !== 2,
-    })),
-  );
+  const [tags, setTags] = useState<ManagedTag[]>(createInitialManagedTags);
   const [editingTag, setEditingTag] = useState<ManagedTag | null>(null);
   const [view, setView] = useState<"tags" | "businesses">("tags");
   const [managingBusiness, setManagingBusiness] = useState<ObjectItem | null>(
@@ -5203,6 +5247,13 @@ function TagsPage({
   const [returnToBusiness, setReturnToBusiness] = useState<string | null>(null);
   const [business, setBusiness] = useState("Все объекты");
   const [query, setQuery] = useState("");
+  const [filterResetTurns, setFilterResetTurns] = useState(0);
+
+  const resetTagFilters = () => {
+    setBusiness("Все объекты");
+    setQuery("");
+    setFilterResetTurns((turns) => turns + 1);
+  };
 
   const visibleGroups = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -5247,10 +5298,6 @@ function TagsPage({
             .includes(normalized)),
     );
   }, [tags, business, query]);
-  const groupPagination = usePaginatedItems(
-    visibleGroups,
-    [view, business, query, visibleGroups.map((group) => group.object.code).join("|")].join("|"),
-  );
   const toneFor = (type: TagType) =>
     type === "Посещение"
       ? "is-visit"
@@ -5337,34 +5384,45 @@ function TagsPage({
             className="h-10 w-full rounded-lg border border-[#dce5f0] pl-9 pr-3 text-[13.5px] outline-none"
           />
         </div>
-        <div className="ml-auto flex items-center gap-4 text-[12.5px] text-[#71839e]">
-          <span className="flex items-center gap-1.5">
-            <i className="size-2.5 rounded-full bg-[#a5b1c2]" />
-            Тип не выбран
-          </span>
-          <span className="flex items-center gap-1.5">
-            <i className="size-2.5 rounded-full bg-[#2563eb]" />
-            Посещение
-          </span>
-          <span className="flex items-center gap-1.5">
-            <i className="size-2.5 rounded-full bg-[#e87918]" />
-            Журнал
-          </span>
-        </div>
+        <button
+          type="button"
+          className="business-tags-filter-reset"
+          onClick={resetTagFilters}
+          aria-label="Сбросить фильтры меток"
+          title="Сбросить фильтры"
+        >
+          <motion.span
+            initial={false}
+            animate={{ rotate: filterResetTurns * -360 }}
+            transition={{ duration: 0.7, ease: [0.18, 0.72, 0.22, 1] }}
+            aria-hidden="true"
+          >
+            <RefreshCw size={16} />
+          </motion.span>
+        </button>
       </div>
       <div
         className={`business-tags-workspace mt-5 overflow-visible rounded-xl border border-[#dfe6ef] bg-white ${view === "tags" ? "is-tags" : "is-businesses"}`}
       >
         <div className="business-tags-header flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
-          <div>
+          <div className="business-tags-heading">
             <h2 className="text-[18px] font-semibold">
               {view === "tags" ? "Все метки" : "Связь с объектами"}
             </h2>
-            {view === "businesses" && (
-              <p className="mt-1 text-[13.5px] text-[#7788a1]">
-                Выберите объект, чтобы посмотреть или изменить связанные метки
-              </p>
-            )}
+            <div className="business-tags-legend" aria-label="Типы меток">
+              <span>
+                <i className="bg-[#a5b1c2]" />
+                Тип не выбран
+              </span>
+              <span>
+                <i className="bg-[#2563eb]" />
+                Посещение
+              </span>
+              <span>
+                <i className="bg-[#e87918]" />
+                Журнал
+              </span>
+            </div>
           </div>
           <div className="tag-view-controls">
             <div
@@ -5406,12 +5464,11 @@ function TagsPage({
               setEditingTag(tag);
             }}
             reset={() => {
-              setBusiness("Все объекты");
-              setQuery("");
+              resetTagFilters();
             }}
           />
         ) : (
-          <div className="table-pagination-shell">
+          <div className="tags-table-scroll">
           <table className="business-tags-table w-full text-left">
             <thead className="bg-[#f8fafc] text-[12.5px] uppercase tracking-[.06em] text-[#7485a0]">
               <tr>
@@ -5422,7 +5479,7 @@ function TagsPage({
             </thead>
             <tbody>
               {visibleGroups.length ? (
-                groupPagination.pageItems.map(({ object, tags: objectTags }) => {
+                visibleGroups.map(({ object, tags: objectTags }) => {
                   const isUnassigned = object.code === "NO-LINK";
                   const activeTags = objectTags.filter((tag) => tag.active);
                   return (
@@ -5534,13 +5591,6 @@ function TagsPage({
               )}
             </tbody>
           </table>
-          <DataPagination
-            page={groupPagination.page}
-            pageCount={groupPagination.pageCount}
-            pageSize={groupPagination.pageSize}
-            totalItems={visibleGroups.length}
-            onPageChange={groupPagination.setPage}
-          />
           </div>
         )}
       </div>
@@ -5844,6 +5894,110 @@ function BusinessTagsManager({
   );
 }
 
+function ContractorAvatarPreview({ items }: { items: string[] }) {
+  const overflowItems = items.slice(3);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+
+  useLayoutEffect(() => {
+    if (!tooltipOpen || !triggerRef.current) return;
+
+    const updatePosition = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const tooltipWidth = 250;
+      const estimatedHeight = 46 + overflowItems.length * 34;
+      const placeAbove = window.innerHeight - rect.bottom < estimatedHeight + 20;
+      setTooltipPosition({
+        left: Math.max(10, Math.min(rect.right - tooltipWidth, window.innerWidth - tooltipWidth - 10)),
+        top: placeAbove
+          ? Math.max(10, rect.top - estimatedHeight - 8)
+          : rect.bottom + 8,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [overflowItems.length, tooltipOpen]);
+
+  return (
+    <>
+      <span className="contractor-avatar-stack" aria-label={items.join(", ")}>
+        {items.slice(0, 3).map((contractor) => {
+          const logo = contractorLogos[contractor];
+          return (
+            <span
+              key={contractor}
+              className="contractor-company-avatar"
+              title={contractor}
+            >
+              {logo ? (
+                <img src={logo} alt="" aria-hidden="true" />
+              ) : (
+                contractor.replace("ООО ", "").slice(0, 1)
+              )}
+            </span>
+          );
+        })}
+        {overflowItems.length > 0 && (
+          <button
+            ref={triggerRef}
+            type="button"
+            className="contractor-avatar-overflow"
+            aria-label={`Показать ещё ${overflowItems.length} подрядчиков`}
+            onClick={(event) => event.stopPropagation()}
+            onMouseEnter={() => setTooltipOpen(true)}
+            onMouseLeave={() => setTooltipOpen(false)}
+            onFocus={() => setTooltipOpen(true)}
+            onBlur={() => setTooltipOpen(false)}
+          >
+            +{overflowItems.length}
+          </button>
+        )}
+      </span>
+      {tooltipOpen && overflowItems.length > 0 && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="contractor-avatar-tooltip"
+            role="tooltip"
+            style={{ top: tooltipPosition.top, left: tooltipPosition.left }}
+          >
+            <strong>Остальные подрядчики</strong>
+            <div>
+              {overflowItems.map((contractor) => {
+                const logo = contractorLogos[contractor];
+                return (
+                  <span key={contractor}>
+                    <i>
+                      {logo ? <img src={logo} alt="" aria-hidden="true" /> : contractor.slice(0, 1)}
+                    </i>
+                    {contractor}
+                  </span>
+                );
+              })}
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
+
+function contractorCountLabel(count: number) {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  if (lastTwo >= 11 && lastTwo <= 14) return `${count} подрядчиков`;
+  if (last === 1) return `${count} подрядчик`;
+  if (last >= 2 && last <= 4) return `${count} подрядчика`;
+  return `${count} подрядчиков`;
+}
+
 function TagsListTable({
   tags,
   edit,
@@ -5853,7 +6007,6 @@ function TagsListTable({
   edit: (tag: ManagedTag) => void;
   reset: () => void;
 }) {
-  const pagination = usePaginatedItems(tags, tags.map((tag) => tag.id).join("|"));
   const colorFor = (type: TagType) =>
     type === "Посещение"
       ? "bg-[#2563eb]"
@@ -5861,7 +6014,7 @@ function TagsListTable({
         ? "bg-[#e87918]"
         : "bg-[#a5b1c2]";
   return (
-    <div className="table-pagination-shell">
+    <div className="tags-table-scroll">
     <table className="tags-table responsive-table w-full text-left">
       <thead className="bg-[#f8fafc] text-[12.5px] uppercase tracking-[.06em] text-[#7485a0]">
         <tr>
@@ -5874,7 +6027,7 @@ function TagsListTable({
       </thead>
       <tbody>
         {tags.length ? (
-          pagination.pageItems.map((tag) => (
+          tags.map((tag) => (
             <tr
               key={tag.id}
               role="button"
@@ -5905,7 +6058,7 @@ function TagsListTable({
               <td data-label="Название" className="px-3">
                 <div className="tag-name-cell">
                   <span
-                    className={`tag-name-color ${colorFor(tag.type)}`}
+                    className={`tag-name-color tag-table-pulse-dot ${colorFor(tag.type)}`}
                   />
                   <span>
                     <strong>{tag.title || "Без названия"}</strong>
@@ -5924,31 +6077,11 @@ function TagsListTable({
                 <div className="flex min-h-9 items-center gap-2">
                   {tag.contractors.length ? (
                     <>
-                      <span
-                        className="contractor-avatar-stack"
-                        aria-label={tag.contractors.join(", ")}
-                      >
-                        {tag.contractors.slice(0, 3).map((contractor) => {
-                          const logo = contractorLogos[contractor];
-                          return (
-                            <span
-                              key={contractor}
-                              className="contractor-company-avatar"
-                              title={contractor}
-                            >
-                              {logo ? (
-                                <img src={logo} alt="" aria-hidden="true" />
-                              ) : (
-                                contractor.replace("ООО ", "").slice(0, 1)
-                              )}
-                            </span>
-                          );
-                        })}
-                      </span>
+                      <ContractorAvatarPreview items={tag.contractors} />
                       <span className="max-w-[130px] truncate text-[12.5px] font-medium text-[#425a78]">
                         {tag.contractors.length === 1
                           ? tag.contractors[0].replace("ООО ", "")
-                          : `${tag.contractors.length} подрядчика`}
+                          : contractorCountLabel(tag.contractors.length)}
                       </span>
                     </>
                   ) : (
@@ -5984,13 +6117,6 @@ function TagsListTable({
         )}
       </tbody>
     </table>
-    <DataPagination
-      page={pagination.page}
-      pageCount={pagination.pageCount}
-      pageSize={pagination.pageSize}
-      totalItems={tags.length}
-      onPageChange={pagination.setPage}
-    />
     </div>
   );
 }
@@ -6129,7 +6255,7 @@ function LegacyTagsPage({ toast }: { toast: (m: string) => void }) {
                   <td data-label="Метка" className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <span
-                        className={`size-3 rounded-full ring-4 ${tag.type === "Посещение" ? "ring-blue-50" : tag.type === "Журнал" ? "ring-orange-50" : "ring-slate-100"} ${colorFor(tag.type)}`}
+                        className={`tag-table-pulse-dot size-3 rounded-full ring-4 ${tag.type === "Посещение" ? "ring-blue-50" : tag.type === "Журнал" ? "ring-orange-50" : "ring-slate-100"} ${colorFor(tag.type)}`}
                       />
                       <div>
                         <p className="text-[13.5px] font-semibold">{tag.id}</p>
@@ -6171,7 +6297,7 @@ function LegacyTagsPage({ toast }: { toast: (m: string) => void }) {
                           <span className="max-w-[130px] truncate text-[12.5px] font-medium text-[#425a78]">
                             {tag.contractors.length === 1
                               ? tag.contractors[0].replace("ООО ", "")
-                              : `${tag.contractors.length} подрядчика`}
+                              : contractorCountLabel(tag.contractors.length)}
                           </span>
                         </>
                       ) : (

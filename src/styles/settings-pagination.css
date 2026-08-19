@@ -1,0 +1,70 @@
+/* Settings directories use the remaining viewport and scroll like Journal. */
+@media (min-width: 721px) {
+  .page-stage > .settings-page {
+    display: flex;
+    height: 100dvh;
+    min-height: 620px;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .settings-page > h1,
+  .settings-page > .settings-tabs {
+    flex: 0 0 auto;
+  }
+
+  .settings-page .settings-entity-panel {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .settings-page .settings-entity-list {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    background: #fff;
+  }
+
+  .settings-page .settings-entity-row {
+    box-sizing: border-box;
+    min-height: 76px;
+  }
+
+  .settings-page .aus-settings {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .settings-page .aus-panel {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .settings-page .aus-panel-head {
+    flex: 0 0 auto;
+  }
+
+  .settings-page .aus-table-wrap--settings-scroll {
+    height: auto;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    background: #fff;
+  }
+
+  .settings-page .aus-table thead {
+    position: sticky;
+    z-index: 3;
+    top: 0;
+  }
+}

@@ -1927,9 +1927,6 @@ export function ExportPage({
     typeFilter,
   ]);
 
-  const filtersAreSet = Boolean(
-    dateFrom || dateTo || selectedObject || selectedContractor || typeFilter || query,
-  );
   const clearFilters = () => {
     setDateFrom("");
     setDateTo("");
@@ -2055,17 +2052,15 @@ export function ExportPage({
               />
             </span>
           </label>
-          {filtersAreSet && (
-            <button
-              type="button"
-              className="journal-reset-button"
-              onClick={clearFilters}
-              aria-label="Сбросить все фильтры"
-              title="Сбросить все фильтры"
-            >
-              <RotateCcw aria-hidden="true" size={17} />
-            </button>
-          )}
+          <button
+            type="button"
+            className="journal-reset-button"
+            onClick={clearFilters}
+            aria-label="Сбросить все фильтры"
+            title="Сбросить все фильтры"
+          >
+            <RotateCcw aria-hidden="true" size={17} />
+          </button>
         </div>
         {!dateRangeIsValid && (
           <p className="op-filter-error" role="alert">

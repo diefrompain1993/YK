@@ -1,0 +1,45 @@
+/* The Tags workspace follows the same viewport-sized table pattern as Journal. */
+@media (min-width: 901px) {
+  .page-stage > .tags-page {
+    display: flex;
+    height: 100dvh;
+    min-height: 620px;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .tags-page > .business-tags-toolbar {
+    flex: 0 0 auto;
+  }
+
+  .tags-page > .business-tags-workspace {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden !important;
+  }
+
+  .tags-page .business-tags-header {
+    flex: 0 0 auto;
+  }
+
+  .tags-page .tags-table-scroll {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    background: #fff;
+  }
+
+  .tags-page .tags-table-scroll > table {
+    width: 100%;
+  }
+
+  .tags-page .tags-table-scroll thead {
+    position: sticky;
+    z-index: 4;
+    top: 0;
+  }
+}

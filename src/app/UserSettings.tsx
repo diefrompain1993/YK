@@ -19,8 +19,6 @@ import {
   type KeyboardEvent,
   type MouseEvent,
 } from "react";
-import { DataPagination, usePaginatedItems } from "./DataPagination";
-
 import "../styles/user-settings.css";
 
 export type AdminAccessRole = "УКП" | "НСР";
@@ -144,8 +142,6 @@ export function AdminUsersSettings({
   const drawerTitleId = useId();
   const drawerRef = useRef<HTMLElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
-  const pagination = usePaginatedItems(users, users.map((user) => user.id).join("|"));
-
   useEffect(() => {
     if (!draft) return;
 
@@ -296,7 +292,7 @@ export function AdminUsersSettings({
           </button>
         </div>
 
-        <div className="aus-table-wrap">
+        <div className="aus-table-wrap aus-table-wrap--settings-scroll">
           <table className="aus-table">
             <thead>
               <tr>
@@ -310,7 +306,7 @@ export function AdminUsersSettings({
               </tr>
             </thead>
             <tbody>
-              {pagination.pageItems.map((user) => {
+              {users.map((user) => {
                 const assignedObjects = user.objects.filter((name) =>
                   objects.includes(name),
                 );
@@ -394,13 +390,6 @@ export function AdminUsersSettings({
             </tbody>
           </table>
         </div>
-        <DataPagination
-          page={pagination.page}
-          pageCount={pagination.pageCount}
-          pageSize={pagination.pageSize}
-          totalItems={users.length}
-          onPageChange={pagination.setPage}
-        />
       </div>
 
       {draft && (

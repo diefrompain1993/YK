@@ -9,5 +9,7 @@
   import "./styles/dashboard-tags-tweaks.css";
   import "./styles/contractor-logos.css";
   import "./styles/data-table-alignment.css";
+  import "./styles/settings-pagination.css";
+  import "./styles/tags-adaptive.css";
 
   createRoot(document.getElementById("root")!).render(<App />);

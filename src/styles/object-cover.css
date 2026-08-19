@@ -1034,6 +1034,32 @@
   box-shadow: 0 0 0 3px rgba(47, 181, 142, 0.11);
 }
 
+.object-tags-modal-status i {
+  transform-origin: center;
+  animation: object-tag-active-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes object-tag-active-breathe {
+  0%,
+  100% {
+    opacity: 0.88;
+    box-shadow: 0 0 0 3px rgba(47, 181, 142, 0.09);
+    transform: scale(0.96);
+  }
+
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 0 5px rgba(47, 181, 142, 0.15);
+    transform: scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .object-tags-modal-status i {
+    animation: none;
+  }
+}
+
 .object-tags-modal-list {
   display: grid;
   min-height: 180px;
