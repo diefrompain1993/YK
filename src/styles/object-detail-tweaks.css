@@ -25,6 +25,14 @@
   background: #fff;
 }
 
+.object-detail-page .object-presence-card .responsive-table tbody td {
+  border-bottom: 1px solid #d9e1eb;
+}
+
+.object-detail-page .object-presence-card .responsive-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 .contractor-detail-page table tbody tr:nth-child(even) {
   background: #fff;
 }

@@ -144,3 +144,43 @@
     padding-inline: 12px;
   }
 }
+
+/* Export rows stay white and are separated by neutral rules instead of striping. */
+@media (min-width: 701px) {
+  .export-workspace .op-export-table tbody tr,
+  .export-workspace .op-export-table tbody tr:nth-child(even),
+  .export-preview-table tbody tr,
+  .export-preview-table tbody tr:nth-child(even) {
+    background: #fff !important;
+  }
+
+  .export-workspace .op-export-table tbody td,
+  .export-preview-table tbody td {
+    border-top: 0 !important;
+    border-bottom: 1px solid #dfe5ed !important;
+  }
+
+  .export-workspace .op-export-table tbody tr:last-child td,
+  .export-preview-table tbody tr:last-child td {
+    border-bottom: 0 !important;
+  }
+
+  /* Data tables use one white canvas; semantic and hover states remain untouched. */
+  .page-stage
+    table
+    tbody
+    tr:nth-child(even):not(:hover):not(:focus-visible):not([aria-selected="true"]):not(.is-selected):not(.is-active):not(.is-expanded):not(.is-unassigned) {
+    background: #fff !important;
+  }
+
+  /* Use the same visible separator throughout every data section. */
+  .page-stage table tbody tr:not(:last-child) > td {
+    border-top: 0 !important;
+    border-bottom: 1px solid #d9e1eb !important;
+  }
+
+  .page-stage table tbody tr:last-child > td {
+    border-top: 0 !important;
+    border-bottom: 0 !important;
+  }
+}

@@ -636,13 +636,13 @@ const contractorDetails: Record<string, ContractorDetails> = {
 };
 const UNASSIGNED_BUSINESS = "Без объекта";
 const tagBusinessGroups: ObjectItem[] = [
-  ...objectsInitial,
   {
     name: UNASSIGNED_BUSINESS,
     address: "Метки, которые ещё не назначены объекту",
     code: "NO-LINK",
     status: "Неактивен",
   },
+  ...objectsInitial,
 ];
 const initialTags: TagItem[] = [
   { id: "NFC-001", uid: "04:A7:2C:9F", color: "bg-blue-500" },
@@ -2438,33 +2438,91 @@ function getObjectPresenceRecords(object: ObjectItem): PresenceRecord[] {
     "Техническая зона",
     "Территория",
   ];
-  const generatedRecords = assignedContractors.flatMap((contractor, index) => {
-    const hasActiveWorker = existingRecords.some(
-      (record) => record.contractor === contractor && !record.leftAt,
-    );
-    if (hasActiveWorker) return [];
+  const employeesAlreadyOnSite = new Set(
+    PRESENCE_RECORDS.filter((record) => !record.leftAt).map(
+      (record) => record.employee,
+    ),
+  );
 
-    const contractorStaff = staff.filter(
-      (employee) => employee.contractor === contractor && employee.status === "Активен",
+  const generatedActiveRecords = assignedContractors.flatMap((contractor) => {
+    const eligibleObjects = objectsInitial.filter((candidate) =>
+      getObjectContractors(candidate).includes(contractor),
     );
-    const employee = contractorStaff[
-      (objectIndex + index) % Math.max(contractorStaff.length, 1)
-    ];
-    if (!employee) return [];
+    const activeStaff = staff.filter(
+      (employee) =>
+        employee.contractor === contractor &&
+        employee.status === "Активен" &&
+        !employeesAlreadyOnSite.has(employee.name),
+    );
 
-    return [{
-      id: `presence-${object.code}-${index + 1}`,
-      employee: employee.name,
-      role: employee.role,
-      contractor,
-      object: object.name,
-      room: fallbackRooms[(objectIndex + index) % fallbackRooms.length],
-      enteredAt: `2026-08-18T${String(8 + (objectIndex + index) % 3).padStart(2, "0")}:${String(5 + (objectIndex * 7 + index * 11) % 50).padStart(2, "0")}:00`,
-      leftAt: null,
-    } satisfies PresenceRecord];
+    return activeStaff.flatMap((employee, employeeIndex) => {
+      const globalEmployeeIndex = staff.findIndex(
+        (candidate) => candidate.email === employee.email,
+      );
+      const assignedObject = eligibleObjects[
+        (globalEmployeeIndex + employeeIndex) % Math.max(eligibleObjects.length, 1)
+      ];
+      if (assignedObject?.code !== object.code) return [];
+
+      return [{
+        id: `presence-active-${object.code}-${globalEmployeeIndex}`,
+        employee: employee.name,
+        role: employee.role,
+        contractor,
+        object: object.name,
+        room: fallbackRooms[(globalEmployeeIndex + objectIndex) % fallbackRooms.length],
+        enteredAt: `2026-08-18T${String(8 + globalEmployeeIndex % 3).padStart(2, "0")}:${String(7 + (objectIndex * 9 + globalEmployeeIndex * 5) % 48).padStart(2, "0")}:00`,
+        leftAt: null,
+      } satisfies PresenceRecord];
+    });
   });
 
-  return [...existingRecords, ...generatedRecords];
+  const targetVisitCount = 20 + ((objectIndex * 13 + 7) % 21);
+  const completedVisitCount = Math.max(
+    0,
+    targetVisitCount - existingRecords.length - generatedActiveRecords.length,
+  );
+  const generatedCompletedRecords = Array.from(
+    { length: completedVisitCount },
+    (_, visitIndex) => {
+      const contractor = assignedContractors[visitIndex % assignedContractors.length];
+      const contractorStaff = staff.filter(
+        (employee) => employee.contractor === contractor,
+      );
+      const employee = contractorStaff[
+        (objectIndex + visitIndex) % Math.max(contractorStaff.length, 1)
+      ] ?? staff[(objectIndex + visitIndex) % staff.length];
+      const baseActiveRecord = PRESENCE_RECORDS.find(
+        (record) => record.employee === employee.name && !record.leftAt,
+      );
+      const date = new Date(
+        Date.UTC(2026, 7, baseActiveRecord ? 10 : 17),
+      );
+      date.setUTCDate(date.getUTCDate() - ((visitIndex + objectIndex * 3) % 34));
+      const day = date.toISOString().slice(0, 10);
+      const entryHour = 7 + ((objectIndex + visitIndex) % 4);
+      const entryMinute = (11 + objectIndex * 7 + visitIndex * 13) % 50;
+      const exitHour = 16 + ((objectIndex + visitIndex) % 4);
+      const exitMinute = (5 + objectIndex * 5 + visitIndex * 9) % 50;
+
+      return {
+        id: `presence-history-${object.code}-${visitIndex + 1}`,
+        employee: employee.name,
+        role: employee.role,
+        contractor,
+        object: object.name,
+        room: fallbackRooms[(objectIndex + visitIndex) % fallbackRooms.length],
+        enteredAt: `${day}T${String(entryHour).padStart(2, "0")}:${String(entryMinute).padStart(2, "0")}:00`,
+        leftAt: `${day}T${String(exitHour).padStart(2, "0")}:${String(exitMinute).padStart(2, "0")}:00`,
+      } satisfies PresenceRecord;
+    },
+  );
+
+  return [
+    ...existingRecords,
+    ...generatedActiveRecords,
+    ...generatedCompletedRecords,
+  ];
 }
 
 function getObjectContacts(object: ObjectItem): ContactPerson[] {
@@ -4326,7 +4384,7 @@ function ObjectContractors({
       </div>
       <div className="object-contractor-columns" aria-hidden="true">
         <span />
-        <span>Подрядчик</span>
+        <span>Название</span>
         <span>На объекте</span>
         <span>Ответственный</span>
         <span>Контакт</span>
@@ -5237,11 +5295,13 @@ function TagsPage({
   );
   const [returnToBusiness, setReturnToBusiness] = useState<string | null>(null);
   const [business, setBusiness] = useState("Все объекты");
+  const [tagTypeFilter, setTagTypeFilter] = useState("Все типы");
   const [query, setQuery] = useState("");
   const [filterResetTurns, setFilterResetTurns] = useState(0);
 
   const resetTagFilters = () => {
     setBusiness("Все объекты");
+    setTagTypeFilter("Все типы");
     setQuery("");
     setFilterResetTurns((turns) => turns + 1);
   };
@@ -5254,14 +5314,18 @@ function TagsPage({
           business === "Все объекты" || object.name === business,
       )
       .map((object) => {
-        const objectTags = tags.filter((tag) => tag.business === object.name);
+        const objectTags = tags.filter(
+          (tag) =>
+            tag.business === object.name &&
+            (tagTypeFilter === "Все типы" || tag.type === tagTypeFilter),
+        );
         const businessMatches =
           !normalized ||
           `${object.name} ${object.address}`
             .toLowerCase()
             .includes(normalized);
         const hasTagMatch = objectTags.some((tag) =>
-          `${tag.id} ${tag.uid} ${tag.title} ${tag.type} ${tag.contractors.join(" ")}`
+          `${tag.id} ${tagNumericId(tag.id)} ${tag.uid} ${tag.title} ${tag.type} ${tag.contractors.join(" ")}`
             .toLowerCase()
             .includes(normalized),
         );
@@ -5271,8 +5335,12 @@ function TagsPage({
           matches: businessMatches || hasTagMatch,
         };
       })
-      .filter((group) => !normalized || group.matches);
-  }, [tags, business, query]);
+      .filter(
+        (group) =>
+          (tagTypeFilter === "Все типы" || group.tags.length > 0) &&
+          (!normalized || group.matches),
+      );
+  }, [tags, business, query, tagTypeFilter]);
 
   const totalVisibleTags = visibleGroups.reduce(
     (total, group) => total + group.tags.length,
@@ -5283,12 +5351,13 @@ function TagsPage({
     return tags.filter(
       (tag) =>
         (business === "Все объекты" || tag.business === business) &&
+        (tagTypeFilter === "Все типы" || tag.type === tagTypeFilter) &&
         (!normalized ||
-          `${tag.id} ${tag.uid} ${tag.title} ${tag.type} ${tag.business} ${tag.contractors.join(" ")}`
+          `${tag.id} ${tagNumericId(tag.id)} ${tag.uid} ${tag.title} ${tag.type} ${tag.business} ${tag.contractors.join(" ")}`
             .toLowerCase()
             .includes(normalized)),
     );
-  }, [tags, business, query]);
+  }, [tags, business, query, tagTypeFilter]);
   const toneFor = (type: TagType) =>
     type === "Посещение"
       ? "is-visit"
@@ -5353,7 +5422,7 @@ function TagsPage({
   return (
     <section className="tags-page px-10 py-8" aria-label="Метки">
       <div className="business-tags-toolbar flex items-center gap-3 rounded-xl border border-[#dfe6ef] bg-white p-4">
-        <div className="w-72">
+        <div className="business-tags-object-filter w-72">
           <Select
             value={business}
             onChange={setBusiness}
@@ -5363,7 +5432,14 @@ function TagsPage({
             ]}
           />
         </div>
-        <div className="relative max-w-xl flex-1">
+        <div className="business-tags-type-filter w-48">
+          <Select
+            value={tagTypeFilter}
+            onChange={setTagTypeFilter}
+            options={["Все типы", "Посещение", "Журнал", "Не выбран"]}
+          />
+        </div>
+        <div className="business-tags-search relative max-w-xl flex-1">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8293ad]"
             size={15}
@@ -5398,7 +5474,7 @@ function TagsPage({
         <div className="business-tags-header flex items-center justify-between border-b border-[#e6ebf2] px-6 py-5">
           <div className="business-tags-heading">
             <h2 className="text-[18px] font-semibold">
-              {view === "tags" ? "Все метки" : "Связь с объектами"}
+              {view === "tags" ? "Все метки" : "По объектам"}
             </h2>
             <div className="business-tags-legend" aria-label="Типы меток">
               <span>
@@ -5437,7 +5513,7 @@ function TagsPage({
                 onClick={() => setView("businesses")}
               >
                 <Building2 size={14} />
-                Связь с объектами
+                По объектам
               </button>
             </div>
             <span className="tag-view-count">
@@ -6443,18 +6519,7 @@ function TagDrawer({
             </div>
             <label className="block">
               <span className="mb-1.5 block text-[13.5px] font-medium text-[#40516d]">
-                Название метки
-              </span>
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Например, метка 1"
-                className="h-10 w-full rounded-lg border border-[#dce5f0] bg-white px-3 text-[15px] text-[#16223a] outline-none transition focus:border-[#3b82f6] focus:ring-2 focus:ring-blue-100"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-[13.5px] font-medium text-[#40516d]">
-                Привязка к бизнес-центру
+                Объект
               </span>
               <Select
                 value={business}
@@ -6489,6 +6554,17 @@ function TagDrawer({
                 </small>
               </div>
             </div>
+            <label className="block">
+              <span className="mb-1.5 block text-[13.5px] font-medium text-[#40516d]">
+                Название метки
+              </span>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Например, метка 1"
+                className="h-10 w-full rounded-lg border border-[#dce5f0] bg-white px-3 text-[15px] text-[#16223a] outline-none transition focus:border-[#3b82f6] focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
             <div className="tag-drawer-status">
               <span
                 className={`tag-drawer-status-icon ${active ? "is-active" : ""}`}
@@ -6745,7 +6821,12 @@ function EmployeePanel({
         if (object !== "Все объекты" && record.object !== object) return false;
         return new Date(record.enteredAt).getTime() >= earliestTime;
       })
-      .sort((a, b) => b.enteredAt.localeCompare(a.enteredAt));
+      .sort((a, b) => {
+        const aIsActive = !a.leftAt;
+        const bIsActive = !b.leftAt;
+        if (aIsActive !== bIsActive) return aIsActive ? -1 : 1;
+        return b.enteredAt.localeCompare(a.enteredAt);
+      });
   }, [employeeRecords, object, period]);
   const groupedHistory = useMemo(() => {
     const groups = new Map<string, PresenceRecord[]>();
