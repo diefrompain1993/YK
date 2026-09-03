@@ -2742,6 +2742,10 @@ aside select:focus {
   box-shadow: var(--shadow-sm);
 }
 
+.date-chip__date {
+  color: #263b57;
+}
+
 .date-chip__time {
   padding-left: 9px;
   border-left: 1px solid #dbe4ef;

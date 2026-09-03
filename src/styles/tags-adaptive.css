@@ -35,11 +35,29 @@
 
   .tags-page .tags-table-scroll > table {
     width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
   }
 
   .tags-page .tags-table-scroll thead {
     position: sticky;
     z-index: 4;
     top: 0;
+  }
+
+  /* Keep row rules in the table paint layer so they cannot flicker while scrolling. */
+  .tags-page .tags-table-scroll tbody tr {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .tags-page .tags-table-scroll tbody tr:not(:last-child) > td {
+    border-top: 0 !important;
+    border-bottom: 1px solid #d9e1eb !important;
+  }
+
+  .tags-page .tags-table-scroll tbody tr:last-child > td {
+    border-top: 0 !important;
+    border-bottom: 0 !important;
   }
 }

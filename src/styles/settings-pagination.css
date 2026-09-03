@@ -68,13 +68,17 @@
     top: 0;
   }
 
-  /* Compact pills only in Settings → Users. */
+  /* Allow full role names only in Settings → Users. */
+  .settings-page .aus-table th:nth-child(3) {
+    width: 148px;
+  }
+
   .settings-page .aus-table .aus-role-badge {
-    width: 72px !important;
-    min-width: 72px !important;
+    width: max-content !important;
+    min-width: 120px !important;
     height: 26px !important;
     min-height: 26px !important;
-    padding-inline: 8px !important;
+    padding-inline: 12px !important;
   }
 
   .settings-page .aus-table .aus-status {

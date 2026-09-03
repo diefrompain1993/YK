@@ -19,6 +19,51 @@
     object-fit: contain;
   }
 
+  .app-sidebar .brand-lockup:not(.is-compact) {
+    min-height: 64px;
+    gap: 0;
+    padding: 4px 5px;
+  }
+
+  .app-sidebar .brand-lockup:not(.is-compact) .brand-mark {
+    display: flex;
+    width: 100% !important;
+    height: 52px !important;
+    flex: 1 1 auto !important;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .app-sidebar .brand-logo-image--wide {
+    display: block;
+    width: min(190px, 100%) !important;
+    height: auto !important;
+    max-height: 52px;
+    object-fit: contain;
+    object-position: left center;
+  }
+
+  .app-sidebar .brand-mark .brand-logo-image--mark {
+    display: none !important;
+  }
+
+  .app-sidebar .brand-lockup.is-compact .brand-mark {
+    width: 42px !important;
+    height: 42px !important;
+    flex: 0 0 42px !important;
+  }
+
+  .app-sidebar .brand-lockup.is-compact .brand-logo-image--wide {
+    display: none !important;
+  }
+
+  .app-sidebar .brand-lockup.is-compact .brand-logo-image--mark {
+    display: block !important;
+    width: 40px !important;
+    height: 40px !important;
+    object-fit: contain;
+  }
+
   .app-sidebar nav button.app-nav-item {
     position: relative;
     height: 44px !important;
@@ -88,6 +133,25 @@
   .app-sidebar nav button.app-nav-item.is-compact {
     justify-content: center;
     padding-inline: 0 !important;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 920px) {
+  .app-sidebar .brand-lockup .brand-logo-image--wide {
+    display: none !important;
+  }
+
+  .app-sidebar .brand-lockup .brand-logo-image--mark {
+    display: block !important;
+    width: 40px !important;
+    height: 40px !important;
+    object-fit: contain;
+  }
+
+  .app-sidebar .brand-lockup .brand-mark {
+    width: 42px !important;
+    height: 42px !important;
+    flex: 0 0 42px !important;
   }
 }
 
@@ -204,6 +268,31 @@
 
 .app-sidebar-role-card .role-preview > small {
   margin: 0 2px -3px;
+}
+
+/* Long role names share the full card width without pushing past its edge. */
+.app-sidebar .profile-card:not(.is-compact) .role-preview {
+  width: 100%;
+  min-width: 0;
+}
+
+.app-sidebar .profile-card:not(.is-compact) .role-switch {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.92fr);
+  gap: 2px;
+}
+
+.app-sidebar .profile-card:not(.is-compact) .role-switch > button {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 5px;
+  overflow: hidden;
+  font-size: 10.5px;
+  letter-spacing: -0.015em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (min-width: 701px) {

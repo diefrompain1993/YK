@@ -11,13 +11,17 @@ import {
   Building2,
   CalendarRange,
   Check,
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
+  Copy,
   Download,
   Eye,
   FileSpreadsheet,
   FileText,
   Filter,
   MapPinned,
+  Paperclip,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -27,11 +31,16 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { createPortal } from "react-dom";
 import { CustomSelect } from "./CustomSelect";
 import { DataPagination, usePaginatedItems } from "./DataPagination";
 import { DateRangePicker } from "./DateRangePicker";
 import { OBJECT_CATALOG } from "./objectCatalog";
+import { useOverlayLock } from "./useOverlayLock";
 import "../styles/operations.css";
+import loadingZonePhoto from "../assets/report-photos/loading-zone.png";
+import technicalRoomPhoto from "../assets/report-photos/technical-room.png";
+import utilityInspectionPhoto from "../assets/report-photos/utility-inspection.png";
 
 const [PRIMARY_OBJECT, SECONDARY_OBJECT, THIRD_OBJECT, FOURTH_OBJECT] =
   OBJECT_CATALOG.map((object) => object.name);
@@ -59,6 +68,7 @@ export type ExportEvent = {
   contractor: string;
   object: string;
   details: string;
+  photos?: string[];
 };
 
 export const PRESENCE_RECORDS: PresenceRecord[] = [
@@ -205,6 +215,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     contractor: "ООО «Альфа Строй»",
     object: PRIMARY_OBJECT,
     details: "Отчёт за смену",
+    photos: [utilityInspectionPhoto, loadingZonePhoto],
   },
   {
     id: "report-02",
@@ -216,6 +227,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     contractor: "ООО «ТехСервис»",
     object: PRIMARY_OBJECT,
     details: "Проверка оборудования",
+    photos: [technicalRoomPhoto],
   },
   {
     id: "report-03",
@@ -227,6 +239,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     contractor: "ООО «МонтажПро»",
     object: FOURTH_OBJECT,
     details: "Отчёт о выполненных работах",
+    photos: [utilityInspectionPhoto, technicalRoomPhoto],
   },
   {
     id: "report-04",
@@ -238,6 +251,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     contractor: "ООО «СтройГрупп»",
     object: PRIMARY_OBJECT,
     details: "Проверка техники безопасности",
+    photos: [loadingZonePhoto],
   },
   {
     id: "report-05",
@@ -249,6 +263,7 @@ const REPORT_EVENTS: ExportEvent[] = [
     contractor: "ООО «ТехСервис»",
     object: SECONDARY_OBJECT,
     details: "Проверка качества работ",
+    photos: [technicalRoomPhoto, loadingZonePhoto],
   },
 ];
 
@@ -711,6 +726,294 @@ function eventTone(type: ExportEventType) {
   if (type === "Вход") return "op-event-badge--entry";
   if (type === "Выход") return "op-event-badge--exit";
   return "op-event-badge--report";
+}
+
+function reportPhotoFilename(reportId: string, index: number) {
+  const safeId = reportId.replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-|-$/g, "");
+  return `${safeId || "report"}-photo-${index + 1}.png`;
+}
+
+function downloadReportPhoto(photo: string, reportId: string, index: number) {
+  const link = document.createElement("a");
+  link.href = photo;
+  link.download = reportPhotoFilename(reportId, index);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function ReportPhotoGallery({
+  photos = [],
+  reportId,
+}: {
+  photos?: string[];
+  reportId: string;
+}) {
+  const [activePhoto, setActivePhoto] = useState<number | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const viewerOpen = activePhoto !== null;
+
+  useEffect(() => {
+    if (!viewerOpen) return;
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const handleViewerKeys = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        setActivePhoto(null);
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        event.stopPropagation();
+        setActivePhoto((current) =>
+          current === null ? null : (current - 1 + photos.length) % photos.length,
+        );
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        event.stopPropagation();
+        setActivePhoto((current) =>
+          current === null ? null : (current + 1) % photos.length,
+        );
+      }
+    };
+    document.addEventListener("keydown", handleViewerKeys, true);
+    return () => {
+      document.removeEventListener("keydown", handleViewerKeys, true);
+      window.requestAnimationFrame(() => previousFocusRef.current?.focus());
+    };
+  }, [viewerOpen, photos.length]);
+
+  if (!photos.length) return null;
+  return (
+    <>
+      <section className="op-report-photos" aria-label="Вложения к отчёту">
+        <div className="op-report-photos__head">
+          <div>
+            <Paperclip size={18} aria-hidden="true" />
+            <h3>Вложения ({photos.length})</h3>
+          </div>
+          <button
+            type="button"
+            className="op-report-download-all"
+            aria-label="Скачать все фотографии"
+            onClick={() =>
+              photos.forEach((photo, index) =>
+                downloadReportPhoto(photo, reportId, index),
+              )
+            }
+          >
+            <Download size={18} aria-hidden="true" />
+            <span>Скачать все</span>
+          </button>
+        </div>
+        <div className={`op-report-photo-grid ${photos.length === 1 ? "is-single" : ""}`}>
+          {photos.map((photo, index) => (
+            <button
+              type="button"
+              className="op-report-photo"
+              key={`${photo}-${index}`}
+              onClick={() => setActivePhoto(index)}
+              aria-label={`Открыть фото ${index + 1}`}
+            >
+              <img
+                src={photo}
+                alt={`Фото ${index + 1} к отчёту`}
+                loading="lazy"
+              />
+              <span className="op-report-photo__type">Фото</span>
+              <span className="op-report-photo__name">
+                {reportPhotoFilename(reportId, index)}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {createPortal(
+        <AnimatePresence>
+          {activePhoto !== null && (
+          <motion.div
+            className="op-photo-viewer"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Просмотр фото ${activePhoto + 1}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            <button
+              type="button"
+              className="op-photo-viewer__backdrop"
+              aria-label="Закрыть просмотр фотографии"
+              onClick={() => setActivePhoto(null)}
+            />
+            <motion.div
+              className="op-photo-viewer__panel"
+              initial={{ opacity: 0, scale: 0.97, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 6 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <header>
+                <div>
+                  <strong>{reportPhotoFilename(reportId, activePhoto)}</strong>
+                </div>
+                <div className="op-photo-viewer__actions">
+                  <button
+                    type="button"
+                    onClick={() => downloadReportPhoto(photos[activePhoto], reportId, activePhoto)}
+                    aria-label="Скачать фотографию"
+                    title="Скачать фотографию"
+                  >
+                    <Download size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePhoto(null)}
+                    aria-label="Закрыть просмотр"
+                    title="Закрыть"
+                    autoFocus
+                  >
+                    <X size={19} />
+                  </button>
+                </div>
+              </header>
+              <div className="op-photo-viewer__image">
+                <img
+                  src={photos[activePhoto]}
+                  alt={`Фото ${activePhoto + 1} к отчёту`}
+                />
+              </div>
+              {photos.length > 1 && (
+                <footer>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActivePhoto((activePhoto - 1 + photos.length) % photos.length)
+                    }
+                    aria-label="Предыдущее фото"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <span>{activePhoto + 1} / {photos.length}</span>
+                  <button
+                    type="button"
+                    onClick={() => setActivePhoto((activePhoto + 1) % photos.length)}
+                    aria-label="Следующее фото"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </footer>
+              )}
+            </motion.div>
+          </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
+    </>
+  );
+}
+
+function ReportDrawerContent({
+  report,
+  titleId,
+  onClose,
+}: {
+  report: ExportEvent;
+  titleId: string;
+  onClose: () => void;
+}) {
+  const [copiedField, setCopiedField] = useState<"object" | "contractor" | null>(null);
+
+  const copyReportValue = async (
+    field: "object" | "contractor",
+    value: string,
+  ) => {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      const input = document.createElement("textarea");
+      input.value = value;
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      input.remove();
+    }
+    setCopiedField(field);
+    window.setTimeout(
+      () => setCopiedField((current) => current === field ? null : current),
+      1400,
+    );
+  };
+
+  return (
+    <>
+      <header>
+        <h2>Детали отчёта</h2>
+        <button aria-label="Закрыть отчёт" onClick={onClose}><X size={19} /></button>
+      </header>
+      <div className="overlay-scroll-region op-report-body">
+        <article className="op-report-document">
+          <p className="op-report-code">ОТЧ-{report.id.toUpperCase()}</p>
+          <h1 id={titleId}>{report.details}</h1>
+          <dl className="op-report-meta">
+            <div className="op-report-meta__time">
+              <dt>Дата и время</dt>
+              <dd><time dateTime={report.occurredAt}>{formatDateTime(report.occurredAt)}</time></dd>
+            </div>
+            <div className="op-report-meta__person">
+              <dt>Сотрудник</dt>
+              <dd>
+                <strong>{report.employee}</strong>
+                <small>{report.role}</small>
+              </dd>
+            </div>
+            <div className="op-report-meta__object">
+              <dt className="op-report-copy-label">
+                <span>Объект</span>
+                <button
+                  type="button"
+                  className={copiedField === "object" ? "is-copied" : ""}
+                  aria-label="Скопировать название объекта"
+                  onClick={() => copyReportValue("object", report.object)}
+                >
+                  {copiedField === "object" ? <Check size={15} /> : <Copy size={15} />}
+                </button>
+              </dt>
+              <dd>{report.object}</dd>
+            </div>
+            <div className="op-report-meta__contractor">
+              <dt className="op-report-copy-label">
+                <span>Подрядчик</span>
+                <button
+                  type="button"
+                  className={copiedField === "contractor" ? "is-copied" : ""}
+                  aria-label="Скопировать название подрядчика"
+                  onClick={() => copyReportValue("contractor", report.contractor)}
+                >
+                  {copiedField === "contractor" ? <Check size={15} /> : <Copy size={15} />}
+                </button>
+              </dt>
+              <dd>{report.contractor}</dd>
+            </div>
+          </dl>
+          <section className="op-report-content">
+            <h3>Результат выполненных работ</h3>
+            <p>
+              Работы за смену выполнены по плану. Отклонения и замечания,
+              требующие срочного решения, не зафиксированы.
+            </p>
+          </section>
+          <ReportPhotoGallery photos={report.photos} reportId={report.id} />
+        </article>
+      </div>
+    </>
+  );
 }
 
 type ExportFormat = "csv" | "xls" | "json";
@@ -1239,7 +1542,10 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
   const [resetIconTurns, setResetIconTurns] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedExportReport, setSelectedExportReport] = useState<ExportEvent | null>(null);
-  const exportReportDrawerRef = useRef<HTMLElement>(null);
+  useOverlayLock(
+    () => setSelectedExportReport(null),
+    Boolean(selectedExportReport),
+  );
 
   const scopedEvents = useMemo(() => {
     if (allowedObjectNames === undefined) return [...events];
@@ -1427,44 +1733,6 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
     if (event.type === "Отчёт") setSelectedExportReport(event);
     else onOpenEmployee?.(event.employee);
   };
-
-  useEffect(() => {
-    if (!selectedExportReport) return;
-    const previousFocus =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setSelectedExportReport(null);
-        return;
-      }
-      if (event.key !== "Tab" || !exportReportDrawerRef.current) return;
-      const focusable = Array.from(
-        exportReportDrawerRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
-        ),
-      );
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    const frame = window.requestAnimationFrame(() => {
-      exportReportDrawerRef.current?.querySelector<HTMLElement>("button")?.focus();
-    });
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener("keydown", closeOnEscape);
-      window.requestAnimationFrame(() => previousFocus?.focus());
-    };
-  }, [selectedExportReport]);
 
   return (
     <section className="operations-page export-workspace" aria-label="Экспорт данных">
@@ -1740,7 +2008,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
         )}
         {selectedExportReport && (
           <motion.div
-            className="op-report-layer"
+            className="overlay-layer op-report-layer"
             role="presentation"
             initial="closed"
             animate="open"
@@ -1754,8 +2022,7 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
               transition={{ duration: 0.22, ease: "easeOut" }}
             />
             <motion.aside
-              ref={exportReportDrawerRef}
-              className="op-report-drawer"
+              className="overlay-drawer-panel op-report-drawer"
               role="dialog"
               aria-modal="true"
               aria-labelledby="export-report-title"
@@ -1763,31 +2030,11 @@ function ExportWorkspace({ events, allowedObjectNames, onOpenEmployee }: ExportW
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
               style={{ willChange: "transform" }}
             >
-              <header>
-                <div>
-                  <small>Отчёт сотрудника</small>
-                  <h2 id="export-report-title">{selectedExportReport.details}</h2>
-                </div>
-                <button aria-label="Закрыть отчёт" onClick={() => setSelectedExportReport(null)}><X size={17} /></button>
-              </header>
-              <div className="op-report-body">
-                <section className="op-report-details" aria-labelledby="export-report-details-title">
-                  <h3 id="export-report-details-title">Сведения об отчёте</h3>
-                  <dl className="op-report-meta">
-                    <div className="op-report-meta__person">
-                      <dt>Сотрудник</dt>
-                      <dd><strong>{selectedExportReport.employee}</strong></dd>
-                    </div>
-                    <div className="op-report-meta__contractor"><dt>Подрядчик</dt><dd>{selectedExportReport.contractor}</dd></div>
-                    <div className="op-report-meta__time"><dt>Дата и время</dt><dd><time>{formatDateTime(selectedExportReport.occurredAt)}</time></dd></div>
-                    <div className="op-report-meta__object"><dt>Объект</dt><dd>{selectedExportReport.object}</dd></div>
-                  </dl>
-                </section>
-                <section className="op-report-content">
-                  <div className="op-report-content__head"><small>Содержание отчёта</small><h3>Результат выполненных работ</h3></div>
-                  <p>Работы за смену выполнены по плану. Отклонения и замечания, требующие срочного решения, не зафиксированы.</p>
-                </section>
-              </div>
+              <ReportDrawerContent
+                report={selectedExportReport}
+                titleId="export-report-title"
+                onClose={() => setSelectedExportReport(null)}
+              />
             </motion.aside>
           </motion.div>
         )}
@@ -1819,46 +2066,7 @@ export function ExportPage({
   const [query, setQuery] = useState("");
   const [journalResetTurns, setJournalResetTurns] = useState(0);
   const [selectedReport, setSelectedReport] = useState<ExportEvent | null>(null);
-  const reportDrawerRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    if (!selectedReport) return;
-    const previousFocus =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setSelectedReport(null);
-        return;
-      }
-      if (event.key !== "Tab" || !reportDrawerRef.current) return;
-      const focusable = Array.from(
-        reportDrawerRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      );
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    const focusFrame = window.requestAnimationFrame(() => {
-      reportDrawerRef.current
-        ?.querySelector<HTMLElement>("button")
-        ?.focus({ preventScroll: true });
-    });
-    return () => {
-      window.cancelAnimationFrame(focusFrame);
-      window.removeEventListener("keydown", closeOnEscape);
-      window.requestAnimationFrame(() => previousFocus?.focus({ preventScroll: true }));
-    };
-  }, [selectedReport]);
+  useOverlayLock(() => setSelectedReport(null), Boolean(selectedReport));
 
   const scopedEvents = useMemo(() => {
     if (allowedObjectNames === undefined) return [...events];
@@ -2166,7 +2374,7 @@ export function ExportPage({
       <AnimatePresence>
         {selectedReport && (
         <motion.div
-          className="op-report-layer"
+          className="overlay-layer op-report-layer"
           role="presentation"
           initial="closed"
           animate="open"
@@ -2180,8 +2388,7 @@ export function ExportPage({
             transition={{ duration: 0.22, ease: "easeOut" }}
           />
           <motion.aside
-            ref={reportDrawerRef}
-            className="op-report-drawer"
+            className="overlay-drawer-panel op-report-drawer"
             role="dialog"
             aria-modal="true"
             aria-labelledby="op-report-title"
@@ -2189,49 +2396,11 @@ export function ExportPage({
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             style={{ willChange: "transform" }}
           >
-            <header>
-              <div>
-                <small>Отчёт сотрудника</small>
-                <h2 id="op-report-title">{selectedReport.details}</h2>
-              </div>
-              <button aria-label="Закрыть отчёт" onClick={() => setSelectedReport(null)}><X size={17} /></button>
-            </header>
-            <div className="op-report-body">
-              <section className="op-report-details" aria-labelledby="op-report-details-title">
-                <h3 id="op-report-details-title">Сведения об отчёте</h3>
-                <dl className="op-report-meta">
-                  <div className="op-report-meta__person">
-                    <dt>Сотрудник</dt>
-                    <dd>
-                      <strong>{selectedReport.employee}</strong>
-                      <small>{selectedReport.role}</small>
-                    </dd>
-                  </div>
-                  <div className="op-report-meta__contractor">
-                    <dt>Подрядчик</dt>
-                    <dd>{selectedReport.contractor}</dd>
-                  </div>
-                  <div className="op-report-meta__time">
-                    <dt>Дата и время</dt>
-                    <dd><time>{formatDateTime(selectedReport.occurredAt)}</time></dd>
-                  </div>
-                  <div className="op-report-meta__object">
-                    <dt>Объект</dt>
-                    <dd>{selectedReport.object}</dd>
-                  </div>
-                </dl>
-              </section>
-              <section className="op-report-content">
-                <div className="op-report-content__head">
-                  <small>Содержание отчёта</small>
-                  <h3>Результат выполненных работ</h3>
-                </div>
-                <p>
-                  Работы за смену выполнены по плану. Отклонения и замечания,
-                  требующие срочного решения, не зафиксированы.
-                </p>
-              </section>
-            </div>
+            <ReportDrawerContent
+              report={selectedReport}
+              titleId="op-report-title"
+              onClose={() => setSelectedReport(null)}
+            />
           </motion.aside>
         </motion.div>
         )}

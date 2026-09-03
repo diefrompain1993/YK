@@ -10,6 +10,7 @@
   import "./styles/contractor-logos.css";
   import "./styles/data-table-alignment.css";
   import "./styles/settings-pagination.css";
-  import "./styles/tags-adaptive.css";
+import "./styles/tags-adaptive.css";
+import "./styles/responsive-audit.css";
 
   createRoot(document.getElementById("root")!).render(<App />);

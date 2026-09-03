@@ -75,6 +75,7 @@ import { DateRangePicker } from "./DateRangePicker";
 import { TimePicker } from "./TimePicker";
 import { NfcTagIcon } from "./NfcTagIcon";
 import { OBJECT_CATALOG } from "./objectCatalog";
+import { useOverlayLock } from "./useOverlayLock";
 import {
   Area,
   AreaChart,
@@ -1317,140 +1318,6 @@ function Nav({
   );
 }
 
-let activeOverlayLocks = 0;
-let overlayInitialStyles: {
-  bodyOverscroll: string;
-  bodyPaddingRight: string;
-  rootScrollBehavior: string;
-} | null = null;
-
-function useOverlayLock(close: () => void) {
-  const closeRef = useRef(close);
-  closeRef.current = close;
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-    const previousFocus =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-    const scrollbarGap = Math.max(0, window.innerWidth - root.clientWidth);
-    const isFirstOverlay = activeOverlayLocks === 0;
-    if (isFirstOverlay) {
-      overlayInitialStyles = {
-        bodyOverscroll: body.style.overscrollBehavior,
-        bodyPaddingRight: body.style.paddingRight,
-        rootScrollBehavior: root.style.scrollBehavior,
-      };
-    }
-    activeOverlayLocks += 1;
-    const isInsideScrollableOverlay = (target: EventTarget | null) =>
-      target instanceof Element && Boolean(target.closest(".overlay-scroll-region"));
-    const stopBackgroundWheel = (event: WheelEvent) => {
-      if (!isInsideScrollableOverlay(event.target)) event.preventDefault();
-    };
-    const stopBackgroundTouch = (event: TouchEvent) => {
-      if (!isInsideScrollableOverlay(event.target)) event.preventDefault();
-    };
-    const keepPagePosition = () => {
-      if (window.scrollX !== scrollX || window.scrollY !== scrollY)
-        window.scrollTo(scrollX, scrollY);
-    };
-    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeRef.current();
-        return;
-      }
-      if (event.key === "Tab") {
-        const panels = document.querySelectorAll<HTMLElement>(
-          '.overlay-drawer-panel[role="dialog"]',
-        );
-        const panel = panels[panels.length - 1];
-        if (!panel) return;
-        const focusable = Array.from(
-          panel.querySelectorAll<HTMLElement>(
-            'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-          ),
-        );
-        if (!focusable.length) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
-        return;
-      }
-      const target = event.target;
-      const editable =
-        target instanceof HTMLElement &&
-        (target.matches("input, textarea, select") || target.isContentEditable);
-      if (
-        !editable &&
-        !isInsideScrollableOverlay(target) &&
-        ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(
-          event.key,
-        )
-      )
-        event.preventDefault();
-    };
-
-    if (isFirstOverlay) {
-      root.classList.add("overlay-open");
-      root.style.scrollBehavior = "auto";
-      body.style.overscrollBehavior = "none";
-      if (scrollbarGap) body.style.paddingRight = `${scrollbarGap}px`;
-    }
-    window.addEventListener("keydown", closeOnEscape);
-    window.addEventListener("scroll", keepPagePosition, { passive: true });
-    document.addEventListener("wheel", stopBackgroundWheel, {
-      capture: true,
-      passive: false,
-    });
-    document.addEventListener("touchmove", stopBackgroundTouch, {
-      capture: true,
-      passive: false,
-    });
-    const focusFrame = window.requestAnimationFrame(() => {
-      const panels = document.querySelectorAll<HTMLElement>(
-        '.overlay-drawer-panel[role="dialog"]',
-      );
-      const panel = panels[panels.length - 1];
-      if (panel && !panel.contains(document.activeElement)) {
-        panel
-          .querySelector<HTMLElement>(
-            '[autofocus], button:not([disabled]), a[href], input:not([disabled])',
-          )
-          ?.focus();
-      }
-    });
-
-    return () => {
-      window.cancelAnimationFrame(focusFrame);
-      window.removeEventListener("keydown", closeOnEscape);
-      window.removeEventListener("scroll", keepPagePosition);
-      document.removeEventListener("wheel", stopBackgroundWheel, true);
-      document.removeEventListener("touchmove", stopBackgroundTouch, true);
-      activeOverlayLocks = Math.max(0, activeOverlayLocks - 1);
-      if (activeOverlayLocks === 0) {
-        root.classList.remove("overlay-open");
-        root.style.scrollBehavior =
-          overlayInitialStyles?.rootScrollBehavior || "";
-        body.style.overscrollBehavior =
-          overlayInitialStyles?.bodyOverscroll || "";
-        body.style.paddingRight = overlayInitialStyles?.bodyPaddingRight || "";
-        overlayInitialStyles = null;
-      }
-      window.requestAnimationFrame(() => previousFocus?.focus());
-    };
-  }, []);
-}
-
 export default function App() {
   const [page, setPage] = useState<AppPage>("home");
   const [managedObjects, setManagedObjects] = useState<ObjectItem[]>(objectsInitial);
@@ -1478,7 +1345,7 @@ export default function App() {
       current.map((user) => ({
         ...user,
         objects:
-          user.accessRole === "УКП"
+          user.accessRole === "Администратор"
             ? nextObjects.map((object) => object.name)
             : user.objects.flatMap((name) => {
                 const code = previousByName.get(name);
@@ -1573,19 +1440,23 @@ export default function App() {
           <div className={`brand-lockup ${sidebar ? "" : "is-compact"}`}>
             <div
               className="brand-mark"
+              role="img"
+              aria-label="Anylog"
               style={{ background: "transparent", boxShadow: "none" }}
             >
               <img
-                src={`${import.meta.env.BASE_URL}brand-logo.svg`}
+                className="brand-logo-image brand-logo-image--wide"
+                src={`${import.meta.env.BASE_URL}anylog-logo.png`}
+                alt=""
+                aria-hidden="true"
+              />
+              <img
+                className="brand-logo-image brand-logo-image--mark"
+                src={`${import.meta.env.BASE_URL}anylog-mark.png`}
                 alt=""
                 aria-hidden="true"
               />
             </div>
-            {sidebar && (
-              <div>
-                <strong>Контроль персонала</strong>
-              </div>
-            )}
           </div>
           <nav className="space-y-1.5">
             <Nav
@@ -1667,7 +1538,7 @@ export default function App() {
                     {userRole === "ukp" ? "Анна Морозова" : "Михаил Волков"}
                   </p>
                   <p className="text-[12.5px] text-[#74839b]">
-                    {userRole === "ukp" ? "УКП" : "Начальник смены"}
+                    {userRole === "ukp" ? "Администратор" : "Пользователь"}
                   </p>
                 </div>
               )}
@@ -1680,7 +1551,7 @@ export default function App() {
                   className={userRole === "ukp" ? "is-active" : ""}
                   onClick={() => setPreviewRole(null)}
                 >
-                  УКП
+                  Администратор
                 </button>
                 <button
                   className={userRole === "nsr" ? "is-active" : ""}
@@ -1689,7 +1560,7 @@ export default function App() {
                     if (page === "settings" || page === "tags") navigate("home");
                   }}
                 >
-                  НСР
+                  Пользователь
                 </button>
                 </div>
               </div>
@@ -1904,7 +1775,6 @@ function HomePage({
           <h1>Главная</h1>
         </div>
         <div className="date-chip">
-          <Clock3 size={16} />
           <span className="date-chip__date">
             {new Intl.DateTimeFormat("ru-RU", {
               day: "numeric",
@@ -4501,7 +4371,9 @@ function SettingsPage({
   const [tab, setTab] = useState<"users" | "objects" | "contractors">("users");
   const [modal, setModal] = useState<"add" | "edit" | "delete" | null>(null);
   const [chosen, setChosen] = useState<ObjectItem | null>(null);
-  const [contractorModal, setContractorModal] = useState<string | null>(null);
+  const [contractorModal, setContractorModal] = useState<{
+    contractor: string | null;
+  } | null>(null);
   return (
     <section className="settings-page px-10 py-8">
       <h1 className="text-[34px] font-bold tracking-[-.025em]">Настройки</h1>
@@ -4569,7 +4441,7 @@ function SettingsPage({
                     setModal("edit");
                   }
                 }}
-                className="settings-entity-row entity-click-row flex cursor-pointer items-center gap-4 px-6 py-4"
+                className="settings-entity-row settings-object-row entity-click-row flex cursor-pointer items-center gap-4 px-6 py-4"
               >
                 <div className="flex-1">
                   <p className="text-[15px] font-semibold">{item.name}</p>
@@ -4619,6 +4491,14 @@ function SettingsPage({
                 Описание, ответственные и привязанные объекты
               </p>
             </div>
+            <button
+              type="button"
+              onClick={() => setContractorModal({ contractor: null })}
+              className="settings-add-button flex h-10 shrink-0 items-center gap-2 rounded-lg bg-[#2563eb] px-4 text-[15px] font-semibold text-white"
+            >
+              <Plus size={16} aria-hidden="true" />
+              Добавить подрядчика
+            </button>
           </div>
           <div className="settings-entity-list divide-y divide-[#e8edf4]">
             {contractors.map((item, i) => {
@@ -4628,14 +4508,14 @@ function SettingsPage({
                   key={item}
                   role="button"
                   tabIndex={0}
-                  onClick={() => setContractorModal(item)}
+                  onClick={() => setContractorModal({ contractor: item })}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
-                      setContractorModal(item);
+                      setContractorModal({ contractor: item });
                     }
                   }}
-                  className="settings-entity-row entity-click-row flex cursor-pointer items-center gap-4 px-6 py-4"
+                  className="settings-entity-row settings-contractor-row entity-click-row flex cursor-pointer items-center gap-4 px-6 py-4"
                 >
                   <div className="grid size-10 place-items-center overflow-hidden rounded-xl border border-[#dbe4ef] bg-white p-1.5">
                     {logo ? (
@@ -4654,7 +4534,7 @@ function SettingsPage({
                     aria-label={`Редактировать ${item}`}
                     onClick={(event) => {
                       event.stopPropagation();
-                      setContractorModal(item);
+                      setContractorModal({ contractor: item });
                     }}
                     className="grid size-9 place-items-center rounded-lg text-[#617894] hover:bg-blue-50 hover:text-blue-600"
                   >
@@ -4695,18 +4575,18 @@ function SettingsPage({
       <AnimatePresence>
         {contractorModal && (
           <ContractorModal
-            key={`contractor-modal-${contractorModal}`}
-            contractor={contractorModal}
+            key={`contractor-modal-${contractorModal.contractor ?? "new"}`}
+            contractor={contractorModal.contractor}
             objects={objects}
             close={() => setContractorModal(null)}
-            done={(m, linkedCodes) => {
+            done={(m, linkedCodes, savedName) => {
               onObjectsChange(
                 objects.map((object) => {
                   const current = getObjectContractors(object);
                   const shouldBeLinked = linkedCodes.includes(object.code);
                   const next = shouldBeLinked
-                    ? Array.from(new Set([...current, contractorModal]))
-                    : current.filter((name) => name !== contractorModal);
+                    ? Array.from(new Set([...current, savedName]))
+                    : current.filter((name) => name !== savedName);
                   return { ...object, contractors: next };
                 }),
               );
@@ -5064,12 +4944,20 @@ function ContractorModal({
   close,
   done,
 }: {
-  contractor: string;
+  contractor: string | null;
   objects: ObjectItem[];
   close: () => void;
-  done: (m: string, linkedCodes: string[]) => void;
+  done: (m: string, linkedCodes: string[], savedName: string) => void;
 }) {
-  const existingDetails = contractorDetails[contractor];
+  const isAdding = contractor === null;
+  const title = isAdding ? "Добавление подрядчика" : "Редактирование подрядчика";
+  const existingDetails: ContractorDetails = contractor
+    ? contractorDetails[contractor]
+    : { description: "", phone: "", email: "", contactsByObject: {} };
+  const [name, setName] = useState(contractor ?? "");
+  const [nameError, setNameError] = useState("");
+  const [phone, setPhone] = useState(existingDetails.phone);
+  const [email, setEmail] = useState(existingDetails.email);
   const [description, setDescription] = useState(
     existingDetails.description,
   );
@@ -5099,14 +4987,14 @@ function ContractorModal({
       exit="closed"
     >
       <motion.button
-        aria-label="Закрыть редактирование подрядчика"
+        aria-label="Закрыть форму подрядчика"
         onClick={close}
         className="absolute inset-0 z-0 cursor-default bg-[#15233a]/30"
         variants={{ closed: { opacity: 0 }, open: { opacity: 1 } }}
         transition={{ duration: 0.22, ease: "easeOut" }}
       />
       <motion.aside
-        aria-label="Редактирование подрядчика"
+        aria-label={title}
         aria-modal="true"
         role="dialog"
         className="overlay-drawer-panel fixed bottom-0 right-0 top-0 z-10 flex w-[480px] flex-col border-l border-[#dfe6ef] bg-white shadow-[-14px_0_36px_rgba(34,51,84,.18)]"
@@ -5115,13 +5003,30 @@ function ContractorModal({
         style={{ willChange: "transform" }}
       >
         <ModalHead
-          title="Редактирование подрядчика"
+          title={title}
           sub="Описание и привязанные объекты"
           close={close}
         />
         <div className="overlay-scroll-region flex-1 overflow-y-auto space-y-7 px-7 py-6">
           <div className="space-y-4">
-            <Field label="Название организации" value={contractor} readOnly />
+            <Field
+              label={isAdding ? "Название организации *" : "Название организации"}
+              value={name}
+              readOnly={!isAdding}
+              onChange={isAdding ? (value) => {
+                  setName(value);
+                  setNameError("");
+                } : undefined}
+            />
+            {nameError && (
+              <p role="alert" className="text-[13px] text-rose-600">{nameError}</p>
+            )}
+            {isAdding && (
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Телефон" type="tel" value={phone} onChange={setPhone} />
+                <Field label="Email" type="email" value={email} onChange={setEmail} />
+              </div>
+            )}
             <label className="block">
               <span className="mb-1.5 block text-[13.5px] font-medium text-[#40516d]">
                 Описание
@@ -5188,9 +5093,6 @@ function ContractorModal({
                               className={`grid size-3.5 place-items-center rounded-sm border text-[12.5px] ${linked.includes(item.code) ? "border-[#2563eb] bg-[#2563eb] text-white" : "border-[#cbd7e6] bg-white text-transparent"}`}
                             >
                               ✓
-                            </span>
-                            <span className="grid size-6 place-items-center rounded-lg bg-[#edf5ff] text-[#2563eb]">
-                              <MapPin size={11} />
                             </span>
                             <span className="flex-1">
                               <span className="block text-[12.5px] font-medium text-[#40516d]">
@@ -5259,8 +5161,19 @@ function ContractorModal({
         <ModalFoot
           close={close}
           save={() => {
-            contractorDetails[contractor] = {
+            const savedName = name.trim();
+            if (!savedName) {
+              setNameError("Укажите название организации");
+              return;
+            }
+            if (isAdding && contractors.some((item) => item.toLowerCase() === savedName.toLowerCase())) {
+              setNameError("Подрядчик с таким названием уже существует");
+              return;
+            }
+            contractorDetails[savedName] = {
               ...existingDetails,
+              phone: phone.trim(),
+              email: email.trim(),
               description: description.trim() || existingDetails.description,
               contactsByObject: Object.fromEntries(
                 linked.map((code) => [
@@ -5274,7 +5187,8 @@ function ContractorModal({
                 ]),
               ),
             };
-            done("Данные подрядчика сохранены", linked);
+            if (isAdding) contractors.push(savedName);
+            done(isAdding ? "Подрядчик добавлен" : "Данные подрядчика сохранены", linked, savedName);
           }}
           label="Сохранить"
         />
@@ -5434,9 +5348,11 @@ function TagsPage({
         </div>
         <div className="business-tags-type-filter w-48">
           <Select
-            value={tagTypeFilter}
-            onChange={setTagTypeFilter}
-            options={["Все типы", "Посещение", "Журнал", "Не выбран"]}
+            value={tagTypeFilter === "Не выбран" ? "Не назначены" : tagTypeFilter}
+            onChange={(value) =>
+              setTagTypeFilter(value === "Не назначены" ? "Не выбран" : value)
+            }
+            options={["Все типы", "Посещение", "Журнал", "Не назначены"]}
           />
         </div>
         <div className="business-tags-search relative max-w-xl flex-1">
@@ -5479,7 +5395,7 @@ function TagsPage({
             <div className="business-tags-legend" aria-label="Типы меток">
               <span>
                 <i className="bg-[#a5b1c2]" />
-                Тип не выбран
+                Не назначены
               </span>
               <span>
                 <i className="bg-[#2563eb]" />
@@ -6138,7 +6054,7 @@ function TagsListTable({
               </td>
               <td data-label="Тип" className="px-3">
                 <span className="text-[13.5px] text-[#40516d]">
-                  {tag.type}
+                  {tag.type === "Не выбран" ? "Не назначены" : tag.type}
                 </span>
               </td>
               <td data-label="Подрядчики" className="px-6">

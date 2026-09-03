@@ -21,7 +21,7 @@ import {
 } from "react";
 import "../styles/user-settings.css";
 
-export type AdminAccessRole = "УКП" | "НСР";
+export type AdminAccessRole = "Администратор" | "Пользователь";
 
 export type AdminUser = {
   id: string;
@@ -66,7 +66,7 @@ export function createInitialAdminUsers(objects: string[]): AdminUser[] {
       phone: "+7 916 440-18-72",
       email: "a.morozova@ukp.ru",
       position: "Руководитель эксплуатации",
-      accessRole: "УКП",
+      accessRole: "Администратор",
       objects: [...objects],
       active: true,
     },
@@ -76,7 +76,7 @@ export function createInitialAdminUsers(objects: string[]): AdminUser[] {
       phone: "+7 985 310-42-08",
       email: "m.volkov@ukp.ru",
       position: "Начальник смены",
-      accessRole: "НСР",
+      accessRole: "Пользователь",
       objects: objects.slice(0, Math.min(2, objects.length)),
       active: true,
     },
@@ -86,7 +86,7 @@ export function createInitialAdminUsers(objects: string[]): AdminUser[] {
       phone: "+7 903 725-60-14",
       email: "o.lebedeva@ukp.ru",
       position: "Инженер по эксплуатации",
-      accessRole: "НСР",
+      accessRole: "Пользователь",
       objects: objects.slice(0, 1),
       active: false,
     },
@@ -338,7 +338,7 @@ export function AdminUsersSettings({
                     </td>
                     <td data-label="Доступ">
                       <span
-                        className={`aus-role-badge aus-role-${user.accessRole.toLocaleLowerCase("ru-RU")}`}
+                        className={`aus-role-badge ${user.accessRole === "Пользователь" ? "is-user" : "is-admin"}`}
                       >
                         {user.accessRole}
                       </span>
@@ -486,7 +486,7 @@ export function AdminUsersSettings({
                 <fieldset className="aus-fieldset">
                   <legend>Роль доступа</legend>
                   <div className="aus-role-options">
-                    {(["УКП", "НСР"] as const).map((role) => (
+                    {(["Администратор", "Пользователь"] as const).map((role) => (
                       <button
                         className={`aus-role-option ${draft.accessRole === role ? "is-selected" : ""}`}
                         type="button"
@@ -505,7 +505,7 @@ export function AdminUsersSettings({
                         <span>
                           <strong>{role}</strong>
                           <small>
-                            {role === "УКП"
+                            {role === "Администратор"
                               ? "Управление пользователями и объектами"
                               : "Работа с назначенными объектами"}
                           </small>
