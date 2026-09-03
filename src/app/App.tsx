@@ -27,6 +27,8 @@ import {
   MapPin,
   Mail,
   Menu,
+  Eye,
+  EyeOff,
   Pencil,
   Phone,
   Plus,
@@ -346,7 +348,20 @@ type ContractorDetails = {
   phone: string;
   email: string;
   contactsByObject: Record<string, ContactPerson>;
+  admin?: {
+    login: string;
+    password: string;
+  };
 };
+
+function createDemoContractorAdmin(contractor: string) {
+  const contractorNumber = Math.max(0, contractors.indexOf(contractor)) + 1;
+  const suffix = String(contractorNumber).padStart(2, "0");
+  return {
+    login: `admin.contractor${suffix}`,
+    password: `Anyloc2026!${suffix}`,
+  };
+}
 
 const objectDetails: Record<
   string,
@@ -1437,24 +1452,21 @@ export default function App() {
         className={`app-sidebar fixed bottom-0 left-0 top-0 z-30 border-r border-[#e1e8f1] bg-white px-4 py-4 transition-all duration-300 ${sidebar ? "is-open w-[268px]" : "w-[82px]"}`}
       >
         <div className="flex h-full flex-col">
-          <div className={`brand-lockup ${sidebar ? "" : "is-compact"}`}>
-            <div
-              className="brand-mark"
-              role="img"
-              aria-label="Anylog"
-              style={{ background: "transparent", boxShadow: "none" }}
-            >
+          <div
+            className={`brand-lockup ${sidebar ? "" : "is-compact"}`}
+            role="img"
+            aria-label="Anyloc"
+          >
+            <div className="brand-mark" aria-hidden="true">
               <img
                 className="brand-logo-image brand-logo-image--wide"
-                src={`${import.meta.env.BASE_URL}anylog-logo.png`}
+                src={`${import.meta.env.BASE_URL}anyloc-sidebar-logo.png`}
                 alt=""
-                aria-hidden="true"
               />
               <img
                 className="brand-logo-image brand-logo-image--mark"
-                src={`${import.meta.env.BASE_URL}anylog-mark.png`}
+                  src={`${import.meta.env.BASE_URL}anyloc-collapsed-mark-exact.png`}
                 alt=""
-                aria-hidden="true"
               />
             </div>
           </div>
@@ -4954,10 +4966,19 @@ function ContractorModal({
   const existingDetails: ContractorDetails = contractor
     ? contractorDetails[contractor]
     : { description: "", phone: "", email: "", contactsByObject: {} };
+  const existingAdmin = contractor
+    ? existingDetails.admin ?? createDemoContractorAdmin(contractor)
+    : undefined;
   const [name, setName] = useState(contractor ?? "");
   const [nameError, setNameError] = useState("");
-  const [phone, setPhone] = useState(existingDetails.phone);
-  const [email, setEmail] = useState(existingDetails.email);
+  const [adminLogin, setAdminLogin] = useState(
+    existingAdmin?.login ?? "",
+  );
+  const [adminPassword, setAdminPassword] = useState(
+    existingAdmin?.password ?? "",
+  );
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [adminError, setAdminError] = useState("");
   const [description, setDescription] = useState(
     existingDetails.description,
   );
@@ -5021,25 +5042,74 @@ function ContractorModal({
             {nameError && (
               <p role="alert" className="text-[13px] text-rose-600">{nameError}</p>
             )}
-            {isAdding && (
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Телефон" type="tel" value={phone} onChange={setPhone} />
-                <Field label="Email" type="email" value={email} onChange={setEmail} />
-              </div>
-            )}
-            <label className="block">
-              <span className="mb-1.5 block text-[13.5px] font-medium text-[#40516d]">
-                Описание
-              </span>
-              <textarea
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                rows={3}
-                placeholder="Например: шлагбаумы, СКУД и видеонаблюдение"
-                className="w-full resize-none rounded-lg border border-[#dce5f0] bg-white px-3 py-2.5 text-[15px] text-[#16223a] outline-none focus:border-[#3b82f6]"
-              />
-            </label>
           </div>
+          <section className="contractor-admin-card">
+            <header className="contractor-admin-card__header">
+              <h3>
+                {isAdding
+                  ? "Добавить администратора"
+                  : "Администратор подрядчика"}
+              </h3>
+            </header>
+            <div className="contractor-admin-card__fields">
+              <Field
+                label="Логин *"
+                value={adminLogin}
+                onChange={(value) => {
+                  setAdminLogin(value);
+                  setAdminError("");
+                }}
+              />
+              <label className="block">
+                <span className="mb-1.5 block text-[13.5px] font-medium text-[#40516d]">
+                  Пароль *
+                </span>
+                <span className="contractor-admin-password">
+                  <input
+                    type={showAdminPassword ? "text" : "password"}
+                    value={adminPassword}
+                    onChange={(event) => {
+                      setAdminPassword(event.target.value);
+                      setAdminError("");
+                    }}
+                  />
+                  <button
+                    type="button"
+                    aria-label={
+                      showAdminPassword ? "Скрыть пароль" : "Показать пароль"
+                    }
+                    title={
+                      showAdminPassword ? "Скрыть пароль" : "Показать пароль"
+                    }
+                    onClick={() => setShowAdminPassword((visible) => !visible)}
+                  >
+                    {showAdminPassword ? (
+                      <EyeOff size={17} aria-hidden="true" />
+                    ) : (
+                      <Eye size={17} aria-hidden="true" />
+                    )}
+                  </button>
+                </span>
+              </label>
+            </div>
+            {adminError ? (
+              <p role="alert" className="contractor-admin-card__error">
+                {adminError}
+              </p>
+            ) : null}
+          </section>
+          <label className="block">
+            <span className="mb-1.5 block text-[13.5px] font-medium text-[#40516d]">
+              Описание
+            </span>
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              rows={3}
+              placeholder="Например: шлагбаумы, СКУД и видеонаблюдение"
+              className="w-full resize-none rounded-lg border border-[#dce5f0] bg-white px-3 py-2.5 text-[15px] text-[#16223a] outline-none focus:border-[#3b82f6]"
+            />
+          </label>
           <section className="rounded-xl border border-[#e3eaf3] bg-[#f8fbff] p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
@@ -5090,9 +5160,10 @@ function ContractorModal({
                             className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left hover:bg-[#f5f9ff]"
                           >
                             <span
-                              className={`grid size-3.5 place-items-center rounded-sm border text-[12.5px] ${linked.includes(item.code) ? "border-[#2563eb] bg-[#2563eb] text-white" : "border-[#cbd7e6] bg-white text-transparent"}`}
+                              className={`contractor-check ${linked.includes(item.code) ? "is-checked" : ""}`}
+                              aria-hidden="true"
                             >
-                              ✓
+                              <Check size={12} strokeWidth={2.7} />
                             </span>
                             <span className="flex-1">
                               <span className="block text-[12.5px] font-medium text-[#40516d]">
@@ -5160,6 +5231,10 @@ function ContractorModal({
         </div>
         <ModalFoot
           close={close}
+          disabled={
+            isAdding &&
+            (!adminLogin.trim() || !adminPassword.trim())
+          }
           save={() => {
             const savedName = name.trim();
             if (!savedName) {
@@ -5170,11 +5245,38 @@ function ContractorModal({
               setNameError("Подрядчик с таким названием уже существует");
               return;
             }
+            const hasAdminLogin = Boolean(adminLogin.trim());
+            const hasAdminPassword = Boolean(adminPassword.trim());
+            if (
+              (isAdding || hasAdminLogin || hasAdminPassword) &&
+              (!hasAdminLogin || !hasAdminPassword)
+            ) {
+              setAdminError("Укажите логин и пароль администратора");
+              return;
+            }
+            if (
+              hasAdminLogin &&
+              Object.entries(contractorDetails).some(
+                ([contractorName, details]) =>
+                  contractorName !== contractor &&
+                  details.admin?.login.toLowerCase() ===
+                  adminLogin.trim().toLowerCase(),
+              )
+            ) {
+              setAdminError("Администратор с таким логином уже существует");
+              return;
+            }
             contractorDetails[savedName] = {
               ...existingDetails,
-              phone: phone.trim(),
-              email: email.trim(),
+              phone: existingDetails.phone,
+              email: existingDetails.email,
               description: description.trim() || existingDetails.description,
+              admin: hasAdminLogin && hasAdminPassword
+                ? {
+                    login: adminLogin.trim(),
+                    password: adminPassword,
+                  }
+                : existingDetails.admin,
               contactsByObject: Object.fromEntries(
                 linked.map((code) => [
                   code,
@@ -5272,20 +5374,34 @@ function TagsPage({
             .includes(normalized)),
     );
   }, [tags, business, query, tagTypeFilter]);
+  const unassignedListTags = useMemo(
+    () =>
+      tags.filter(
+        (tag) =>
+          tag.business === UNASSIGNED_BUSINESS &&
+          (tagTypeFilter === "Все типы" || tag.type === tagTypeFilter),
+      ),
+    [tags, tagTypeFilter],
+  );
+  const showUnassignedListRow = useMemo(() => {
+    if (business !== "Все объекты" && business !== UNASSIGNED_BUSINESS) {
+      return false;
+    }
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return true;
+    if (`не назначено метки без объекта`.includes(normalized)) return true;
+    return unassignedListTags.some((tag) =>
+      `${tag.id} ${tagNumericId(tag.id)} ${tag.uid} ${tag.title} ${tag.type} ${tag.contractors.join(" ")}`
+        .toLowerCase()
+        .includes(normalized),
+    );
+  }, [business, query, unassignedListTags]);
   const toneFor = (type: TagType) =>
     type === "Посещение"
       ? "is-visit"
       : type === "Журнал"
         ? "is-journal"
         : "is-neutral";
-  const tagCountLabel = (count: number) => {
-    const lastTwo = count % 100;
-    const last = count % 10;
-    if (lastTwo >= 11 && lastTwo <= 14) return `${count} меток`;
-    if (last === 1) return `${count} метка`;
-    if (last >= 2 && last <= 4) return `${count} метки`;
-    return `${count} меток`;
-  };
   const openNewTag = (businessName: string, returnToManager = false) => {
     const nextNumber =
       Math.max(
@@ -5442,6 +5558,9 @@ function TagsPage({
         {view === "tags" ? (
           <TagsListTable
             tags={visibleTags}
+            unassignedTags={unassignedListTags}
+            showUnassignedRow={showUnassignedListRow}
+            manageUnassigned={() => setManagingBusiness(tagBusinessGroups[0])}
             edit={(tag) => {
               setReturnToBusiness(null);
               setEditingTag(tag);
@@ -5984,12 +6103,27 @@ function tagNumericId(tagId: string) {
   return `ID: ${Number.isFinite(serial) ? serial + 102 : tagId}`;
 }
 
+function tagCountLabel(count: number) {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  if (lastTwo >= 11 && lastTwo <= 14) return `${count} меток`;
+  if (last === 1) return `${count} метка`;
+  if (last >= 2 && last <= 4) return `${count} метки`;
+  return `${count} меток`;
+}
+
 function TagsListTable({
   tags,
+  unassignedTags,
+  showUnassignedRow,
+  manageUnassigned,
   edit,
   reset,
 }: {
   tags: ManagedTag[];
+  unassignedTags: ManagedTag[];
+  showUnassignedRow: boolean;
+  manageUnassigned: () => void;
   edit: (tag: ManagedTag) => void;
   reset: () => void;
 }) {
@@ -6012,6 +6146,70 @@ function TagsListTable({
         </tr>
       </thead>
       <tbody>
+        {showUnassignedRow && (
+          <tr
+            className="business-center-row tags-unassigned-summary-row is-unassigned border-t border-[#e8edf4]"
+            role="button"
+            tabIndex={0}
+            aria-label="Показать не назначенные метки"
+            onClick={manageUnassigned}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                manageUnassigned();
+              }
+            }}
+          >
+            <td className="px-6 py-4">
+              <div className="business-center-name">
+                <span className="business-center-icon">
+                  <AlertTriangle size={17} />
+                </span>
+                <span>
+                  <strong>Не назначено</strong>
+                  <small>Метки без привязки к объекту</small>
+                </span>
+              </div>
+            </td>
+            <td className="px-3">
+              <button
+                type="button"
+                className="tag-name-cell tags-unassigned-count"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  manageUnassigned();
+                }}
+              >
+                <span className="tag-name-color bg-[#a5b1c2]" />
+                <span>
+                  <strong>{tagCountLabel(unassignedTags.length)}</strong>
+                  <small>
+                    {unassignedTags.filter((tag) => tag.active).length} активных
+                  </small>
+                </span>
+              </button>
+            </td>
+            <td className="px-3 text-[13.5px] text-[#a16a2c]">
+              Не назначено
+            </td>
+            <td className="tags-unassigned-contractors px-6 text-[12.5px] text-[#8493a8]">
+              —
+            </td>
+            <td className="px-6 text-right">
+              <button
+                type="button"
+                className="tags-unassigned-manage-button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  manageUnassigned();
+                }}
+              >
+                <SlidersHorizontal size={14} />
+                <span>Управлять</span>
+              </button>
+            </td>
+          </tr>
+        )}
         {tags.length ? (
           tags.map((tag) => (
             <tr
@@ -6038,7 +6236,9 @@ function TagsListTable({
                   {tag.business === UNASSIGNED_BUSINESS ? (
                     <AlertTriangle size={13} />
                   ) : null}
-                  {tag.business}
+                  {tag.business === UNASSIGNED_BUSINESS
+                    ? "Не назначено"
+                    : tag.business}
                 </span>
               </td>
               <td data-label="Название" className="px-3">
@@ -6062,7 +6262,7 @@ function TagsListTable({
                   {tag.contractors.length ? (
                     <>
                       <ContractorAvatarPreview items={tag.contractors} />
-                      <span className="max-w-[130px] truncate text-[12.5px] font-medium text-[#425a78]">
+                      <span className="whitespace-nowrap text-[12.5px] font-medium text-[#425a78]">
                         {tag.contractors.length === 1
                           ? tag.contractors[0].replace("ООО ", "")
                           : contractorCountLabel(tag.contractors.length)}
@@ -6087,7 +6287,7 @@ function TagsListTable({
               </td>
             </tr>
           ))
-        ) : (
+        ) : !showUnassignedRow ? (
           <tr>
             <td colSpan={5}>
               <div className="empty-filter-state">
@@ -6098,7 +6298,7 @@ function TagsListTable({
               </div>
             </td>
           </tr>
-        )}
+        ) : null}
       </tbody>
     </table>
     </div>
@@ -6278,7 +6478,7 @@ function LegacyTagsPage({ toast }: { toast: (m: string) => void }) {
                                 </span>
                               ))}
                           </span>
-                          <span className="max-w-[130px] truncate text-[12.5px] font-medium text-[#425a78]">
+                          <span className="whitespace-nowrap text-[12.5px] font-medium text-[#425a78]">
                             {tag.contractors.length === 1
                               ? tag.contractors[0].replace("ООО ", "")
                               : contractorCountLabel(tag.contractors.length)}
@@ -7002,10 +7202,12 @@ function ModalFoot({
   close,
   save,
   label,
+  disabled = false,
 }: {
   close: () => void;
   save: () => void;
   label: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex justify-end gap-3 border-t border-[#e4eaf2] px-7 py-5">
@@ -7017,7 +7219,8 @@ function ModalFoot({
       </button>
       <button
         onClick={save}
-        className="h-10 rounded-lg bg-[#2563eb] px-5 text-[15px] font-semibold text-white"
+        disabled={disabled}
+        className="h-10 rounded-lg bg-[#2563eb] px-5 text-[15px] font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#b8c6dc] disabled:text-white/90 disabled:shadow-none"
       >
         {label}
       </button>

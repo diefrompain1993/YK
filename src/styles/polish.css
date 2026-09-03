@@ -1311,6 +1311,110 @@ button.password-visibility:not(:disabled):active {
   transform: scale(1);
 }
 
+.contractor-admin-card {
+  padding: 17px;
+  border: 1px solid #dfe4ea;
+  border-radius: 14px;
+  background: #f6f7f9;
+  box-shadow: none;
+}
+
+.contractor-admin-card__header {
+  margin-bottom: 16px;
+}
+
+.contractor-admin-card__header h3 {
+  margin: 0;
+}
+
+.contractor-admin-card__header h3 {
+  color: #172943;
+  font-size: 15px;
+  font-weight: 720;
+}
+
+.contractor-admin-card__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.contractor-admin-password {
+  position: relative;
+  display: block;
+}
+
+.contractor-admin-password input {
+  width: 100%;
+  height: 40px;
+  padding: 0 42px 0 12px;
+  border: 1px solid #dce5f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #16223a;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.contractor-admin-password input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px #dbeafe;
+}
+
+.contractor-admin-password button {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #718096;
+  transform: translateY(-50%);
+  transition: none;
+  animation: none;
+}
+
+.contractor-admin-password button:hover {
+  background: #eef1f5;
+  color: #394a61;
+}
+
+.contractor-admin-password button svg {
+  transform: none;
+  transition: none;
+  animation: none;
+}
+
+.contractor-admin-password button:not(:disabled):active {
+  transform: translateY(-50%);
+}
+
+.contractor-admin-card__error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 11px 1px 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.contractor-admin-card__error {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+@media (max-width: 520px) {
+  .contractor-admin-card__fields {
+    grid-template-columns: 1fr;
+  }
+}
+
 .business-tags-table {
   table-layout: fixed;
 }
@@ -1381,7 +1485,7 @@ button.password-visibility:not(:disabled):active {
 }
 
 .business-tags-workspace.is-tags .tags-table th:nth-child(1) {
-  width: 27%;
+  width: 25%;
 }
 
 .business-tags-workspace.is-tags .tags-table th:nth-child(2) {
@@ -1393,11 +1497,80 @@ button.password-visibility:not(:disabled):active {
 }
 
 .business-tags-workspace.is-tags .tags-table th:nth-child(4) {
-  width: 22%;
+  width: 18%;
 }
 
 .business-tags-workspace.is-tags .tags-table th:nth-child(5) {
-  width: 9%;
+  width: 15%;
+  text-align: center !important;
+}
+
+.business-tags-workspace.is-tags .tags-table td:last-child {
+  text-align: center !important;
+}
+
+.business-tags-workspace.is-tags .tags-table td:last-child > button {
+  margin-inline: auto !important;
+}
+
+@media (min-width: 701px) {
+  .business-tags-workspace.is-tags .tags-table th:nth-child(4),
+  .business-tags-workspace.is-tags .tags-table td:nth-child(4) {
+    text-align: center !important;
+  }
+
+  .business-tags-workspace.is-tags .tags-table td:nth-child(4) > div {
+    justify-content: center;
+  }
+}
+
+.tags-unassigned-summary-row > td {
+  vertical-align: middle;
+}
+
+.tags-unassigned-count {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #415675;
+  text-align: left;
+}
+
+.tags-unassigned-count:hover,
+.tags-unassigned-count:focus-visible {
+  background: transparent;
+}
+
+button.tags-unassigned-count:not(:disabled):active {
+  transform: none;
+}
+
+.tags-unassigned-contractors {
+  text-align: center !important;
+}
+
+.tags-unassigned-manage-button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid #efd7b2;
+  border-radius: 9px;
+  background: #fffdf9;
+  color: #b66e22;
+  font-size: 12.5px;
+  font-weight: 680;
+  white-space: nowrap;
+  transition: border-color 150ms ease, background-color 150ms ease,
+    color 150ms ease;
+}
+
+.tags-unassigned-manage-button:hover {
+  border-color: #e7bd7d;
+  background: #fff7e9;
+  color: #995915;
 }
 
 .tag-name-cell {
@@ -3708,15 +3881,6 @@ aside select:focus {
   line-height: 1.5 !important;
 }
 
-.page-stage table tbody tr {
-  animation: rowIn 340ms both;
-}
-
-.page-stage table tbody tr:nth-child(2) { animation-delay: 35ms; }
-.page-stage table tbody tr:nth-child(3) { animation-delay: 70ms; }
-.page-stage table tbody tr:nth-child(4) { animation-delay: 105ms; }
-.page-stage table tbody tr:nth-child(5) { animation-delay: 140ms; }
-
 .app-shell > aside[style],
 .app-shell > aside.fixed,
 .app-shell > div + aside.fixed {
@@ -3738,11 +3902,6 @@ aside select:focus {
 @keyframes radialReveal {
   from { opacity: 0; transform: rotate(-80deg) scale(0.85); }
   to { opacity: 1; transform: rotate(0) scale(1); }
-}
-
-@keyframes rowIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes drawerIn {

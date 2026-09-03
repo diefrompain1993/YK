@@ -1,67 +1,70 @@
 /* A quieter desktop navigation treatment with one clear active marker. */
 @media (min-width: 701px) {
   .app-sidebar .brand-lockup {
-    gap: 7px;
-    padding-inline: 6px;
+    min-height: 78px;
+    gap: 0;
+    margin: 0 0 18px;
+    padding: 4px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
-  .app-sidebar .brand-mark {
-    width: 32px !important;
-    height: 32px !important;
-    flex: 0 0 32px !important;
+  .app-sidebar .brand-lockup > .brand-mark {
+    display: grid;
+    width: 46px !important;
+    height: 46px !important;
+    flex: 0 0 46px !important;
+    place-items: center;
     border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
-  .app-sidebar .brand-mark img {
+  .app-sidebar .brand-logo-image--mark {
     display: block;
-    width: 30px;
-    height: 30px;
+    width: 46px;
+    height: 46px;
     object-fit: contain;
   }
 
   .app-sidebar .brand-lockup:not(.is-compact) {
-    min-height: 64px;
-    gap: 0;
-    padding: 4px 5px;
+    justify-content: flex-start;
   }
 
   .app-sidebar .brand-lockup:not(.is-compact) .brand-mark {
-    display: flex;
     width: 100% !important;
-    height: 52px !important;
+    height: 70px !important;
     flex: 1 1 auto !important;
-    align-items: center;
     justify-content: flex-start;
   }
 
   .app-sidebar .brand-logo-image--wide {
     display: block;
-    width: min(190px, 100%) !important;
+    width: min(208px, 100%) !important;
     height: auto !important;
-    max-height: 52px;
+    max-height: 70px;
     object-fit: contain;
     object-position: left center;
   }
 
-  .app-sidebar .brand-mark .brand-logo-image--mark {
-    display: none !important;
+  .app-sidebar .brand-lockup:not(.is-compact) .brand-logo-image--mark {
+    display: none;
   }
 
   .app-sidebar .brand-lockup.is-compact .brand-mark {
-    width: 42px !important;
-    height: 42px !important;
-    flex: 0 0 42px !important;
+    width: 46px !important;
+    height: 46px !important;
+    flex: 0 0 46px !important;
+  }
+
+  .app-sidebar .brand-lockup.is-compact {
+    padding: 8px 0;
   }
 
   .app-sidebar .brand-lockup.is-compact .brand-logo-image--wide {
-    display: none !important;
-  }
-
-  .app-sidebar .brand-lockup.is-compact .brand-logo-image--mark {
-    display: block !important;
-    width: 40px !important;
-    height: 40px !important;
-    object-fit: contain;
+    display: none;
   }
 
   .app-sidebar nav button.app-nav-item {
@@ -143,15 +146,16 @@
 
   .app-sidebar .brand-lockup .brand-logo-image--mark {
     display: block !important;
-    width: 40px !important;
-    height: 40px !important;
-    object-fit: contain;
   }
 
   .app-sidebar .brand-lockup .brand-mark {
-    width: 42px !important;
-    height: 42px !important;
-    flex: 0 0 42px !important;
+    width: 46px !important;
+    height: 46px !important;
+    flex: 0 0 46px !important;
+  }
+
+  .app-sidebar .brand-lockup {
+    padding: 8px 0;
   }
 }
 
